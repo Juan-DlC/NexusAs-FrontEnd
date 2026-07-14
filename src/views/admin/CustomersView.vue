@@ -1,0 +1,232 @@
+<template>
+  <div class="customers-view">
+    <div class="page-header-row">
+      <div>
+        <h2 class="page-title">Clientes</h2>
+        <p class="page-sub">{{ totalRecords }} clientes registrados</p>
+      </div>
+      <button class="btn btn-primary floating-action-btn" @click="openCreateModal" v-if="auth.isAdmin">
+        + Nuevo cliente
+      </button>
+    </div>
+
+    <div class="search-bar">
+      <input
+        v-model="search"
+        type="text"
+        class="form-input search-input"
+        placeholder="Buscar por nombre o documento..."
+        @input="onSearchInput"
+      />
+    </div>
+
+    <div class="card">
+      <div v-if="loading" class="state-text">Cargando...</div>
+      <div v-else-if="customers.length === 0" class="state-text">
+        No se encontraron clientes.
+      </div>
+      <table v-else>
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Documento</th>
+            <th>Teléfono</th>
+            <th>Correo</th>
+            <th>Notas</th>
+            <th v-if="auth.isAdmin">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="c in customers" :key="c.id">
+            <td><strong>{{ c.name }}</strong></td>
+            <td>{{ c.document || '-' }}</td>
+            <td>{{ c.phone || '-' }}</td>
+            <td>{{ c.email || '-' }}</td>
+            <td class="notes-cell">{{ c.notes || '-' }}</td>
+            <td v-if="auth.isAdmin">
+              <button class="btn-icon" @click="openEditModal(c)">✎</button>
+              <button class="btn-icon btn-icon-danger" @click="confirmDelete(c)">🗑</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="pagination" v-if="totalPages > 1">
+        <button class="btn btn-secondary btn-sm" :disabled="!hasPreviousPage" @click="changePage(pageNumber - 1)">
+          ← Anterior
+        </button>
+        <span class="page-info">Página {{ pageNumber }} de {{ totalPages }}</span>
+        <button class="btn btn-secondary btn-sm" :disabled="!hasNextPage" @click="changePage(pageNumber + 1)">
+          Siguiente →
+        </button>
+      </div>
+    </div>
+
+    <ModalBase v-model="showModal" :title="editingCustomer ? 'Editar cliente' : 'Nuevo cliente'">
+      <form @submit.prevent="saveCustomer">
+        <div class="form-group">
+          <label class="form-label">Nombre completo</label>
+          <input v-model="form.name" type="text" class="form-input" required @input="form.name = toUpperCase(form.name)" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Documento</label>
+            <input v-model="form.document" type="text" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Teléfono</label>
+            <input v-model="form.phone" type="text" class="form-input" @input="form.phone = toUpperCase(form.phone)" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Correo (opcional)</label>
+          <input v-model="form.email" type="email" class="form-input" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Notas (opcional)</label>
+          <input v-model="form.notes" type="text" class="form-input" @input="form.notes = toUpperCase(form.notes)" />
+        </div>
+      </form>
+      <template #footer>
+        <button class="btn btn-secondary" @click="showModal = false">Cancelar</button>
+        <button class="btn btn-primary" @click="saveCustomer" :disabled="saving">
+          {{ saving ? 'Guardando...' : 'Guardar' }}
+        </button>
+      </template>
+    </ModalBase>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue'
+import api from '@/api/axios'
+import { useAuthStore } from '@/stores/auth'
+import ModalBase from '@/components/shared/ModalBase.vue'
+import { toUpperCase } from '@/utils/textFormat'
+
+const auth = useAuthStore()
+const customers = ref([])
+const loading = ref(true)
+const saving = ref(false)
+const search = ref('')
+const showModal = ref(false)
+const editingCustomer = ref(null)
+
+const pageNumber = ref(1)
+const pageSize = ref(10)
+const totalRecords = ref(0)
+const totalPages = ref(1)
+const hasNextPage = ref(false)
+const hasPreviousPage = ref(false)
+
+const form = ref({ name: '', document: '', phone: '', email: '', notes: '' })
+
+let searchTimeout = null
+function onSearchInput() {
+  clearTimeout(searchTimeout)
+  searchTimeout = setTimeout(() => {
+    pageNumber.value = 1
+    loadCustomers()
+  }, 400)
+}
+
+async function loadCustomers() {
+  try {
+    loading.value = true
+    const res = await api.get('/Customer', {
+      params: { pageNumber: pageNumber.value, pageSize: pageSize.value, search: search.value }
+    })
+    const data = res.data.data
+    customers.value = data.data
+    totalRecords.value = data.totalRecords
+    totalPages.value = data.totalPages
+    hasNextPage.value = data.hasNextPage
+    hasPreviousPage.value = data.hasPreviousPage
+  } catch (err) {
+    console.error('Error cargando clientes:', err)
+  } finally {
+    loading.value = false
+  }
+}
+
+function changePage(page) {
+  pageNumber.value = page
+  loadCustomers()
+}
+
+function openCreateModal() {
+  editingCustomer.value = null
+  form.value = { name: '', document: '', phone: '', email: '', notes: '' }
+  showModal.value = true
+}
+
+function openEditModal(customer) {
+  editingCustomer.value = customer
+  form.value = {
+    name: customer.name,
+    document: customer.document || '',
+    phone: customer.phone || '',
+    email: customer.email || '',
+    notes: customer.notes || ''
+  }
+  showModal.value = true
+}
+
+async function saveCustomer() {
+  try {
+    saving.value = true
+    const payload = {
+      name: form.value.name,
+      document: form.value.document || null,
+      phone: form.value.phone || null,
+      email: form.value.email || null,
+      notes: form.value.notes || null
+    }
+    if (editingCustomer.value) {
+      await api.put(`/Customer/${editingCustomer.value.id}`, payload)
+    } else {
+      await api.post('/Customer', payload)
+    }
+    showModal.value = false
+    loadCustomers()
+  } catch (err) {
+    alert(err.response?.data?.message || 'Error al guardar el cliente.')
+  } finally {
+    saving.value = false
+  }
+}
+
+async function confirmDelete(customer) {
+  if (!confirm(`¿Desactivar el cliente "${customer.name}"?`)) return
+  try {
+    await api.delete(`/Customer/${customer.id}`)
+    loadCustomers()
+  } catch (err) {
+    alert(err.response?.data?.message || 'Error al desactivar el cliente.')
+  }
+}
+
+onMounted(loadCustomers)
+</script>
+
+<style scoped>
+.notes-cell {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.customers-view { display: flex; flex-direction: column; gap: 16px; }
+.page-header-row { display: flex; align-items: center; justify-content: space-between; }
+.page-title { font-size: 18px; font-weight: 700; color: var(--color-text); }
+.page-sub { font-size: 12px; color: var(--color-text-muted); margin-top: 2px; }
+.search-bar { display: flex; }
+.search-input { max-width: 320px; }
+.state-text { text-align: center; padding: 40px 0; color: var(--color-text-muted); font-size: 13px; }
+.btn-icon { background: var(--color-bg); width: 30px; height: 30px; border-radius: 8px; margin-right: 6px; transition: var(--transition); }
+.btn-icon:hover { background: var(--color-accent-light); }
+.btn-icon-danger:hover { background: #FFEBEE; color: var(--color-danger); }
+.pagination { display: flex; align-items: center; justify-content: center; gap: 16px; padding-top: 16px; margin-top: 8px; border-top: 1px solid var(--color-border); }
+.page-info { font-size: 12px; color: var(--color-text-muted); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+</style>
