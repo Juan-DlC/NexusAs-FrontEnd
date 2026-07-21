@@ -140,6 +140,16 @@
           </select>
         </div>
 
+        <div class="form-group">
+          <label class="form-label">Proveedor</label>
+          <select v-model="form.supplierId" class="form-input" required>
+            <option value="" disabled>Selecciona un proveedor</option>
+            <option v-for="sup in suppliers" :key="sup.id" :value="sup.id">
+              {{ sup.name }}
+            </option>
+          </select>
+        </div>
+
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Costo (privado)</label>
@@ -201,6 +211,7 @@ const auth = useAuthStore()
 
 const products = ref([])
 const categories = ref([])
+const suppliers = ref([])
 const loading = ref(true)
 const saving = ref(false)
 const search = ref('')
@@ -216,7 +227,7 @@ const hasNextPage = ref(false)
 const hasPreviousPage = ref(false)
 
 const form = ref({
-  code: '', name: '', categoryId: '', cost: 0,
+  code: '', name: '', categoryId: '', supplierId: '', cost: 0,
   salePrice: 0, stock: 0, minStock: 0, isPartnership: false
 })
 
@@ -272,6 +283,15 @@ async function loadCategories() {
   }
 }
 
+async function loadSuppliers() {
+  try {
+    const res = await api.get('/Supplier', { params: { pageSize: 100 } })
+    suppliers.value = res.data.data.data
+  } catch (err) {
+    console.error('Error cargando proveedores:', err)
+  }
+}
+
 function changePage(page) {
   pageNumber.value = page
   loadProducts()
@@ -279,7 +299,7 @@ function changePage(page) {
 
 function openCreateModal() {
   editingProduct.value = null
-  form.value = { code: '', name: '', categoryId: '', cost: 0, salePrice: 0, stock: 0, minStock: 0, isPartnership: false }
+  form.value = { code: '', name: '', categoryId: '', supplierId: '', cost: 0, salePrice: 0, stock: 0, minStock: 0, isPartnership: false }
   suggestedPrice.value = 0
   showModal.value = true
 }
@@ -290,6 +310,7 @@ function openEditModal(product) {
     code: product.code,
     name: product.name,
     categoryId: product.categoryId,
+    supplierId: product.supplierId || '',
     cost: product.cost || 0,
     salePrice: product.salePrice,
     stock: product.stock,
@@ -328,7 +349,10 @@ async function confirmDelete(product) {
 
 onMounted(() => {
   loadProducts()
-  if (!auth.isPartner) loadCategories()
+  if (!auth.isPartner) {
+    loadCategories()
+    loadSuppliers()
+  }
 })
 </script>
 

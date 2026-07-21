@@ -72,13 +72,15 @@
       <form @submit.prevent="saveSale">
         <div class="form-group">
           <label class="form-label">Método de pago</label>
-          <select v-model="form.paymentMethod" class="form-input">
-            <option value="Cash">Contado</option>
-            <option value="Credit">Crédito</option>
+          <select v-model="form.paymentMethodId" class="form-input" required>
+            <option value="" disabled>Selecciona un método</option>
+            <option v-for="pm in paymentMethods" :key="pm.id" :value="pm.id">
+              {{ pm.name }}
+            </option>
           </select>
         </div>
 
-        <div class="form-group" v-if="form.paymentMethod === 'Credit'">
+        <div class="form-group" v-if="selectedPaymentMethod && selectedPaymentMethod.allowsCredit">
           <label class="form-label">Cliente (obligatorio para crédito)</label>
           <select v-model="form.customerId" class="form-input" required>
             <option value="" disabled>Selecciona un cliente</option>
@@ -86,7 +88,7 @@
           </select>
         </div>
 
-        <div class="form-group" v-if="form.paymentMethod === 'Credit'">
+        <div class="form-group" v-if="selectedPaymentMethod && selectedPaymentMethod.allowsCredit">
           <label class="form-label">Número de cuotas</label>
           <select v-model.number="form.numberOfInstallments" class="form-input">
             <option :value="1">1 cuota (pago único)</option>
@@ -100,7 +102,7 @@
           </p>
         </div>
 
-        <div class="form-group" v-else>
+        <div class="form-group" v-if="!selectedPaymentMethod || !selectedPaymentMethod.allowsCredit">
           <label class="form-label">Cliente (opcional)</label>
           <select v-model="form.customerId" class="form-input">
             <option value="">Sin cliente</option>
@@ -240,7 +242,7 @@ import { toUpperCase } from '@/utils/textFormat'
 
 const sales = ref([])
 const customers = ref([])
-// const products = ref([])
+const paymentMethods = ref([])
 const loading = ref(true)
 const saving = ref(false)
 const showModal = ref(false)
@@ -255,7 +257,7 @@ const hasNextPage = ref(false)
 const hasPreviousPage = ref(false)
 
 const form = ref({
-  paymentMethod: 'Cash',
+  paymentMethodId: '',
   customerId: '',
   numberOfInstallments: 1,
   discount: 0,
@@ -276,6 +278,10 @@ const calculatedTotal = computed(() => {
     (sum, d) => sum + (d.quantity * d.unitPrice || 0), 0
   )
   return subtotal - (form.value.discount || 0)
+})
+
+const selectedPaymentMethod = computed(() => {
+  return paymentMethods.value.find(pm => pm.id === form.value.paymentMethodId)
 })
 
 function onProductSelect(detail, product) {
@@ -345,14 +351,18 @@ async function loadCustomers() {
   customers.value = res.data.data.data
 }
 
-// async function loadProducts() {
-//   const res = await api.get('/Product', { params: { pageSize: 100 } })
-//   products.value = res.data.data.data
-// }
+async function loadPaymentMethods() {
+  try {
+    const res = await api.get('/PaymentMethod')
+    paymentMethods.value = res.data.data
+  } catch (err) {
+    console.error('Error cargando métodos de pago:', err)
+  }
+}
 
 function openCreateModal() {
   form.value = {
-    paymentMethod: 'Cash', customerId: '', numberOfInstallments: 1, discount: 0, notes: '',
+    paymentMethodId: '', customerId: '', numberOfInstallments: 1, discount: 0, notes: '',
     details: [{ productId: '', quantity: 1, unitPrice: 0, stock: 0 }]
   }
   showModal.value = true
@@ -362,7 +372,7 @@ async function saveSale() {
   try {
     saving.value = true
     const payload = {
-      paymentMethod: form.value.paymentMethod,
+      paymentMethodId: form.value.paymentMethodId,
       customerId: form.value.customerId || null,
       numberOfInstallments: form.value.numberOfInstallments || 1,
       discount: Number(form.value.discount) || 0,
@@ -376,7 +386,6 @@ async function saveSale() {
     await api.post('/Sale', payload)
     showModal.value = false
     loadSales()
-    //loadProducts()
   } catch (err) {
     alert(err.response?.data?.message || err.response?.data?.errors
       ? JSON.stringify(err.response.data.errors)
@@ -409,7 +418,7 @@ async function downloadReceipt(saleId) {
 onMounted(() => {
   loadSales()
   loadCustomers()
-  //loadProducts()
+  loadPaymentMethods()
 })
 </script>
 
