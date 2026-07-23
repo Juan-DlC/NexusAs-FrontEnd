@@ -44,8 +44,8 @@
             <td>{{ c.email || '-' }}</td>
             <td class="notes-cell">{{ c.notes || '-' }}</td>
             <td v-if="auth.isAdmin">
-              <button class="btn-icon" @click="openEditModal(c)">✎</button>
-              <button class="btn-icon btn-icon-danger" @click="confirmDelete(c)">🗑</button>
+              <button class="btn-icon" @click="openEditModal(c)" :title="`✏️ Editar ${c.name}`">✏️</button>
+              <button class="btn-icon btn-icon-danger" @click="confirmDelete(c)" :title="`🗑️ Eliminar ${c.name}`">🗑️</button>
             </td>
           </tr>
         </tbody>

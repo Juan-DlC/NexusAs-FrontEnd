@@ -24,8 +24,9 @@
             :to="item.path"
             class="nav-item"
             :class="{ active: isActive(item.path) }"
+            :title="`${item.icon} ${item.label}`"
           >
-            <span class="nav-dot"></span>
+            <span class="nav-icon">{{ item.icon }}</span>
             <span class="nav-label" v-if="!sidebarCollapsed">{{ item.label }}</span>
           </router-link>
         </template>
@@ -72,26 +73,27 @@ const sidebarCollapsed = ref(false)
 
 const menuItems = [
   { section: 'Principal' },
-  { name: 'dashboard', path: '/', label: 'Dashboard', roles: ['Admin'] },
+  { name: 'dashboard', path: '/', label: 'Dashboard', icon: '📊', roles: ['Admin'] },
   {
     name: 'products',
     path: '/productos',
     label: 'Productos',
+    icon: '👟',
     roles: ['Admin', 'Seller', 'Partner'],
   },
-  { name: 'categories', path: '/categorias', label: 'Categorías', roles: ['Admin'] },
-  { name: 'suppliers', path: '/proveedores', label: 'Proveedores', roles: ['Admin'] },
+  { name: 'categories', path: '/categorias', label: 'Categorías', icon: '🏷️', roles: ['Admin'] },
+  { name: 'suppliers', path: '/proveedores', label: 'Proveedores', icon: '📦', roles: ['Admin'] },
   { section: 'Ventas' },
-  { name: 'customers', path: '/clientes', label: 'Clientes', roles: ['Admin', 'Seller'] },
-  { name: 'sales', path: '/ventas', label: 'Ventas', roles: ['Admin', 'Seller', 'Partner'] },
-  { name: 'credits', path: '/creditos', label: 'Créditos', roles: ['Admin'] },
+  { name: 'customers', path: '/clientes', label: 'Clientes', icon: '👥', roles: ['Admin', 'Seller'] },
+  { name: 'sales', path: '/ventas', label: 'Ventas', icon: '💰', roles: ['Admin', 'Seller', 'Partner'] },
+  { name: 'credits', path: '/creditos', label: 'Créditos', icon: '💳', roles: ['Admin'] },
   { section: 'Gestión' },
-  { name: 'stock', path: '/stock', label: 'Stock', roles: ['Admin'] },
-  { name: 'partners', path: '/socias', label: 'Socias', roles: ['Admin'] },
-  { name: 'users', path: '/usuarios', label: 'Usuarios', roles: ['Admin'] },
-  { name: 'reports', path: '/reportes', label: 'Reportes', roles: ['Admin'] },
+  { name: 'stock', path: '/stock', label: 'Stock', icon: '📋', roles: ['Admin'] },
+  { name: 'partners', path: '/socias', label: 'Socias', icon: '👩‍💼', roles: ['Admin'] },
+  { name: 'users', path: '/usuarios', label: 'Usuarios', icon: '👤', roles: ['Admin'] },
+  { name: 'reports', path: '/reportes', label: 'Reportes', icon: '📈', roles: ['Admin'] },
   { section: 'Mi cuenta' },
-  { name: 'partner-summary', path: '/mi-resumen', label: 'Mi Resumen', roles: ['Partner'] },
+  { name: 'partner-summary', path: '/mi-resumen', label: 'Mi Resumen', icon: '💼', roles: ['Partner'] },
 ]
 
 const pageTitles = {
@@ -254,17 +256,19 @@ function handleLogout() {
   color: var(--sidebar-text-active);
 }
 
-.nav-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.25);
+.nav-icon {
+  font-size: 16px;
   flex-shrink: 0;
+  opacity: 0.7;
   transition: var(--transition);
 }
 
-.nav-item.active .nav-dot {
-  background: var(--sidebar-accent);
+.nav-item.active .nav-icon {
+  opacity: 1;
+}
+
+.nav-item:hover .nav-icon {
+  opacity: 1;
 }
 
 .nav-label {

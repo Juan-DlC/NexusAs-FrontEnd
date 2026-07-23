@@ -43,8 +43,8 @@
             <td>{{ s.phone || '-' }}</td>
             <td>{{ s.email || '-' }}</td>
             <td>
-              <button class="btn-icon" @click.stop="openEditModal(s)">✎</button>
-              <button class="btn-icon btn-icon-danger" @click.stop="confirmDelete(s)">🗑</button>
+              <button class="btn-icon" @click.stop="openEditModal(s)" :title="`✏️ Editar ${s.name}`">✏️</button>
+              <button class="btn-icon btn-icon-danger" @click.stop="confirmDelete(s)" :title="`🗑️ Eliminar ${s.name}`">🗑️</button>
             </td>
           </tr>
         </tbody>

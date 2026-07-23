@@ -48,7 +48,7 @@
             </td>
             <td>${{ formatNumber(s.total) }}</td>
             <td>
-              <button class="btn-icon" @click.stop="downloadReceipt(s.id)" title="Descargar recibo">
+              <button class="btn-icon" @click.stop="downloadReceipt(s.id)" :title="`📄 Descargar recibo de ${s.saleNumber}`">
                 📄
               </button>
             </td>
@@ -124,7 +124,7 @@
               placeholder="Cant."
               required
             />
-          <CurrencyInput v-model="detail.unitPrice" class="price-input" />            <button type="button" class="btn-icon btn-icon-danger" @click="removeDetail(index)">✕</button>
+          <CurrencyInput v-model="detail.unitPrice" class="price-input" />            <button type="button" class="btn-icon btn-icon-danger" @click="removeDetail(index)" :title="`✕ Eliminar producto`">✕</button>
           </div>
           <p class="stock-warning" v-if="isStockExceeded(detail)">
             ⚠️ Stock insuficiente — disponible: {{ getProductStock(detail) }}

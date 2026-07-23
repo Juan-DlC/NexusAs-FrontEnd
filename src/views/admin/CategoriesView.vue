@@ -38,8 +38,8 @@
             <td><strong>{{ cat.name }}</strong></td>
             <td>{{ cat.description || '-' }}</td>
             <td>
-              <button class="btn-icon" @click="openEditModal(cat)">✎</button>
-              <button class="btn-icon btn-icon-danger" @click="confirmDelete(cat)">🗑</button>
+              <button class="btn-icon" @click="openEditModal(cat)" :title="`✏️ Editar ${cat.name}`">✏️</button>
+              <button class="btn-icon btn-icon-danger" @click="confirmDelete(cat)" :title="`🗑️ Eliminar ${cat.name}`">🗑️</button>
             </td>
           </tr>
         </tbody>

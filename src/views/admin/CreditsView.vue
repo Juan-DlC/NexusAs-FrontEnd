@@ -59,8 +59,9 @@
                 v-if="c.status !== 'Paid'"
                 class="btn btn-secondary btn-sm"
                 @click.stop="openPaymentModal(c)"
+                :title="`💳 Registrar abono para ${c.customerName}`"
               >
-                Registrar abono
+                💳 Registrar abono
               </button>
             </td>
           </tr>

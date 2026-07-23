@@ -19,6 +19,17 @@
         placeholder="Buscar por nombre o código..."
         @input="onSearchInput"
       />
+      <select v-model="filterCategory" class="form-input filter-select" @change="onFilterChange">
+        <option value="">Todas las categorías</option>
+        <option v-for="cat in categories" :key="cat.id" :value="cat.id">
+          {{ cat.name }}
+        </option>
+      </select>
+      <select v-model="filterStatus" class="form-input filter-select" @change="onFilterChange">
+        <option value="">Todos los estados</option>
+        <option value="active">Activos</option>
+        <option value="inactive">Inactivos</option>
+      </select>
     </div>
 
     <div class="card">
@@ -36,6 +47,7 @@
             <th>Categoría</th>
             <th>Precio</th>
             <th>Stock</th>
+            <th>Estado</th>
             <th v-if="auth.isAdmin">Acciones</th>
           </tr>
         </thead>
@@ -55,9 +67,22 @@
                 {{ p.stock }} uds
               </span>
             </td>
+            <td>
+              <span :class="['badge', p.isActive ? 'badge-success' : 'badge-danger']">
+                {{ p.isActive ? 'Activo' : 'Inactivo' }}
+              </span>
+            </td>
             <td v-if="auth.isAdmin">
-              <button class="btn-icon" @click="openEditModal(p)">✎</button>
-              <button class="btn-icon btn-icon-danger" @click="confirmDelete(p)">🗑</button>
+              <button class="btn-icon" @click.stop="openEditModal(p)" :title="`✏️ Editar ${p.name}`">✏️</button>
+              <button 
+                class="btn-icon" 
+                :class="p.isActive ? 'btn-icon-warning' : 'btn-icon-success'"
+                @click.stop="toggleProductStatus(p)" 
+                :title="`${p.isActive ? '🔴 Desactivar' : '🟢 Activar'} ${p.name}`"
+              >
+                {{ p.isActive ? '🔴' : '🟢' }}
+              </button>
+              <button class="btn-icon btn-icon-danger" @click.stop="confirmDelete(p)" :title="`🗑️ Eliminar ${p.name}`">🗑️</button>
             </td>
           </tr>
         </tbody>
@@ -215,6 +240,8 @@ const suppliers = ref([])
 const loading = ref(true)
 const saving = ref(false)
 const search = ref('')
+const filterCategory = ref('')
+const filterStatus = ref('')
 const showModal = ref(false)
 const editingProduct = ref(null)
 const suggestedPrice = ref(0)
@@ -249,6 +276,11 @@ function onSearchInput() {
   }, 400)
 }
 
+function onFilterChange() {
+  pageNumber.value = 1
+  loadProducts()
+}
+
 async function loadProducts() {
   try {
     loading.value = true
@@ -257,9 +289,24 @@ async function loadProducts() {
       const res = await api.get('/Partner/my/products')
       products.value = res.data.data
     } else {
-      const res = await api.get('/Product', {
-        params: { pageNumber: pageNumber.value, pageSize: pageSize.value, search: search.value }
-      })
+      const params = { 
+        pageNumber: pageNumber.value, 
+        pageSize: pageSize.value, 
+        search: search.value 
+      }
+      
+      // Agregar filtros opcionales
+      if (filterCategory.value) {
+        params.categoryId = filterCategory.value
+      }
+      
+      if (filterStatus.value === 'active') {
+        params.isActive = true
+      } else if (filterStatus.value === 'inactive') {
+        params.isActive = false
+      }
+      
+      const res = await api.get('/Product', { params })
       const data = res.data.data
       products.value = data.data
       totalRecords.value = data.totalRecords
@@ -338,12 +385,23 @@ async function saveProduct() {
 }
 
 async function confirmDelete(product) {
-  if (!confirm(`¿Desactivar el producto "${product.name}"?`)) return
+  if (!confirm(`¿Eliminar el producto "${product.name}"?`)) return
   try {
     await api.delete(`/Product/${product.id}`)
     loadProducts()
   } catch (err) {
-    alert(err.response?.data?.message || 'Error al desactivar el producto.')
+    alert(err.response?.data?.message || 'Error al eliminar el producto.')
+  }
+}
+
+async function toggleProductStatus(product) {
+  const action = product.isActive ? 'desactivar' : 'activar'
+  if (!confirm(`¿Está seguro de ${action} el producto "${product.name}"?`)) return
+  try {
+    await api.patch(`/Product/${product.id}/toggle-status`)
+    loadProducts()
+  } catch (err) {
+    alert(err.response?.data?.message || `Error al ${action} el producto.`)
   }
 }
 
@@ -368,8 +426,22 @@ onMounted(() => {
 .page-title { font-size: 18px; font-weight: 700; color: var(--color-text); }
 .page-sub { font-size: 12px; color: var(--color-text-muted); margin-top: 2px; }
 
-.search-bar { display: flex; }
-.search-input { max-width: 320px; }
+.search-bar { 
+  display: flex; 
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.search-input { 
+  max-width: 320px; 
+  flex: 1;
+  min-width: 200px;
+}
+
+.filter-select {
+  max-width: 200px;
+  flex-shrink: 0;
+}
 
 .state-text {
   text-align: center;
@@ -385,9 +457,12 @@ onMounted(() => {
   border-radius: 8px;
   margin-right: 6px;
   transition: var(--transition);
+  cursor: pointer;
 }
 .btn-icon:hover { background: var(--color-accent-light); }
 .btn-icon-danger:hover { background: #FFEBEE; color: var(--color-danger); }
+.btn-icon-warning:hover { background: #FFF3E0; color: var(--color-warning); }
+.btn-icon-success:hover { background: #E8F5E9; color: var(--color-success); }
 
 .pagination {
   display: flex;

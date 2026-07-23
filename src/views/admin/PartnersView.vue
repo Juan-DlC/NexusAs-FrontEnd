@@ -33,7 +33,7 @@
               </span>
             </td>
             <td>
-              <button class="btn-icon" @click.stop="openCommissionModal(p)" title="Editar comisión">✎</button>
+              <button class="btn-icon" @click.stop="openCommissionModal(p)" :title="`✏️ Editar comisión de ${p.name}`">✏️</button>
             </td>
           </tr>
         </tbody>
