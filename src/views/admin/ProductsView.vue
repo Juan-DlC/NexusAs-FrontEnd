@@ -26,9 +26,9 @@
         </option>
       </select>
       <select v-model="filterStatus" class="form-input filter-select" @change="onFilterChange">
-        <option value="">Todos los estados</option>
-        <option value="active">Activos</option>
-        <option value="inactive">Inactivos</option>
+        <option value="">Solo activos (default)</option>
+        <option value="inactive">Solo inactivos</option>
+        <option value="all">Todos</option>
       </select>
     </div>
 
@@ -228,11 +228,13 @@
 import { ref, onMounted } from 'vue'
 import api from '@/api/axios'
 import { useAuthStore } from '@/stores/auth'
+import { useToastStore } from '@/stores/toast'
 import ModalBase from '@/components/shared/ModalBase.vue'
 import CurrencyInput from '@/components/shared/CurrencyInput.vue'
 import { toUpperCase } from '@/utils/textFormat'
 
 const auth = useAuthStore()
+const toast = useToastStore()
 
 const products = ref([])
 const categories = ref([])
@@ -300,10 +302,15 @@ async function loadProducts() {
         params.categoryId = filterCategory.value
       }
       
-      if (filterStatus.value === 'active') {
-        params.isActive = true
-      } else if (filterStatus.value === 'inactive') {
+      // Filtro de estado
+      if (filterStatus.value === 'inactive') {
         params.isActive = false
+      } else if (filterStatus.value === 'all') {
+        // No enviar isActive para que el backend devuelva todos
+        // (omitir el parámetro)
+      } else {
+        // Default '' → solo activos
+        params.isActive = true
       }
       
       const res = await api.get('/Product', { params })
@@ -372,13 +379,15 @@ async function saveProduct() {
     saving.value = true
     if (editingProduct.value) {
       await api.put(`/Product/${editingProduct.value.id}`, form.value)
+      toast.show('Producto actualizado correctamente', 'success')
     } else {
       await api.post('/Product', form.value)
+      toast.show('Producto creado correctamente', 'success')
     }
     showModal.value = false
     loadProducts()
   } catch (err) {
-    alert(err.response?.data?.message || 'Error al guardar el producto.')
+    toast.show(err.response?.data?.message || 'Error al guardar el producto', 'error')
   } finally {
     saving.value = false
   }
@@ -388,9 +397,10 @@ async function confirmDelete(product) {
   if (!confirm(`¿Eliminar el producto "${product.name}"?`)) return
   try {
     await api.delete(`/Product/${product.id}`)
+    toast.show('Producto eliminado correctamente', 'success')
     loadProducts()
   } catch (err) {
-    alert(err.response?.data?.message || 'Error al eliminar el producto.')
+    toast.show(err.response?.data?.message || 'Error al eliminar el producto', 'error')
   }
 }
 
@@ -399,9 +409,10 @@ async function toggleProductStatus(product) {
   if (!confirm(`¿Está seguro de ${action} el producto "${product.name}"?`)) return
   try {
     await api.patch(`/Product/${product.id}/toggle-status`)
+    toast.show(`Producto ${action}do correctamente`, 'success')
     loadProducts()
   } catch (err) {
-    alert(err.response?.data?.message || `Error al ${action} el producto.`)
+    toast.show(err.response?.data?.message || `Error al ${action} el producto`, 'error')
   }
 }
 

@@ -17,7 +17,8 @@
           <tr>
             <th>Socia</th>
             <th>Usuario</th>
-            <th>Comisión</th>
+            <th>% Normal</th>
+            <th>% Alianza</th>
             <th>Estado</th>
             <th>Acciones</th>
           </tr>
@@ -27,6 +28,7 @@
             <td><strong>{{ p.partnerName }}</strong></td>
             <td>{{ p.username }}</td>
             <td>{{ p.commissionPercent }}%</td>
+            <td>{{ p.allianceCommissionPercent || 20 }}%</td>
             <td>
               <span :class="['badge', p.isActive ? 'badge-success' : 'badge-danger']">
                 {{ p.isActive ? 'Activa' : 'Inactiva' }}
@@ -44,9 +46,14 @@
     <ModalBase v-model="showCommissionModal" title="Editar comisión">
       <div v-if="selectedPartner">
         <div class="form-group">
-          <label class="form-label">Socia: {{ selectedPartner.partnerName }}</label>
-          <input v-model.number="newCommission" type="number" min="1" max="100" class="form-input" />
-          <p class="hint-text">% de la ganancia en productos normales (no aplica a productos de alianza).</p>
+          <label class="form-label">% comisión productos normales</label>
+          <input v-model.number="commissionForm.commissionPercent" type="number" min="1" max="100" class="form-input" />
+          <p class="hint-text">% de la ganancia de AS en productos normales</p>
+        </div>
+        <div class="form-group">
+          <label class="form-label">% comisión productos de alianza</label>
+          <input v-model.number="commissionForm.allianceCommissionPercent" type="number" min="1" max="100" class="form-input" />
+          <p class="hint-text">% de la ganancia de AS en productos de alianza</p>
         </div>
       </div>
       <template #footer>
@@ -62,53 +69,66 @@
       <div v-if="partnerDetail">
         <div class="summary-grid">
           <div class="summary-card">
-            <span class="summary-label">Total vendido</span>
-            <strong>${{ formatNumber(partnerDetail.totalSales) }}</strong>
-          </div>
-          <div class="summary-card success">
-            <span class="summary-label">Ganancias socia</span>
-            <strong>${{ formatNumber(partnerDetail.totalEarnings) }}</strong>
-          </div>
-          <div class="summary-card">
             <span class="summary-label">Deuda total</span>
             <strong>${{ formatNumber(partnerDetail.totalDebt) }}</strong>
           </div>
+          <div class="summary-card success">
+            <span class="summary-label">Abonado</span>
+            <strong>${{ formatNumber(partnerDetail.totalPaid) }}</strong>
+          </div>
           <div class="summary-card danger">
             <span class="summary-label">Saldo pendiente</span>
-            <strong>${{ formatNumber(partnerDetail.pendingDebt) }}</strong>
+            <strong style="color: var(--color-danger);">${{ formatNumber(partnerDetail.pendingDebt) }}</strong>
           </div>
         </div>
 
         <div class="tabs">
-          <button :class="['tab-btn', { active: activeTab === 'sales' }]" @click="activeTab = 'sales'">
-            Productos llevados
+          <button :class="['tab-btn', { active: activeTab === 'invoices' }]" @click="activeTab = 'invoices'">
+            Facturas ({{ partnerInvoices.length }})
           </button>
           <button :class="['tab-btn', { active: activeTab === 'liquidations' }]" @click="activeTab = 'liquidations'">
             Abonos
           </button>
         </div>
 
-        <div v-if="activeTab === 'sales'">
-          <table v-if="partnerSales.length > 0">
+        <div v-if="activeTab === 'invoices'">
+          <table v-if="partnerInvoices.length > 0">
             <thead>
-              <tr><th>Producto</th><th>Cant.</th><th>Precio AS</th><th>Vendió a</th><th>Su ganancia</th></tr>
+              <tr>
+                <th>Factura</th>
+                <th>Fecha</th>
+                <th>Total</th>
+                <th>Estado</th>
+                <th>Pendiente</th>
+                <th>Acciones</th>
+              </tr>
             </thead>
             <tbody>
-              <tr v-for="s in partnerSales" :key="s.id">
+              <tr v-for="inv in partnerInvoices" :key="inv.saleId">
+                <td><strong>{{ inv.saleNumber }}</strong></td>
+                <td>{{ formatDate(inv.date) }}</td>
+                <td>${{ formatNumber(inv.total) }}</td>
                 <td>
-                  {{ s.productName }}
-                  <span v-if="s.isPartnership" class="badge badge-pink" style="margin-left: 4px;">
-                    Alianza
+                  <span :class="['badge', inv.creditStatus === 'Paid' ? 'badge-success' : inv.creditStatus === 'NoCredit' ? 'badge-info' : 'badge-warning']">
+                    {{ inv.creditStatus === 'NoCredit' ? 'Contado' : inv.creditStatus === 'Paid' ? 'Pagado' : inv.creditStatus === 'Partial' ? 'Parcial' : 'Pendiente' }}
                   </span>
                 </td>
-                <td>{{ s.quantity }}</td>
-                <td>${{ formatNumber(s.partnerPrice) }}</td>
-                <td>${{ formatNumber(s.salePrice) }}</td>
-                <td style="color: var(--color-success)">${{ formatNumber(s.partnerEarning) }}</td>
+                <td :style="{ color: inv.pendingAmount > 0 ? 'var(--color-danger)' : 'inherit', fontWeight: inv.pendingAmount > 0 ? '600' : 'normal' }">
+                  ${{ formatNumber(inv.pendingAmount) }}
+                </td>
+                <td>
+                  <button 
+                    v-if="inv.pendingAmount > 0" 
+                    class="btn btn-secondary btn-sm" 
+                    @click.stop="openLiquidationModalForInvoice(inv)"
+                  >
+                    Abonar
+                  </button>
+                </td>
               </tr>
             </tbody>
           </table>
-          <p v-else class="state-text">Sin ventas registradas.</p>
+          <p v-else class="state-text">Sin facturas registradas.</p>
         </div>
 
         <div v-if="activeTab === 'liquidations'">
@@ -141,6 +161,10 @@
     <!-- Modal Registrar liquidación -->
     <ModalBase v-model="showLiquidationModal" title="Registrar abono de la socia">
       <form @submit.prevent="saveLiquidation">
+        <div v-if="selectedInvoice" class="invoice-ref">
+          Abonando a factura: <strong>{{ selectedInvoice.saleNumber }}</strong>
+          (Pendiente: <span style="color: var(--color-danger); font-weight: 600;">${{ formatNumber(selectedInvoice.pendingAmount) }}</span>)
+        </div>
         <div class="form-group">
           <label class="form-label">Monto abonado</label>
           <CurrencyInput v-model="liquidationForm.amount" />
@@ -156,7 +180,7 @@
         </div>
       </form>
       <template #footer>
-        <button class="btn btn-secondary" @click="showLiquidationModal = false">Cancelar</button>
+        <button class="btn btn-secondary" @click="closeLiquidationModal">Cancelar</button>
         <button class="btn btn-primary" @click="saveLiquidation" :disabled="saving">
           {{ saving ? 'Guardando...' : 'Registrar' }}
         </button>
@@ -168,9 +192,12 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '@/api/axios'
+import { useToastStore } from '@/stores/toast'
 import ModalBase from '@/components/shared/ModalBase.vue'
 import CurrencyInput from '@/components/shared/CurrencyInput.vue'
 import { toUpperCase } from '@/utils/textFormat'
+
+const toast = useToastStore()
 
 const partners = ref([])
 const loading = ref(true)
@@ -181,11 +208,13 @@ const showDetailModal = ref(false)
 const showLiquidationModal = ref(false)
 
 const selectedPartner = ref(null)
+const selectedInvoice = ref(null)
 const partnerDetail = ref(null)
 const partnerSales = ref([])
+const partnerInvoices = ref([])
 const liquidations = ref([])
-const activeTab = ref('sales')
-const newCommission = ref(0)
+const activeTab = ref('invoices')
+const commissionForm = ref({ commissionPercent: 0, allianceCommissionPercent: 0 })
 
 const liquidationForm = ref({ amount: 0, notes: '' })
 
@@ -211,20 +240,22 @@ async function loadPartners() {
 
 function openCommissionModal(partner) {
   selectedPartner.value = partner
-  newCommission.value = partner.commissionPercent
+  commissionForm.value = {
+    commissionPercent: partner.commissionPercent,
+    allianceCommissionPercent: partner.allianceCommissionPercent || 20
+  }
   showCommissionModal.value = true
 }
 
 async function saveCommission() {
   try {
     saving.value = true
-    await api.patch(`/Partner/${selectedPartner.value.id}/commission`, null, {
-      params: { commission: newCommission.value }
-    })
+    await api.patch(`/Partner/${selectedPartner.value.id}/commission`, commissionForm.value)
+    toast.show('Comisión actualizada correctamente', 'success')
     showCommissionModal.value = false
     loadPartners()
   } catch (err) {
-    alert(err.response?.data?.message || 'Error al actualizar la comisión.')
+    toast.show(err.response?.data?.message || 'Error al actualizar la comisión', 'error')
   } finally {
     saving.value = false
   }
@@ -232,16 +263,18 @@ async function saveCommission() {
 
 async function openDetailModal(partner) {
   selectedPartner.value = partner
-  activeTab.value = 'sales'
+  activeTab.value = 'invoices'
   try {
-    const [summaryRes, salesRes, liqRes] = await Promise.all([
-      api.get(`/Partner/${partner.id}/summary`),
+    const [summaryRes, salesRes, liqRes, invoicesRes] = await Promise.all([
+      api.get(`/Partner/${partner.id}/admin-summary`),
       api.get(`/Partner/${partner.id}/sales`),
-      api.get(`/Partner/${partner.id}/liquidations`)
+      api.get(`/Partner/${partner.id}/liquidations`),
+      api.get(`/Partner/${partner.id}/invoices`, { params: { pageNumber: 1, pageSize: 50 } })
     ])
     partnerDetail.value = summaryRes.data.data
     partnerSales.value = salesRes.data.data
     liquidations.value = liqRes.data.data
+    partnerInvoices.value = invoicesRes.data.data.data || []
     showDetailModal.value = true
   } catch (err) {
     console.error('Error al cargar el detalle de la socia.', err)
@@ -249,8 +282,21 @@ async function openDetailModal(partner) {
 }
 
 function openLiquidationModal() {
+  selectedInvoice.value = null
   liquidationForm.value = { amount: 0, notes: '' }
   showLiquidationModal.value = true
+}
+
+function openLiquidationModalForInvoice(invoice) {
+  selectedInvoice.value = invoice
+  liquidationForm.value = { amount: 0, notes: '', saleId: invoice.saleId }
+  showLiquidationModal.value = true
+}
+
+function closeLiquidationModal() {
+  showLiquidationModal.value = false
+  selectedInvoice.value = null
+  liquidationForm.value = { amount: 0, notes: '' }
 }
 
 async function saveLiquidation() {
@@ -261,14 +307,16 @@ async function saveLiquidation() {
       amount: liquidationForm.value.amount,
       type: 'Payment',
       notes: liquidationForm.value.notes || null,
+      saleId: selectedInvoice.value?.saleId || null,
       periodFrom: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
       periodTo: now.toISOString()
     }
     await api.post(`/Partner/${selectedPartner.value.id}/liquidations`, payload)
-    showLiquidationModal.value = false
+    toast.show('Abono registrado correctamente', 'success')
+    closeLiquidationModal()
     openDetailModal(selectedPartner.value)
   } catch (err) {
-    alert(err.response?.data?.message || 'Error al registrar el abono.')
+    toast.show(err.response?.data?.message || 'Error al registrar el abono', 'error')
   } finally {
     saving.value = false
   }
@@ -315,7 +363,7 @@ onMounted(loadPartners)
 
 .summary-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 10px;
   margin-bottom: 18px;
 }
@@ -358,5 +406,14 @@ onMounted(loadPartners)
   color: var(--color-accent);
   border-bottom-color: var(--color-accent);
   font-weight: 600;
+}
+
+.invoice-ref {
+  background: var(--color-accent-light);
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 16px;
+  font-size: 13px;
+  border-left: 3px solid var(--color-accent);
 }
 </style>

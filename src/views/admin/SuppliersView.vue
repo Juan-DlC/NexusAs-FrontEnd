@@ -138,8 +138,11 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '@/api/axios'
+import { useToastStore } from '@/stores/toast'
 import ModalBase from '@/components/shared/ModalBase.vue'
 import { toUpperCase } from '@/utils/textFormat'
+
+const toast = useToastStore()
 
 const suppliers = ref([])
 const loading = ref(true)
@@ -221,13 +224,15 @@ async function saveSupplier() {
     saving.value = true
     if (editingSupplier.value) {
       await api.put(`/Supplier/${editingSupplier.value.id}`, form.value)
+      toast.show('Proveedor actualizado correctamente', 'success')
     } else {
       await api.post('/Supplier', form.value)
+      toast.show('Proveedor creado correctamente', 'success')
     }
     showModal.value = false
     loadSuppliers()
   } catch (err) {
-    alert(err.response?.data?.message || 'Error al guardar el proveedor.')
+    toast.show(err.response?.data?.message || 'Error al guardar el proveedor', 'error')
   } finally {
     saving.value = false
   }
@@ -237,9 +242,10 @@ async function confirmDelete(supplier) {
   if (!confirm(`¿Eliminar el proveedor "${supplier.name}"?`)) return
   try {
     await api.delete(`/Supplier/${supplier.id}`)
+    toast.show('Proveedor eliminado correctamente', 'success')
     loadSuppliers()
   } catch (err) {
-    alert(err.response?.data?.message || 'Error al eliminar el proveedor.')
+    toast.show(err.response?.data?.message || 'Error al eliminar el proveedor', 'error')
   }
 }
 

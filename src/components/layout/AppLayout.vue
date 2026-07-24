@@ -1,5 +1,6 @@
 <template>
   <div class="app-layout">
+    <ToastNotification />
     <aside class="sidebar">
       <div class="sidebar-header">
         <div class="logo">
@@ -65,6 +66,7 @@
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import ToastNotification from '@/components/shared/ToastNotification.vue'
 
 const auth = useAuthStore()
 const router = useRouter()

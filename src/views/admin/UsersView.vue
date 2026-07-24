@@ -93,7 +93,10 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '@/api/axios'
+import { useToastStore } from '@/stores/toast'
 import ModalBase from '@/components/shared/ModalBase.vue'
+
+const toast = useToastStore()
 
 const users = ref([])
 const loading = ref(true)
@@ -133,10 +136,11 @@ async function saveUser() {
   try {
     saving.value = true
     await api.post('/User', form.value)
+    toast.show('Usuario creado correctamente', 'success')
     showModal.value = false
     loadUsers()
   } catch (err) {
-    alert(err.response?.data?.message || 'Error al crear el usuario.')
+    toast.show(err.response?.data?.message || 'Error al crear el usuario', 'error')
   } finally {
     saving.value = false
   }
@@ -146,9 +150,10 @@ async function toggleStatus(user) {
   if (!confirm(`¿${user.isActive ? 'Desactivar' : 'Activar'} a "${user.fullName}"?`)) return
   try {
     await api.patch(`/User/${user.id}/toggle-status`)
+    toast.show(`Usuario ${user.isActive ? 'desactivado' : 'activado'} correctamente`, 'success')
     loadUsers()
   } catch (err) {
-    alert(err.response?.data?.message || 'Error al cambiar el estado.')
+    toast.show(err.response?.data?.message || 'Error al cambiar el estado', 'error')
   }
 }
 

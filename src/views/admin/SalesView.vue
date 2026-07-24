@@ -42,8 +42,8 @@
             <td>{{ s.customerName || 'Sin cliente' }}</td>
             <td>{{ formatDate(s.date) }}</td>
             <td>
-              <span :class="['badge', s.paymentMethod === 'Cash' ? 'badge-success' : 'badge-warning']">
-                {{ s.paymentMethod === 'Cash' ? 'Contado' : 'Crédito' }}
+              <span :class="['badge', s.paymentMethodName?.toUpperCase().includes('CREDIT') || s.paymentMethodName?.toUpperCase().includes('CRÉDITO') ? 'badge-warning' : 'badge-success']">
+                {{ s.paymentMethodName || 'N/A' }}
               </span>
             </td>
             <td>${{ formatNumber(s.total) }}</td>
@@ -72,15 +72,15 @@
       <form @submit.prevent="saveSale">
         <div class="form-group">
           <label class="form-label">Método de pago</label>
-          <select v-model="form.paymentMethodId" class="form-input" required>
-            <option value="" disabled>Selecciona un método</option>
+          <select v-model.number="form.paymentMethodId" class="form-input" required>
+            <option :value="null" disabled>Selecciona método de pago</option>
             <option v-for="pm in paymentMethods" :key="pm.id" :value="pm.id">
               {{ pm.name }}
             </option>
           </select>
         </div>
 
-        <div class="form-group" v-if="selectedPaymentMethod && selectedPaymentMethod.allowsCredit">
+        <div class="form-group" v-if="isCredit">
           <label class="form-label">Cliente (obligatorio para crédito)</label>
           <select v-model="form.customerId" class="form-input" required>
             <option value="" disabled>Selecciona un cliente</option>
@@ -88,7 +88,7 @@
           </select>
         </div>
 
-        <div class="form-group" v-if="selectedPaymentMethod && selectedPaymentMethod.allowsCredit">
+        <div class="form-group" v-if="isCredit">
           <label class="form-label">Número de cuotas</label>
           <select v-model.number="form.numberOfInstallments" class="form-input">
             <option :value="1">1 cuota (pago único)</option>
@@ -102,7 +102,7 @@
           </p>
         </div>
 
-        <div class="form-group" v-if="!selectedPaymentMethod || !selectedPaymentMethod.allowsCredit">
+        <div class="form-group" v-if="!isCredit">
           <label class="form-label">Cliente (opcional)</label>
           <select v-model="form.customerId" class="form-input">
             <option value="">Sin cliente</option>
@@ -172,8 +172,8 @@
           <p><strong>Fecha:</strong> {{ formatDate(selectedSale.date) }}</p>
           <p><strong>Vendedor:</strong> {{ selectedSale.sellerName }}</p>
           <p><strong>Método:</strong>
-            <span :class="['badge', selectedSale.paymentMethod === 'Cash' ? 'badge-success' : 'badge-warning']">
-              {{ selectedSale.paymentMethod === 'Cash' ? 'Contado' : 'Crédito' }}
+            <span :class="['badge', selectedSale.paymentMethodName?.toUpperCase().includes('CREDIT') || selectedSale.paymentMethodName?.toUpperCase().includes('CRÉDITO') ? 'badge-warning' : 'badge-success']">
+              {{ selectedSale.paymentMethodName || 'N/A' }}
             </span>
           </p>
           <p v-if="selectedSale.notes"><strong>Notas:</strong> {{ selectedSale.notes }}</p>
@@ -224,8 +224,50 @@
 
       <template #footer>
         <button class="btn btn-secondary" @click="showDetailModal = false">Cerrar</button>
+        <button class="btn btn-secondary" @click="openReturnModal">↩ Devolver productos</button>
         <button class="btn btn-primary" @click="downloadReceipt(selectedSale.id)">
           Ver recibo PDF
+        </button>
+      </template>
+    </ModalBase>
+
+    <!-- Modal Devolución -->
+    <ModalBase v-model="showReturnModal" :title="`Registrar devolución — ${selectedSale?.saleNumber || ''}`" width="600px">
+      <div v-if="returnForm.details.length > 0">
+        <p class="hint-text" style="margin-bottom: 16px;">
+          Selecciona los productos y la cantidad a devolver
+        </p>
+        <div v-for="(item, index) in returnForm.details" :key="index" class="return-item">
+          <input type="checkbox" v-model="item.selected" />
+          <div>
+            <strong>{{ item.productName }}</strong>
+            <p class="hint-text" style="margin: 0;">Cantidad original: {{ item.originalQuantity }}</p>
+          </div>
+          <input
+            v-model.number="item.returnQuantity"
+            type="number"
+            min="0"
+            :max="item.originalQuantity"
+            class="form-input return-qty"
+            :disabled="!item.selected"
+          />
+        </div>
+
+        <div class="form-group" style="margin-top: 20px;">
+          <label class="form-label">Notas (opcional)</label>
+          <textarea
+            v-model="returnForm.notes"
+            class="form-input"
+            rows="3"
+            @input="returnForm.notes = toUpperCase(returnForm.notes)"
+          ></textarea>
+        </div>
+      </div>
+
+      <template #footer>
+        <button class="btn btn-secondary" @click="showReturnModal = false">Cancelar</button>
+        <button class="btn btn-primary" @click="saveReturn" :disabled="saving">
+          {{ saving ? 'Procesando...' : 'Confirmar devolución' }}
         </button>
       </template>
     </ModalBase>
@@ -235,10 +277,13 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import api from '@/api/axios'
+import { useToastStore } from '@/stores/toast'
 import ModalBase from '@/components/shared/ModalBase.vue'
 import CurrencyInput from '@/components/shared/CurrencyInput.vue'
 import ProductSearch from '@/components/shared/ProductSearch.vue'
 import { toUpperCase } from '@/utils/textFormat'
+
+const toast = useToastStore()
 
 const sales = ref([])
 const customers = ref([])
@@ -247,6 +292,7 @@ const loading = ref(true)
 const saving = ref(false)
 const showModal = ref(false)
 const showDetailModal = ref(false)
+const showReturnModal = ref(false)
 const selectedSale = ref(null)
 const search = ref('')
 const pageNumber = ref(1)
@@ -257,13 +303,15 @@ const hasNextPage = ref(false)
 const hasPreviousPage = ref(false)
 
 const form = ref({
-  paymentMethodId: '',
+  paymentMethodId: null,
   customerId: '',
   numberOfInstallments: 1,
   discount: 0,
   notes: '',
   details: [{ productId: '', quantity: 1, unitPrice: 0 }]
 })
+
+const returnForm = ref({ notes: '', details: [] })
 
 function formatNumber(n) {
   return Number(n).toLocaleString('es-CO')
@@ -282,6 +330,10 @@ const calculatedTotal = computed(() => {
 
 const selectedPaymentMethod = computed(() => {
   return paymentMethods.value.find(pm => pm.id === form.value.paymentMethodId)
+})
+
+const isCredit = computed(() => {
+  return selectedPaymentMethod.value?.code === 'CREDIT'
 })
 
 function onProductSelect(detail, product) {
@@ -362,7 +414,7 @@ async function loadPaymentMethods() {
 
 function openCreateModal() {
   form.value = {
-    paymentMethodId: '', customerId: '', numberOfInstallments: 1, discount: 0, notes: '',
+    paymentMethodId: null, customerId: '', numberOfInstallments: 1, discount: 0, notes: '',
     details: [{ productId: '', quantity: 1, unitPrice: 0, stock: 0 }]
   }
   showModal.value = true
@@ -384,12 +436,13 @@ async function saveSale() {
       }))
     }
     await api.post('/Sale', payload)
+    toast.show('Venta registrada correctamente', 'success')
     showModal.value = false
     loadSales()
   } catch (err) {
-    alert(err.response?.data?.message || err.response?.data?.errors
-      ? JSON.stringify(err.response.data.errors)
-      : 'Error al registrar la venta.')
+    const errorMsg = err.response?.data?.message || 
+      (err.response?.data?.errors ? JSON.stringify(err.response.data.errors) : 'Error al registrar la venta')
+    toast.show(errorMsg, 'error')
   } finally {
     saving.value = false
   }
@@ -401,7 +454,7 @@ async function openDetailModal(sale) {
     selectedSale.value = res.data.data
     showDetailModal.value = true
   } catch (err) {
-    alert(err.response?.data?.message || 'Error al cargar el detalle de la venta.')
+    toast.show(err.response?.data?.message || 'Error al cargar el detalle de la venta', 'error')
   }
 }
 
@@ -411,7 +464,49 @@ async function downloadReceipt(saleId) {
     const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
     window.open(url, '_blank')
   } catch {
-    alert('Error al ver el recibo.')
+    toast.show('Error al ver el recibo', 'error')
+  }
+}
+
+function openReturnModal() {
+  returnForm.value = {
+    notes: '',
+    details: selectedSale.value.details.map(d => ({
+      productId: d.productId,
+      productName: d.productName,
+      originalQuantity: d.quantity,
+      returnQuantity: 0,
+      selected: false
+    }))
+  }
+  showReturnModal.value = true
+}
+
+async function saveReturn() {
+  const details = returnForm.value.details
+    .filter(d => d.selected && d.returnQuantity > 0)
+    .map(d => ({ productId: d.productId, quantity: d.returnQuantity }))
+
+  if (details.length === 0) {
+    toast.show('Selecciona al menos un producto para devolver', 'warning')
+    return
+  }
+
+  try {
+    saving.value = true
+    await api.post('/Return', {
+      saleId: selectedSale.value.id,
+      notes: returnForm.value.notes || null,
+      details
+    })
+    toast.show('Devolución registrada correctamente', 'success')
+    showReturnModal.value = false
+    showDetailModal.value = false
+    loadSales()
+  } catch (err) {
+    toast.show(err.response?.data?.message || 'Error al registrar la devolución', 'error')
+  } finally {
+    saving.value = false
   }
 }
 
@@ -541,4 +636,17 @@ onMounted(() => {
 
 
 .total-preview strong { color: var(--color-accent); font-size: 17px; }
+
+.return-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.return-qty {
+  width: 70px;
+}
 </style>

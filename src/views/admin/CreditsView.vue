@@ -173,9 +173,12 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '@/api/axios'
+import { useToastStore } from '@/stores/toast'
 import ModalBase from '@/components/shared/ModalBase.vue'
 import CurrencyInput from '@/components/shared/CurrencyInput.vue'
 import { toUpperCase } from '@/utils/textFormat'
+
+const toast = useToastStore()
 const showDetailModal = ref(false)
 const creditDetail = ref(null)
 
@@ -276,10 +279,11 @@ async function savePayment() {
   try {
     saving.value = true
     await api.post(`/Credit/${selectedCredit.value.id}/payment`, paymentForm.value)
+    toast.show('Abono registrado correctamente', 'success')
     showModal.value = false
     loadCredits()
   } catch (err) {
-    alert(err.response?.data?.message || 'Error al registrar el abono.')
+    toast.show(err.response?.data?.message || 'Error al registrar el abono', 'error')
   } finally {
     saving.value = false
   }

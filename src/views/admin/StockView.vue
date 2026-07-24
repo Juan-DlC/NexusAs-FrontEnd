@@ -141,8 +141,11 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '@/api/axios'
+import { useToastStore } from '@/stores/toast'
 import ModalBase from '@/components/shared/ModalBase.vue'
 import { toUpperCase } from '@/utils/textFormat'
+
+const toast = useToastStore()
 
 const products = ref([])
 const movements = ref([])
@@ -215,11 +218,12 @@ async function saveEntry() {
   try {
     saving.value = true
     await api.post('/Stock/entry', entryForm.value)
+    toast.show('Entrada de stock registrada correctamente', 'success')
     showEntryModal.value = false
     await loadProducts()
     if (entryForm.value.productId === selectedProductId.value) loadMovements()
   } catch (err) {
-    alert(err.response?.data?.message || 'Error al registrar la entrada.')
+    toast.show(err.response?.data?.message || 'Error al registrar la entrada', 'error')
   } finally {
     saving.value = false
   }
@@ -229,11 +233,12 @@ async function saveAdjustment() {
   try {
     saving.value = true
     await api.post('/Stock/adjustment', adjustmentForm.value)
+    toast.show('Ajuste de stock registrado correctamente', 'success')
     showAdjustmentModal.value = false
     await loadProducts()
     if (adjustmentForm.value.productId === selectedProductId.value) loadMovements()
   } catch (err) {
-    alert(err.response?.data?.message || 'Error al registrar el ajuste.')
+    toast.show(err.response?.data?.message || 'Error al registrar el ajuste', 'error')
   } finally {
     saving.value = false
   }

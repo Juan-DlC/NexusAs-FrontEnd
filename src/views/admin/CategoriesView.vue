@@ -80,8 +80,11 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '@/api/axios'
+import { useToastStore } from '@/stores/toast'
 import ModalBase from '@/components/shared/ModalBase.vue'
 import { toUpperCase } from '@/utils/textFormat'
+
+const toast = useToastStore()
 
 const categories = ref([])
 const loading = ref(true)
@@ -148,13 +151,15 @@ async function saveCategory() {
     saving.value = true
     if (editingCategory.value) {
       await api.put(`/Category/${editingCategory.value.id}`, form.value)
+      toast.show('Categoría actualizada correctamente', 'success')
     } else {
       await api.post('/Category', form.value)
+      toast.show('Categoría creada correctamente', 'success')
     }
     showModal.value = false
     loadCategories()
   } catch (err) {
-    alert(err.response?.data?.message || 'Error al guardar la categoría.')
+    toast.show(err.response?.data?.message || 'Error al guardar la categoría', 'error')
   } finally {
     saving.value = false
   }
@@ -164,9 +169,10 @@ async function confirmDelete(cat) {
   if (!confirm(`¿Desactivar la categoría "${cat.name}"?`)) return
   try {
     await api.delete(`/Category/${cat.id}`)
+    toast.show('Categoría desactivada correctamente', 'success')
     loadCategories()
   } catch (err) {
-    alert(err.response?.data?.message || 'No se puede eliminar: tiene productos asociados.')
+    toast.show(err.response?.data?.message || 'No se puede eliminar: tiene productos asociados', 'error')
   }
 }
 

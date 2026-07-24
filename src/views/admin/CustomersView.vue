@@ -101,10 +101,12 @@
 import { ref, onMounted } from 'vue'
 import api from '@/api/axios'
 import { useAuthStore } from '@/stores/auth'
+import { useToastStore } from '@/stores/toast'
 import ModalBase from '@/components/shared/ModalBase.vue'
 import { toUpperCase } from '@/utils/textFormat'
 
 const auth = useAuthStore()
+const toast = useToastStore()
 const customers = ref([])
 const loading = ref(true)
 const saving = ref(false)
@@ -184,13 +186,15 @@ async function saveCustomer() {
     }
     if (editingCustomer.value) {
       await api.put(`/Customer/${editingCustomer.value.id}`, payload)
+      toast.show('Cliente actualizado correctamente', 'success')
     } else {
       await api.post('/Customer', payload)
+      toast.show('Cliente creado correctamente', 'success')
     }
     showModal.value = false
     loadCustomers()
   } catch (err) {
-    alert(err.response?.data?.message || 'Error al guardar el cliente.')
+    toast.show(err.response?.data?.message || 'Error al guardar el cliente', 'error')
   } finally {
     saving.value = false
   }
@@ -200,9 +204,10 @@ async function confirmDelete(customer) {
   if (!confirm(`¿Desactivar el cliente "${customer.name}"?`)) return
   try {
     await api.delete(`/Customer/${customer.id}`)
+    toast.show('Cliente desactivado correctamente', 'success')
     loadCustomers()
   } catch (err) {
-    alert(err.response?.data?.message || 'Error al desactivar el cliente.')
+    toast.show(err.response?.data?.message || 'Error al desactivar el cliente', 'error')
   }
 }
 
