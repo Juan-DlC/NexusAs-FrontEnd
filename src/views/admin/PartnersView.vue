@@ -5,6 +5,9 @@
         <h2 class="page-title">Socias Vendedoras</h2>
         <p class="page-sub">{{ partners.length }} socias registradas</p>
       </div>
+      <button class="btn btn-secondary" @click="openSelectPartnerForSale" style="margin-right: 8px;">
+        🧾 Venta a socia
+      </button>
     </div>
 
     <div class="card">
@@ -100,11 +103,16 @@
                 <th>Total</th>
                 <th>Estado</th>
                 <th>Pendiente</th>
-                <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="inv in partnerInvoices" :key="inv.saleId">
+              <tr
+                v-for="inv in partnerInvoices"
+                :key="inv.saleId"
+                class="clickable-row"
+                @click="openInvoiceDetail(inv)"
+                :title="'Ver detalle de ' + inv.saleNumber"
+              >
                 <td><strong>{{ inv.saleNumber }}</strong></td>
                 <td>{{ formatDate(inv.date) }}</td>
                 <td>${{ formatNumber(inv.total) }}</td>
@@ -113,17 +121,19 @@
                     {{ inv.creditStatus === 'NoCredit' ? 'Contado' : inv.creditStatus === 'Paid' ? 'Pagado' : inv.creditStatus === 'Partial' ? 'Parcial' : 'Pendiente' }}
                   </span>
                 </td>
-                <td :style="{ color: inv.pendingAmount > 0 ? 'var(--color-danger)' : 'inherit', fontWeight: inv.pendingAmount > 0 ? '600' : 'normal' }">
-                  ${{ formatNumber(inv.pendingAmount) }}
-                </td>
                 <td>
-                  <button 
-                    v-if="inv.pendingAmount > 0" 
-                    class="btn btn-secondary btn-sm" 
-                    @click.stop="openLiquidationModalForInvoice(inv)"
+                  <span
+                    v-if="inv.creditStatus === 'NoCredit'"
+                    class="badge badge-info"
                   >
-                    Abonar
-                  </button>
+                    Contado
+                  </span>
+                  <span
+                    v-else
+                    :style="{ color: inv.pendingAmount > 0 ? 'var(--color-danger)' : 'inherit', fontWeight: inv.pendingAmount > 0 ? '600' : 'normal' }"
+                  >
+                    ${{ formatNumber(inv.pendingAmount) }}
+                  </span>
                 </td>
               </tr>
             </tbody>
@@ -154,6 +164,7 @@
 
       <template #footer>
         <button class="btn btn-secondary" @click="showDetailModal = false">Cerrar</button>
+        <button class="btn btn-primary" @click="openPartnerSaleModal">🧾 Nueva venta</button>
         <button class="btn btn-primary" @click="downloadStatement">Descargar estado de cuenta</button>
       </template>
     </ModalBase>
@@ -164,6 +175,10 @@
         <div v-if="selectedInvoice" class="invoice-ref">
           Abonando a factura: <strong>{{ selectedInvoice.saleNumber }}</strong>
           (Pendiente: <span style="color: var(--color-danger); font-weight: 600;">${{ formatNumber(selectedInvoice.pendingAmount) }}</span>)
+        </div>
+        <div class="credit-summary" v-if="partnerDetail">
+          <p><strong>Deuda pendiente:</strong> <span style="color: var(--color-danger); font-weight: 700;">${{ formatNumber(partnerDetail.pendingDebt) }}</span></p>
+          <p style="font-size: 11px; color: var(--color-text-muted);">El abono no puede superar la deuda pendiente</p>
         </div>
         <div class="form-group">
           <label class="form-label">Monto abonado</label>
@@ -186,15 +201,213 @@
         </button>
       </template>
     </ModalBase>
+
+    <!-- Modal Detalle de Factura -->
+    <ModalBase v-model="showInvoiceDetailModal" title="Detalle de factura" width="600px">
+      <div v-if="selectedInvoiceDetail">
+        <div class="detail-summary">
+          <p><strong>Factura:</strong> {{ selectedInvoiceDetail.saleNumber }}</p>
+          <p><strong>Fecha:</strong> {{ formatDate(selectedInvoiceDetail.date) }}</p>
+          <p><strong>Total:</strong> ${{ formatNumber(selectedInvoiceDetail.total) }}</p>
+          <p v-if="selectedInvoiceDetail.notes"><strong>Notas:</strong> {{ selectedInvoiceDetail.notes }}</p>
+        </div>
+
+        <div class="divider-label">Productos</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Producto</th>
+              <th>Cant.</th>
+              <th>Precio</th>
+              <th>Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(d, i) in selectedInvoiceDetail.details" :key="i">
+              <td>{{ d.productCode || d.code || '-' }}</td>
+              <td>{{ d.productName }}</td>
+              <td>{{ d.quantity }}</td>
+              <td>${{ formatNumber(d.unitPrice) }}</td>
+              <td>${{ formatNumber(d.subtotal) }}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div v-if="selectedInvoiceDetail.creditInfo" class="credit-box" style="margin-top: 14px;">
+          <div class="divider-label">Estado del crédito</div>
+          <p style="color: var(--color-danger)">
+            <strong>Pendiente:</strong> ${{ formatNumber(selectedInvoiceDetail.creditInfo.pendingAmount) }}
+          </p>
+          <p style="color: var(--color-success)">
+            <strong>Abonado:</strong> ${{ formatNumber(selectedInvoiceDetail.creditInfo.paidAmount) }}
+          </p>
+        </div>
+      </div>
+
+      <template #footer>
+        <button class="btn btn-secondary" @click="showInvoiceDetailModal = false">Cerrar</button>
+        <button class="btn btn-secondary" @click="downloadInvoicePdf(selectedInvoiceDetail.id)">📄 Ver factura PDF</button>
+        <button class="btn btn-warning" @click="openReturnFromInvoice">↩ Registrar devolución</button>
+        <button
+          v-if="selectedInvoiceDetail?.creditInfo?.pendingAmount > 0"
+          class="btn btn-primary"
+          @click="openLiquidationModalForInvoice({ saleId: selectedInvoiceDetail.id, saleNumber: selectedInvoiceDetail.saleNumber, pendingAmount: selectedInvoiceDetail.creditInfo.pendingAmount })"
+        >
+          💳 Registrar abono
+        </button>
+      </template>
+    </ModalBase>
+
+    <!-- Modal Selección de Socia -->
+    <ModalBase v-model="showSelectPartnerModal" title="Seleccionar socia" width="400px">
+      <div v-for="p in partners" :key="p.id" class="partner-select-item" @click="selectPartnerForSale(p)">
+        <strong>{{ p.partnerName }}</strong>
+        <span style="font-size:12px; color: var(--color-text-muted)">{{ p.username }}</span>
+      </div>
+      <template #footer>
+        <button class="btn btn-secondary" @click="showSelectPartnerModal = false">Cancelar</button>
+      </template>
+    </ModalBase>
+
+    <!-- Modal Venta a Socia -->
+    <ModalBase v-model="showPartnerSaleModal" :title="'Nueva venta — ' + (selectedPartner?.partnerName || '')" width="640px">
+      <div class="invoice-ref" style="margin-bottom: 16px;">
+        Registrando venta a nombre de: <strong>{{ selectedPartner?.partnerName }}</strong>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Método de pago <span style="color: var(--color-danger)">*</span></label>
+        <select v-model.number="partnerSaleForm.paymentMethodId" class="form-input" required>
+          <option :value="null" disabled>Selecciona método de pago</option>
+          <option v-for="pm in partnerPaymentMethods" :key="pm.id" :value="pm.id">
+            {{ pm.name }}
+          </option>
+        </select>
+      </div>
+
+      <div class="divider-label">Productos</div>
+
+      <div v-for="(detail, index) in partnerSaleForm.details" :key="index">
+        <div class="detail-row-partner">
+          <ProductSearch @select="(p) => onPartnerProductSelect(detail, p)" />
+          <input
+            v-model.number="detail.quantity"
+            type="number"
+            min="1"
+            class="form-input qty-input"
+            :class="{ 'input-error': detail.productId && detail.quantity > detail.stock }"
+          />
+          <div class="price-info" v-if="detail.productId">
+            <span class="partner-price">A socia: ${{ formatNumber(detail.partnerPrice) }}</span>
+            <span class="suggested-price">Sugerido: ${{ formatNumber(detail.suggestedPrice) }}</span>
+          </div>
+          <button
+            type="button"
+            class="btn-icon btn-icon-danger"
+            @click="partnerSaleForm.details.splice(index, 1)"
+            v-if="partnerSaleForm.details.length > 1"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div class="partner-sale-detail" v-if="detail.productId && detail.partnerPrice > 0">
+          <div class="price-row">
+            <span>💰 Precio a socia (lo que paga a AS):</span>
+            <strong style="color: var(--color-accent)">${{ formatNumber(detail.partnerPrice) }}</strong>
+          </div>
+          <div class="price-row">
+            <span>🏷️ Precio sugerido de venta:</span>
+            <span style="color: var(--color-text-muted)">${{ formatNumber(detail.suggestedPrice) }}</span>
+          </div>
+          <div class="price-row" v-if="Number(detail.quantity) > 1">
+            <span>📦 Subtotal ({{ detail.quantity }} × ${{ formatNumber(detail.partnerPrice) }}):</span>
+            <strong>${{ formatNumber(detail.partnerPrice * detail.quantity) }}</strong>
+          </div>
+        </div>
+
+        <p class="stock-warning" v-if="detail.productId && detail.quantity > detail.stock">
+          ⚠️ Stock insuficiente — disponible: {{ detail.stock }}
+        </p>
+      </div>
+
+      <button
+        type="button"
+        class="btn btn-secondary btn-sm"
+        @click="partnerSaleForm.details.push({ productId: '', quantity: 1, unitPrice: 0, partnerPrice: 0, suggestedPrice: 0, stock: 0 })"
+        style="margin-bottom: 16px;"
+      >
+        + Agregar producto
+      </button>
+
+      <div class="form-group">
+        <label class="form-label">Notas (opcional)</label>
+        <input
+          v-model="partnerSaleForm.notes"
+          type="text"
+          class="form-input"
+          @input="partnerSaleForm.notes = toUpperCase(partnerSaleForm.notes)"
+        />
+      </div>
+
+      <div class="total-preview" style="margin-top: 16px;">
+        <span>Total a cobrar a la socia:</span>
+        <strong>${{ formatNumber(partnerCalculatedTotal) }}</strong>
+      </div>
+      <p style="font-size: 11px; color: var(--color-text-muted); text-align: right; margin-top: 4px;">
+        Precio sugerido total de venta: ${{ formatNumber(partnerSaleForm.details.reduce((s, d) => s + ((d.suggestedPrice || 0) * (d.quantity || 0)), 0)) }}
+      </p>
+
+      <template #footer>
+        <button class="btn btn-secondary" @click="showPartnerSaleModal = false">Cancelar</button>
+        <button class="btn btn-primary" @click="savePartnerSale">Registrar venta</button>
+      </template>
+    </ModalBase>
+
+    <!-- Modal Devolución desde Socia -->
+    <ModalBase v-model="showReturnFromPartnerModal" title="Registrar devolución" width="560px">
+      <div class="invoice-ref" style="margin-bottom: 16px;">
+        Devolución de: <strong>{{ selectedInvoiceDetail?.saleNumber }}</strong>
+      </div>
+      <div v-for="(d, i) in returnPartnerForm.details" :key="i" class="return-item">
+        <input type="checkbox" v-model="d.selected" />
+        <span>{{ d.productName }} (llevó {{ d.originalQuantity }})</span>
+        <input
+          v-if="d.selected"
+          v-model.number="d.returnQuantity"
+          type="number"
+          :max="d.originalQuantity"
+          min="1"
+          class="form-input return-qty"
+        />
+      </div>
+      <div class="form-group" style="margin-top: 16px;">
+        <label class="form-label">Notas (opcional)</label>
+        <input
+          v-model="returnPartnerForm.notes"
+          type="text"
+          class="form-input"
+          @input="returnPartnerForm.notes = toUpperCase(returnPartnerForm.notes)"
+        />
+      </div>
+      <template #footer>
+        <button class="btn btn-secondary" @click="showReturnFromPartnerModal = false">Cancelar</button>
+        <button class="btn btn-primary" @click="saveReturnFromPartner" :disabled="saving">
+          {{ saving ? 'Procesando...' : 'Confirmar devolución' }}
+        </button>
+      </template>
+    </ModalBase>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import api from '@/api/axios'
 import { useToastStore } from '@/stores/toast'
 import ModalBase from '@/components/shared/ModalBase.vue'
 import CurrencyInput from '@/components/shared/CurrencyInput.vue'
+import ProductSearch from '@/components/shared/ProductSearch.vue'
 import { toUpperCase } from '@/utils/textFormat'
 
 const toast = useToastStore()
@@ -209,6 +422,7 @@ const showLiquidationModal = ref(false)
 
 const selectedPartner = ref(null)
 const selectedInvoice = ref(null)
+const selectedInvoiceDetail = ref(null)
 const partnerDetail = ref(null)
 const partnerSales = ref([])
 const partnerInvoices = ref([])
@@ -216,7 +430,21 @@ const liquidations = ref([])
 const activeTab = ref('invoices')
 const commissionForm = ref({ commissionPercent: 0, allianceCommissionPercent: 0 })
 
+const showReturnFromPartnerModal = ref(false)
+const showInvoiceDetailModal = ref(false)
+const showPartnerSaleModal = ref(false)
+const showSelectPartnerModal = ref(false)
+const returnPartnerForm = ref({ notes: '', details: [] })
+
 const liquidationForm = ref({ amount: 0, notes: '' })
+
+const partnerSaleForm = ref({
+  paymentMethodId: null,
+  notes: '',
+  details: [{ productId: '', quantity: 1, unitPrice: 0, partnerPrice: 0, suggestedPrice: 0, stock: 0 }]
+})
+
+const partnerPaymentMethods = ref([])
 
 function formatNumber(n) {
   return Number(n).toLocaleString('es-CO')
@@ -300,6 +528,14 @@ function closeLiquidationModal() {
 }
 
 async function saveLiquidation() {
+  if (liquidationForm.value.amount <= 0) {
+    toast.show('El monto debe ser mayor a 0', 'warning')
+    return
+  }
+  if (partnerDetail.value && liquidationForm.value.amount > partnerDetail.value.pendingDebt) {
+    toast.show(`El abono ($${formatNumber(liquidationForm.value.amount)}) supera la deuda pendiente ($${formatNumber(partnerDetail.value.pendingDebt)})`, 'error')
+    return
+  }
   try {
     saving.value = true
     const now = new Date()
@@ -335,6 +571,181 @@ async function downloadStatement() {
     window.open(url, '_blank')
   } catch (err) {
     console.error('Error al descargar el estado de cuenta.', err)
+  }
+}
+
+async function openInvoiceDetail(inv) {
+  try {
+    const res = await api.get(`/Sale/${inv.saleId}`)
+    selectedInvoiceDetail.value = res.data.data
+    showInvoiceDetailModal.value = true
+  } catch {
+    toast.show('Error al cargar detalle de factura', 'error')
+  }
+}
+
+function openReturnFromInvoice() {
+  returnPartnerForm.value = {
+    notes: '',
+    details: selectedInvoiceDetail.value.details.map(d => ({
+      productId: d.productId,
+      productName: d.productName,
+      originalQuantity: d.quantity,
+      returnQuantity: 0,
+      selected: false
+    }))
+  }
+  showReturnFromPartnerModal.value = true
+}
+
+async function saveReturnFromPartner() {
+  const details = returnPartnerForm.value.details
+    .filter(d => d.selected && d.returnQuantity > 0)
+    .map(d => ({ productId: d.productId, quantity: d.returnQuantity }))
+
+  if (details.length === 0) {
+    toast.show('Selecciona al menos un producto', 'warning')
+    return
+  }
+
+  try {
+    saving.value = true
+    await api.post('/Return', {
+      saleId: selectedInvoiceDetail.value.id,
+      notes: returnPartnerForm.value.notes || null,
+      details
+    })
+    toast.show('Devolución registrada. Stock actualizado.', 'success')
+    showReturnFromPartnerModal.value = false
+    showInvoiceDetailModal.value = false
+    openDetailModal(selectedPartner.value)
+  } catch (err) {
+    toast.show(err.response?.data?.message || 'Error al registrar devolución', 'error')
+  } finally {
+    saving.value = false
+  }
+}
+
+const partnerCalculatedTotal = computed(() => {
+  return partnerSaleForm.value.details.reduce((sum, d) => {
+    const price = Number(d.partnerPrice) || 0
+    const qty = Number(d.quantity) || 1
+    return sum + (price * qty)
+  }, 0)
+})
+
+function openSelectPartnerForSale() {
+  showSelectPartnerModal.value = true
+}
+
+function selectPartnerForSale(partner) {
+  showSelectPartnerModal.value = false
+  selectedPartner.value = partner
+  openPartnerSaleModal()
+}
+
+async function openPartnerSaleModal() {
+  if (partnerPaymentMethods.value.length === 0) {
+    try {
+      const res = await api.get('/PaymentMethod')
+      partnerPaymentMethods.value = res.data.data.filter(pm => pm.code === 'CASH' || pm.code === 'CREDIT')
+    } catch {
+      toast.show('Error cargando métodos de pago', 'error')
+      return
+    }
+  }
+
+  // Preseleccionar método "Contado" por defecto
+  const defaultMethod = partnerPaymentMethods.value.find(pm => pm.code === 'CASH')
+
+  partnerSaleForm.value = {
+    paymentMethodId: defaultMethod?.id || null,
+    notes: '',
+    details: [{ productId: '', quantity: 1, unitPrice: 0, partnerPrice: 0, suggestedPrice: 0, stock: 0 }]
+  }
+  showPartnerSaleModal.value = true
+}
+
+function onPartnerProductSelect(detail, product) {
+  detail.productId = product.id
+  detail.stock = product.stock
+  detail.suggestedPrice = product.salePrice || 0
+
+  // Calcular precio a socia usando comisiones de selectedPartner
+  const commissionPercent = product.isPartnership
+    ? (selectedPartner.value.allianceCommissionPercent || 20)
+    : (selectedPartner.value.commissionPercent || 50)
+
+  const gainAS = (product.salePrice || 0) - (product.cost || 0)
+  const calculatedPartnerPrice = (product.cost || 0) + (gainAS * commissionPercent / 100)
+
+  detail.partnerPrice = Math.round(calculatedPartnerPrice)
+  detail.unitPrice = detail.partnerPrice
+}
+
+async function savePartnerSale() {
+  // Validaciones
+  if (!partnerSaleForm.value.paymentMethodId) {
+    toast.show('Selecciona un método de pago', 'warning')
+    return
+  }
+
+  if (partnerSaleForm.value.details.some(d => !d.productId)) {
+    toast.show('Selecciona un producto en cada fila', 'warning')
+    return
+  }
+
+  if (partnerSaleForm.value.details.some(d => !d.partnerPrice || d.partnerPrice <= 0)) {
+    toast.show('Hay productos sin precio calculado. Verifica la configuración de comisiones.', 'error')
+    return
+  }
+
+  try {
+    saving.value = true
+
+    // Verificar si es método de pago a crédito
+    const selectedPaymentMethod = partnerPaymentMethods.value.find(pm => pm.id === partnerSaleForm.value.paymentMethodId)
+    const isCredit = selectedPaymentMethod?.code === 'CREDIT'
+
+    const payload = {
+      partnerUserId: selectedPartner.value.userId,
+      customerId: isCredit ? selectedPartner.value.userId : null,
+      paymentMethodId: partnerSaleForm.value.paymentMethodId,
+      numberOfInstallments: 1,
+      discount: 0,
+      notes: partnerSaleForm.value.notes || null,
+      details: partnerSaleForm.value.details
+        .filter(d => d.productId && d.partnerPrice > 0)
+        .map(d => ({
+          productId: d.productId,
+          quantity: Number(d.quantity) || 1,
+          unitPrice: Number(d.partnerPrice)
+        }))
+    }
+
+    if (payload.details.length === 0) {
+      toast.show('Agrega al menos un producto válido', 'warning')
+      return
+    }
+
+    await api.post('/Sale', payload)
+    toast.show('Venta registrada correctamente', 'success')
+    showPartnerSaleModal.value = false
+    openDetailModal(selectedPartner.value)
+  } catch (err) {
+    toast.show(err.response?.data?.message || 'Error al registrar venta', 'error')
+  } finally {
+    saving.value = false
+  }
+}
+
+async function downloadInvoicePdf(saleId) {
+  try {
+    const res = await api.get(`/Sale/${saleId}/receipt`, { responseType: 'blob' })
+    const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
+    window.open(url, '_blank')
+  } catch {
+    toast.show('Error al generar el PDF', 'error')
   }
 }
 
@@ -415,5 +826,170 @@ onMounted(loadPartners)
   margin-bottom: 16px;
   font-size: 13px;
   border-left: 3px solid var(--color-accent);
+}
+
+.return-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 13px;
+}
+
+.return-qty {
+  width: 70px;
+  padding: 6px 8px;
+}
+
+.credit-box {
+  background: var(--color-accent-light);
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+}
+
+.detail-summary {
+  background: var(--color-bg);
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 16px;
+}
+
+.detail-summary p {
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.divider-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 16px 0 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.detail-row {
+  display: grid;
+  grid-template-columns: 2fr 70px 100px 32px;
+  gap: 8px;
+  margin-bottom: 8px;
+  align-items: center;
+}
+
+.qty-input, .price-input { padding: 10px 8px; }
+
+.input-error { border-color: var(--color-danger) !important; }
+
+.stock-warning {
+  font-size: 11px;
+  color: var(--color-danger);
+  margin-top: -4px;
+  margin-bottom: 8px;
+}
+
+.total-preview {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--color-accent-light);
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  color: var(--color-text);
+  margin-top: 8px;
+}
+
+.total-preview strong { color: var(--color-accent); font-size: 17px; }
+
+.btn-icon-danger:hover { background: #FFEBEE; color: var(--color-danger); }
+
+.partner-select-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.partner-select-item:hover {
+  background: var(--color-accent-light);
+}
+
+.detail-row-partner {
+  display: grid;
+  grid-template-columns: 2fr 70px 1fr auto;
+  gap: 8px;
+  margin-bottom: 8px;
+  align-items: start;
+}
+
+.price-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.partner-price {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-accent);
+}
+
+.suggested-price {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.partner-product-summary {
+  background: var(--color-accent-light);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  margin-top: -4px;
+  margin-bottom: 8px;
+}
+
+.partner-sale-detail {
+  background: var(--color-accent-light);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  margin: -4px 0 10px 0;
+}
+
+.price-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  padding: 3px 0;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  padding: 2px 0;
+}
+
+.credit-summary {
+  background: var(--color-accent-light);
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 16px;
+  border-left: 3px solid var(--color-danger);
+}
+
+.credit-summary p {
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+.credit-summary p:last-child {
+  margin-bottom: 0;
 }
 </style>

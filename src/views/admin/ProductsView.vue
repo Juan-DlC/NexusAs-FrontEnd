@@ -52,7 +52,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="p in products" :key="p.id">
+          <tr v-for="p in products" :key="p.id" class="clickable-row" @click="openProductDetail(p)">
             <td>{{ p.code }}</td>
             <td>
               <strong>{{ p.name }}</strong>
@@ -166,9 +166,9 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label">Proveedor</label>
-          <select v-model="form.supplierId" class="form-input" required>
-            <option value="" disabled>Selecciona un proveedor</option>
+          <label class="form-label">Proveedor (opcional)</label>
+          <select v-model="form.supplierId" class="form-input">
+            <option value="">Sin proveedor</option>
             <option v-for="sup in suppliers" :key="sup.id" :value="sup.id">
               {{ sup.name }}
             </option>
@@ -221,6 +221,68 @@
         </button>
       </template>
     </ModalBase>
+
+    <!-- Modal Detalle de Producto -->
+    <ModalBase v-model="showProductDetailModal" title="Detalle del producto" width="480px">
+      <div v-if="selectedProduct" class="product-detail">
+        <div class="detail-row-info">
+          <span>Código:</span>
+          <strong>{{ selectedProduct.code }}</strong>
+        </div>
+        <div class="detail-row-info">
+          <span>Nombre:</span>
+          <strong>{{ selectedProduct.name }}</strong>
+        </div>
+        <div class="detail-row-info">
+          <span>Categoría:</span>
+          <strong>{{ selectedProduct.categoryName || '-' }}</strong>
+        </div>
+        <div class="detail-row-info">
+          <span>Proveedor:</span>
+          <strong>{{ selectedProduct.supplierName || 'Sin proveedor' }}</strong>
+        </div>
+        <div class="detail-row-info">
+          <span>Descripción:</span>
+          <strong>{{ selectedProduct.description || '-' }}</strong>
+        </div>
+        <div class="detail-row-info">
+          <span>Precio venta:</span>
+          <strong>${{ formatNumber(selectedProduct.salePrice) }}</strong>
+        </div>
+        <div class="detail-row-info">
+          <span>Stock actual:</span>
+          <strong :style="{ color: selectedProduct.isLowStock ? 'var(--color-danger)' : 'var(--color-success)' }">
+            {{ selectedProduct.stock }} uds {{ selectedProduct.isLowStock ? '⚠️' : '✓' }}
+          </strong>
+        </div>
+        <div class="detail-row-info">
+          <span>Stock mínimo:</span>
+          <strong>{{ selectedProduct.minStock }} uds</strong>
+        </div>
+        <div class="detail-row-info">
+          <span>Es alianza:</span>
+          <span :class="['badge', selectedProduct.isPartnership ? 'badge-pink' : 'badge-success']">
+            {{ selectedProduct.isPartnership ? 'Sí' : 'No' }}
+          </span>
+        </div>
+        <div class="detail-row-info">
+          <span>Estado:</span>
+          <span :class="['badge', selectedProduct.isActive ? 'badge-success' : 'badge-danger']">
+            {{ selectedProduct.isActive ? 'Activo' : 'Inactivo' }}
+          </span>
+        </div>
+      </div>
+      <template #footer>
+        <button class="btn btn-secondary" @click="showProductDetailModal = false">Cerrar</button>
+        <button 
+          class="btn btn-primary" 
+          @click="showProductDetailModal = false; openEditModal(selectedProduct)" 
+          v-if="auth.isAdmin"
+        >
+          ✏️ Editar
+        </button>
+      </template>
+    </ModalBase>
   </div>
 </template>
 
@@ -245,7 +307,9 @@ const search = ref('')
 const filterCategory = ref('')
 const filterStatus = ref('')
 const showModal = ref(false)
+const showProductDetailModal = ref(false)
 const editingProduct = ref(null)
+const selectedProduct = ref(null)
 const suggestedPrice = ref(0)
 
 const pageNumber = ref(1)
@@ -364,12 +428,12 @@ function openEditModal(product) {
     code: product.code,
     name: product.name,
     categoryId: product.categoryId,
-    supplierId: product.supplierId || '',
     cost: product.cost || 0,
     salePrice: product.salePrice,
     stock: product.stock,
     minStock: product.minStock,
-    isPartnership: product.isPartnership || false
+    isPartnership: product.isPartnership || false,
+    supplierId: product.supplierId || ''
   }
   showModal.value = true
 }
@@ -377,11 +441,15 @@ function openEditModal(product) {
 async function saveProduct() {
   try {
     saving.value = true
+    const payload = {
+      ...form.value,
+      supplierId: form.value.supplierId || null
+    }
     if (editingProduct.value) {
-      await api.put(`/Product/${editingProduct.value.id}`, form.value)
+      await api.put(`/Product/${editingProduct.value.id}`, payload)
       toast.show('Producto actualizado correctamente', 'success')
     } else {
-      await api.post('/Product', form.value)
+      await api.post('/Product', payload)
       toast.show('Producto creado correctamente', 'success')
     }
     showModal.value = false
@@ -414,6 +482,11 @@ async function toggleProductStatus(product) {
   } catch (err) {
     toast.show(err.response?.data?.message || `Error al ${action} el producto`, 'error')
   }
+}
+
+function openProductDetail(product) {
+  selectedProduct.value = product
+  showProductDetailModal.value = true
 }
 
 onMounted(() => {
@@ -505,4 +578,31 @@ onMounted(() => {
   cursor: pointer;
 }
 .checkbox-label input { width: 16px; height: 16px; cursor: pointer; }
+
+.clickable-row {
+  cursor: pointer;
+}
+
+.clickable-row:hover {
+  background: var(--color-accent-light) !important;
+}
+
+.product-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.detail-row-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 13px;
+}
+
+.detail-row-info span:first-child {
+  color: var(--color-text-muted);
+}
 </style>

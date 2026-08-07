@@ -38,12 +38,16 @@
         </thead>
         <tbody>
           <tr v-for="s in sales" :key="s.id" class="clickable-row" @click="openDetailModal(s)">
-            <td><strong>{{ s.saleNumber }}</strong></td>
+            <td>
+              <strong>{{ s.saleNumber }}</strong>
+              <span v-if="s.status === 'FullReturn'" class="badge badge-danger" style="margin-left: 4px;">Devuelta</span>
+              <span v-else-if="s.status === 'PartialReturn'" class="badge badge-warning" style="margin-left: 4px;">Devolución parcial</span>
+            </td>
             <td>{{ s.customerName || 'Sin cliente' }}</td>
             <td>{{ formatDate(s.date) }}</td>
             <td>
-              <span :class="['badge', s.paymentMethodName?.toUpperCase().includes('CREDIT') || s.paymentMethodName?.toUpperCase().includes('CRÉDITO') ? 'badge-warning' : 'badge-success']">
-                {{ s.paymentMethodName || 'N/A' }}
+              <span :class="['badge', s.paymentMethodName === 'CONTADO' || s.paymentMethod === 'Cash' ? 'badge-success' : 'badge-warning']">
+                {{ s.paymentMethodName || s.paymentMethod || 'N/A' }}
               </span>
             </td>
             <td>${{ formatNumber(s.total) }}</td>
@@ -74,6 +78,8 @@
           <label class="form-label">Método de pago</label>
           <select v-model.number="form.paymentMethodId" class="form-input" required>
             <option :value="null" disabled>Selecciona método de pago</option>
+            <option v-if="paymentMethods.length === 0" value="Cash">Contado</option>
+            <option v-if="paymentMethods.length === 0" value="Credit">Crédito</option>
             <option v-for="pm in paymentMethods" :key="pm.id" :value="pm.id">
               {{ pm.name }}
             </option>
@@ -172,8 +178,8 @@
           <p><strong>Fecha:</strong> {{ formatDate(selectedSale.date) }}</p>
           <p><strong>Vendedor:</strong> {{ selectedSale.sellerName }}</p>
           <p><strong>Método:</strong>
-            <span :class="['badge', selectedSale.paymentMethodName?.toUpperCase().includes('CREDIT') || selectedSale.paymentMethodName?.toUpperCase().includes('CRÉDITO') ? 'badge-warning' : 'badge-success']">
-              {{ selectedSale.paymentMethodName || 'N/A' }}
+            <span :class="['badge', selectedSale.paymentMethodName === 'CONTADO' || selectedSale.paymentMethod === 'Cash' ? 'badge-success' : 'badge-warning']">
+              {{ selectedSale.paymentMethodName || selectedSale.paymentMethod || 'N/A' }}
             </span>
           </p>
           <p v-if="selectedSale.notes"><strong>Notas:</strong> {{ selectedSale.notes }}</p>
@@ -197,6 +203,27 @@
         <div class="total-preview" style="margin-top: 14px;">
           <span>Total:</span>
           <strong>${{ formatNumber(selectedSale.total) }}</strong>
+        </div>
+
+        <div class="total-preview" style="margin-top: 14px; background: #FFF3E0;" v-if="selectedSale.returns && selectedSale.returns.length > 0">
+          <span>Total después de devoluciones:</span>
+          <strong style="color: var(--color-warning)">${{ formatNumber(selectedSale.total) }}</strong>
+        </div>
+
+        <div v-if="selectedSale.returns && selectedSale.returns.length > 0" style="margin-top: 14px;">
+          <div class="divider-label">Devoluciones ({{ selectedSale.returns.length }})</div>
+          <div class="return-item-detail" v-for="ret in selectedSale.returns" :key="ret.id">
+            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+              <span><strong>{{ formatDate(ret.date) }}</strong></span>
+              <span style="color: var(--color-warning)">-${{ formatNumber(ret.totalReturned) }}</span>
+            </div>
+            <p v-if="ret.notes" style="font-size:12px; color: var(--color-text-muted)">{{ ret.notes }}</p>
+            <ul style="font-size:12px; margin-top:4px; padding-left:16px;">
+              <li v-for="d in ret.details" :key="d.productId">
+                {{ d.productName }} — {{ d.quantity }} unidad(es) — ${{ formatNumber(d.unitPrice) }} c/u
+              </li>
+            </ul>
+          </div>
         </div>
 
         <div v-if="selectedSale.creditInfo" class="credit-box">
@@ -452,6 +479,15 @@ async function openDetailModal(sale) {
   try {
     const res = await api.get(`/Sale/${sale.id}`)
     selectedSale.value = res.data.data
+    
+    // Cargar devoluciones de esta venta usando endpoint correcto
+    try {
+      const returnsRes = await api.get(`/Return/by-sale/${res.data.data.id}`)
+      selectedSale.value.returns = returnsRes.data.data || []
+    } catch {
+      selectedSale.value.returns = []
+    }
+    
     showDetailModal.value = true
   } catch (err) {
     toast.show(err.response?.data?.message || 'Error al cargar el detalle de la venta', 'error')
@@ -648,5 +684,23 @@ onMounted(() => {
 
 .return-qty {
   width: 70px;
+}
+
+.return-item-detail {
+  background: #FFF3E0;
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  border-left: 3px solid var(--color-warning);
+}
+
+.return-item-detail p {
+  margin-bottom: 4px;
+}
+
+.return-item-detail ul {
+  margin: 0;
+  padding-left: 20px;
 }
 </style>

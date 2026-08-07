@@ -14,19 +14,14 @@
 
     <div v-else class="summary-grid">
       <div class="summary-card">
-        <span class="summary-icon">◆</span>
-        <span class="summary-label">Total vendido</span>
-        <strong>${{ formatNumber(summary.totalSales) }}</strong>
-      </div>
-      <div class="summary-card success">
-        <span class="summary-icon">◉</span>
-        <span class="summary-label">Mis ganancias</span>
-        <strong>${{ formatNumber(summary.totalEarnings) }}</strong>
-      </div>
-      <div class="summary-card">
         <span class="summary-icon">◇</span>
         <span class="summary-label">Deuda total</span>
         <strong>${{ formatNumber(summary.totalDebt) }}</strong>
+      </div>
+      <div class="summary-card success">
+        <span class="summary-icon">◉</span>
+        <span class="summary-label">Abonado</span>
+        <strong>${{ formatNumber(summary.totalPaid) }}</strong>
       </div>
       <div class="summary-card danger">
         <span class="summary-icon">◰</span>
@@ -37,10 +32,8 @@
 
     <div class="info-box" v-if="!loading">
       <p>
-        <strong>¿Cómo funciona?</strong> Cuando vendes un producto de AS Accesorios,
-        tú ganas la diferencia entre el precio al que AS te lo entregó y el precio
-        al que tú lo vendiste. La "Deuda total" es lo que le debes a AS por los
-        productos que has tomado — independiente de a quién se los hayas vendido o fiado.
+        <strong>¿Cómo funciona?</strong> La "Deuda total" es lo que le debes a AS por los
+        productos que has tomado. A medida que vayas abonando, el "Saldo pendiente" irá disminuyendo.
       </p>
     </div>
   </div>
@@ -99,7 +92,7 @@ onMounted(loadSummary)
 
 .summary-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
 }
 
