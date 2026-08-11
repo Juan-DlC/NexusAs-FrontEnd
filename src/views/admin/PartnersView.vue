@@ -703,13 +703,8 @@ async function savePartnerSale() {
   try {
     saving.value = true
 
-    // Verificar si es método de pago a crédito
-    const selectedPaymentMethod = partnerPaymentMethods.value.find(pm => pm.id === partnerSaleForm.value.paymentMethodId)
-    const isCredit = selectedPaymentMethod?.code === 'CREDIT'
-
     const payload = {
       partnerUserId: selectedPartner.value.userId,
-      customerId: isCredit ? selectedPartner.value.userId : null,
       paymentMethodId: partnerSaleForm.value.paymentMethodId,
       numberOfInstallments: 1,
       discount: 0,
@@ -728,11 +723,14 @@ async function savePartnerSale() {
       return
     }
 
+    console.log('🚀 Payload venta a socia:', payload)
+    
     await api.post('/Sale', payload)
     toast.show('Venta registrada correctamente', 'success')
     showPartnerSaleModal.value = false
     openDetailModal(selectedPartner.value)
   } catch (err) {
+    console.error('❌ Error venta a socia:', err.response?.data)
     toast.show(err.response?.data?.message || 'Error al registrar venta', 'error')
   } finally {
     saving.value = false
