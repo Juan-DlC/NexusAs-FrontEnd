@@ -43,7 +43,7 @@
               <span v-if="s.status === 'FullReturn'" class="badge badge-danger" style="margin-left: 4px;">Devuelta</span>
               <span v-else-if="s.status === 'PartialReturn'" class="badge badge-warning" style="margin-left: 4px;">Devolución parcial</span>
             </td>
-            <td>{{ s.customerName || 'Sin cliente' }}</td>
+            <td>{{ s.customerName || s.sellerName || 'Sin cliente' }}</td>
             <td>{{ formatDate(s.date) }}</td>
             <td>
               <span :class="['badge', s.paymentMethodName === 'CONTADO' || s.paymentMethod === 'Cash' ? 'badge-success' : 'badge-warning']">
@@ -142,8 +142,14 @@
         </button>
 
         <div class="form-group">
-          <label class="form-label">Descuento (opcional)</label>
-          <CurrencyInput v-model="form.discount" />
+          <label class="form-label">Descuento % (opcional)</label>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <input v-model.number="form.discountPercent" type="number" min="0" max="100" class="form-input" style="max-width: 100px;" placeholder="0" />
+            <span style="font-size: 13px; color: var(--color-text-muted);">%</span>
+            <span v-if="form.discountPercent > 0" style="font-size: 13px; color: var(--color-accent);">
+              = -${{ formatNumber(calculatedDiscount) }}
+            </span>
+          </div>
         </div>
 
         <div class="form-group">
@@ -174,7 +180,7 @@
       <div v-if="selectedSale">
         <div class="detail-summary">
           <p><strong>Factura:</strong> {{ selectedSale.saleNumber }}</p>
-          <p><strong>Cliente:</strong> {{ selectedSale.customerName || 'Sin cliente' }}</p>
+          <p><strong>Cliente/Socia:</strong> {{ selectedSale.customerName || selectedSale.sellerName || 'Sin cliente' }}</p>
           <p><strong>Fecha:</strong> {{ formatDate(selectedSale.date) }}</p>
           <p><strong>Vendedor:</strong> {{ selectedSale.sellerName }}</p>
           <p><strong>Método:</strong>
@@ -348,11 +354,18 @@ function formatDate(d) {
   return new Date(d).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: '2-digit' })
 }
 
+const calculatedDiscount = computed(() => {
+  const subtotal = form.value.details.reduce(
+    (sum, d) => sum + (d.quantity * d.unitPrice || 0), 0
+  )
+  return Math.round(subtotal * (form.value.discountPercent || 0) / 100)
+})
+
 const calculatedTotal = computed(() => {
   const subtotal = form.value.details.reduce(
     (sum, d) => sum + (d.quantity * d.unitPrice || 0), 0
   )
-  return subtotal - (form.value.discount || 0)
+  return subtotal - calculatedDiscount.value
 })
 
 const selectedPaymentMethod = computed(() => {
@@ -441,7 +454,7 @@ async function loadPaymentMethods() {
 
 function openCreateModal() {
   form.value = {
-    paymentMethodId: null, customerId: '', numberOfInstallments: 1, discount: 0, notes: '',
+    paymentMethodId: null, customerId: '', numberOfInstallments: 1, discountPercent: 0, notes: '',
     details: [{ productId: '', quantity: 1, unitPrice: 0, stock: 0 }]
   }
   showModal.value = true
@@ -454,7 +467,8 @@ async function saveSale() {
       paymentMethodId: form.value.paymentMethodId,
       customerId: form.value.customerId || null,
       numberOfInstallments: form.value.numberOfInstallments || 1,
-      discount: Number(form.value.discount) || 0,
+      discountPercent: form.value.discountPercent || 0,
+      discountAmount: calculatedDiscount.value,
       notes: form.value.notes || null,
       details: form.value.details.map(d => ({
         productId: d.productId,

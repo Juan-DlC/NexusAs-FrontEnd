@@ -43,7 +43,7 @@
         <tbody>
           <tr v-for="c in credits" :key="c.id" class="clickable-row" @click="openDetailModal(c)">
             <td><strong>{{ c.saleNumber }}</strong></td>
-            <td>{{ c.customerName }}</td>
+            <td>{{ c.customerName || c.sellerName || 'Sin cliente' }}</td>
             <td>${{ formatNumber(c.totalAmount) }}</td>
             <td style="color: var(--color-success)">${{ formatNumber(c.paidAmount) }}</td>
             <td style="color: var(--color-danger); font-weight: 600;">

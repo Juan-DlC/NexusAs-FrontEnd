@@ -117,23 +117,17 @@
                 <td>{{ formatDate(inv.date) }}</td>
                 <td>${{ formatNumber(inv.total) }}</td>
                 <td>
-                  <span :class="['badge', inv.creditStatus === 'Paid' ? 'badge-success' : inv.creditStatus === 'NoCredit' ? 'badge-info' : 'badge-warning']">
-                    {{ inv.creditStatus === 'NoCredit' ? 'Contado' : inv.creditStatus === 'Paid' ? 'Pagado' : inv.creditStatus === 'Partial' ? 'Parcial' : 'Pendiente' }}
+                  <span :class="['badge',
+                    inv.creditStatus === 'NoCredit' ? 'badge-info' :
+                    inv.creditStatus === 'Paid' ? 'badge-success' :
+                    inv.creditStatus === 'Partial' ? 'badge-warning' : 'badge-danger']">
+                    {{ inv.creditStatus === 'NoCredit' ? 'Contado' :
+                       inv.creditStatus === 'Paid' ? 'Pagado' :
+                       inv.creditStatus === 'Partial' ? 'Pago parcial' : 'Crédito pendiente' }}
                   </span>
                 </td>
-                <td>
-                  <span
-                    v-if="inv.creditStatus === 'NoCredit'"
-                    class="badge badge-info"
-                  >
-                    Contado
-                  </span>
-                  <span
-                    v-else
-                    :style="{ color: inv.pendingAmount > 0 ? 'var(--color-danger)' : 'inherit', fontWeight: inv.pendingAmount > 0 ? '600' : 'normal' }"
-                  >
-                    ${{ formatNumber(inv.pendingAmount) }}
-                  </span>
+                <td :style="{ color: inv.pendingAmount > 0 ? 'var(--color-danger)' : 'inherit', fontWeight: inv.pendingAmount > 0 ? '600' : 'normal' }">
+                  {{ inv.creditStatus === 'NoCredit' ? '-' : '$' + formatNumber(inv.pendingAmount) }}
                 </td>
               </tr>
             </tbody>
@@ -284,6 +278,10 @@
             {{ pm.name }}
           </option>
         </select>
+      </div>
+
+      <div v-if="partnerSaleForm.paymentMethodId" :class="['payment-info', partnerSaleIsCredit ? 'payment-info-credit' : 'payment-info-cash']">
+        {{ partnerSaleIsCredit ? '⚠️ Esta venta generará deuda para la socia' : '✅ Venta de contado, no genera deuda' }}
       </div>
 
       <div class="divider-label">Productos</div>
@@ -533,7 +531,7 @@ async function saveLiquidation() {
     return
   }
   if (partnerDetail.value && liquidationForm.value.amount > partnerDetail.value.pendingDebt) {
-    toast.show(`El abono ($${formatNumber(liquidationForm.value.amount)}) supera la deuda pendiente ($${formatNumber(partnerDetail.value.pendingDebt)})`, 'error')
+    toast.show(`El abono supera la deuda pendiente de $${formatNumber(partnerDetail.value.pendingDebt)}`, 'error')
     return
   }
   try {
@@ -549,8 +547,11 @@ async function saveLiquidation() {
     }
     await api.post(`/Partner/${selectedPartner.value.id}/liquidations`, payload)
     toast.show('Abono registrado correctamente', 'success')
-    closeLiquidationModal()
-    openDetailModal(selectedPartner.value)
+    showLiquidationModal.value = false
+    selectedInvoice.value = null
+    liquidationForm.value = { amount: 0, notes: '' }
+    // Recargar detalle completo de la socia
+    await openDetailModal(selectedPartner.value)
   } catch (err) {
     toast.show(err.response?.data?.message || 'Error al registrar el abono', 'error')
   } finally {
@@ -633,6 +634,12 @@ const partnerCalculatedTotal = computed(() => {
     return sum + (price * qty)
   }, 0)
 })
+
+const selectedPartnerPaymentMethod = computed(() =>
+  partnerPaymentMethods.value.find(pm => pm.id === partnerSaleForm.value.paymentMethodId)
+)
+
+const partnerSaleIsCredit = computed(() => selectedPartnerPaymentMethod.value?.code === 'CREDIT')
 
 function openSelectPartnerForSale() {
   showSelectPartnerModal.value = true
@@ -989,5 +996,22 @@ onMounted(loadPartners)
 
 .credit-summary p:last-child {
   margin-bottom: 0;
+}
+
+.payment-info {
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+.payment-info-credit {
+  background: #FFF3E0;
+  color: var(--color-warning);
+}
+
+.payment-info-cash {
+  background: #E8F5E9;
+  color: var(--color-success);
 }
 </style>

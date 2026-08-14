@@ -17,13 +17,14 @@
 
     <div class="card">
       <div class="form-group">
-        <label class="form-label">Selecciona un producto</label>
-        <select v-model="selectedProductId" class="form-input" @change="loadMovements">
-          <option value="" disabled>Selecciona un producto</option>
-          <option v-for="p in products" :key="p.id" :value="p.id">
-            {{ p.name }} (Stock actual: {{ p.stock }})
-          </option>
-        </select>
+        <label class="form-label">Buscar producto</label>
+        <ProductSearch @select="onStockProductSelect" placeholder="Buscar por nombre, código..." />
+        <div v-if="selectedProductInfo" class="selected-product-info">
+          <span>{{ selectedProductInfo.name }}</span>
+          <span :class="['badge', selectedProductInfo.stock <= 0 ? 'badge-danger' : 'badge-success']">
+            Stock: {{ selectedProductInfo.stock }}
+          </span>
+        </div>
       </div>
     </div>
 
@@ -67,12 +68,7 @@
       <form @submit.prevent="saveEntry">
         <div class="form-group">
           <label class="form-label">Producto</label>
-          <select v-model="entryForm.productId" class="form-input" required>
-            <option value="" disabled>Selecciona un producto</option>
-            <option v-for="p in products" :key="p.id" :value="p.id">
-              {{ p.name }} (Stock actual: {{ p.stock }})
-            </option>
-          </select>
+          <ProductSearch @select="(p) => entryForm.productId = p.id" placeholder="Buscar producto..." />
         </div>
         <div class="form-group">
           <label class="form-label">Cantidad a ingresar</label>
@@ -102,12 +98,7 @@
       <form @submit.prevent="saveAdjustment">
         <div class="form-group">
           <label class="form-label">Producto</label>
-          <select v-model="adjustmentForm.productId" class="form-input" required @change="onAdjustProductSelect">
-            <option value="" disabled>Selecciona un producto</option>
-            <option v-for="p in products" :key="p.id" :value="p.id">
-              {{ p.name }} (Stock actual: {{ p.stock }})
-            </option>
-          </select>
+          <ProductSearch @select="(p) => { adjustmentForm.productId = p.id; adjustmentForm.newStock = p.stock }" placeholder="Buscar producto..." />
         </div>
         <div class="form-group">
           <label class="form-label">Nuevo stock real</label>
@@ -143,6 +134,7 @@ import { ref, onMounted } from 'vue'
 import api from '@/api/axios'
 import { useToastStore } from '@/stores/toast'
 import ModalBase from '@/components/shared/ModalBase.vue'
+import ProductSearch from '@/components/shared/ProductSearch.vue'
 import { toUpperCase } from '@/utils/textFormat'
 
 const toast = useToastStore()
@@ -150,6 +142,7 @@ const toast = useToastStore()
 const products = ref([])
 const movements = ref([])
 const selectedProductId = ref('')
+const selectedProductInfo = ref(null)
 const loading = ref(false)
 const saving = ref(false)
 
@@ -176,6 +169,12 @@ function typeBadge(type) {
 function getCurrentStock(productId) {
   const product = products.value.find(p => p.id === productId)
   return product ? product.stock : 0
+}
+
+function onStockProductSelect(product) {
+  selectedProductId.value = product.id
+  selectedProductInfo.value = product
+  loadMovements()
 }
 
 function onAdjustProductSelect() {
@@ -217,11 +216,17 @@ function openAdjustmentModal() {
 async function saveEntry() {
   try {
     saving.value = true
-    await api.post('/Stock/entry', entryForm.value)
+    const res = await api.post('/Stock/entry', entryForm.value)
     toast.show('Entrada de stock registrada correctamente', 'success')
     showEntryModal.value = false
     await loadProducts()
-    if (entryForm.value.productId === selectedProductId.value) loadMovements()
+    if (entryForm.value.productId === selectedProductId.value) {
+      loadMovements()
+      // Actualizar stock en selectedProductInfo
+      if (selectedProductInfo.value && res.data?.data?.newStock !== undefined) {
+        selectedProductInfo.value.stock = res.data.data.newStock
+      }
+    }
   } catch (err) {
     toast.show(err.response?.data?.message || 'Error al registrar la entrada', 'error')
   } finally {
@@ -236,7 +241,13 @@ async function saveAdjustment() {
     toast.show('Ajuste de stock registrado correctamente', 'success')
     showAdjustmentModal.value = false
     await loadProducts()
-    if (adjustmentForm.value.productId === selectedProductId.value) loadMovements()
+    if (adjustmentForm.value.productId === selectedProductId.value) {
+      loadMovements()
+      // Actualizar stock en selectedProductInfo
+      if (selectedProductInfo.value) {
+        selectedProductInfo.value.stock = adjustmentForm.value.newStock
+      }
+    }
   } catch (err) {
     toast.show(err.response?.data?.message || 'Error al registrar el ajuste', 'error')
   } finally {
@@ -255,4 +266,14 @@ onMounted(loadProducts)
 .header-actions { display: flex; gap: 10px; }
 .state-text { text-align: center; padding: 40px 0; color: var(--color-text-muted); font-size: 13px; }
 .hint-text { font-size: 12px; color: var(--color-accent); margin-top: 6px; }
+.selected-product-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 13px;
+  padding: 6px 10px;
+  background: var(--color-accent-light);
+  border-radius: var(--radius-sm);
+}
 </style>

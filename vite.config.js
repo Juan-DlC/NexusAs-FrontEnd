@@ -15,4 +15,8 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
+  server: {
+    port: 5174,       // Fija el puerto en 5173
+    strictPort: true  // Evita que salte al 5174 si el 5173 está ocupado
+  }
 })
