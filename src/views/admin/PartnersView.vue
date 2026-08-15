@@ -103,6 +103,7 @@
                 <th>Total</th>
                 <th>Estado</th>
                 <th>Pendiente</th>
+                <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -126,12 +127,34 @@
                        inv.creditStatus === 'Partial' ? 'Pago parcial' : 'Crédito pendiente' }}
                   </span>
                 </td>
-                <td :style="{ color: inv.pendingAmount > 0 ? 'var(--color-danger)' : 'inherit', fontWeight: inv.pendingAmount > 0 ? '600' : 'normal' }">
-                  {{ inv.creditStatus === 'NoCredit' ? '-' : '$' + formatNumber(inv.pendingAmount) }}
+                <td>
+                  <span v-if="inv.creditStatus === 'NoCredit'" style="color: var(--color-text-muted)">—</span>
+                  <span v-else :style="{ color: inv.pendingAmount > 0 ? 'var(--color-danger)' : 'var(--color-success)', fontWeight: '600' }">
+                    ${{ formatNumber(inv.pendingAmount) }}
+                  </span>
+                </td>
+                <td>
+                  <button
+                    v-if="inv.creditStatus !== 'NoCredit' && inv.pendingAmount > 0"
+                    class="btn btn-secondary btn-sm"
+                    @click.stop="openLiquidationModalForInvoice(inv)"
+                  >
+                    💳 Abonar
+                  </button>
+                  <span v-else-if="inv.isFullyReturned" class="badge badge-danger">Devuelta</span>
                 </td>
               </tr>
             </tbody>
           </table>
+          <div class="pagination" v-if="invoicesTotalPages > 1">
+            <button class="btn btn-secondary btn-sm" :disabled="invoicesPageNumber <= 1" @click="loadMoreInvoices(invoicesPageNumber - 1)">
+              ← Anterior
+            </button>
+            <span class="page-info">Página {{ invoicesPageNumber }} de {{ invoicesTotalPages }}</span>
+            <button class="btn btn-secondary btn-sm" :disabled="invoicesPageNumber >= invoicesTotalPages" @click="loadMoreInvoices(invoicesPageNumber + 1)">
+              Siguiente →
+            </button>
+          </div>
           <p v-else class="state-text">Sin facturas registradas.</p>
         </div>
 
@@ -359,7 +382,9 @@
 
       <template #footer>
         <button class="btn btn-secondary" @click="showPartnerSaleModal = false">Cancelar</button>
-        <button class="btn btn-primary" @click="savePartnerSale">Registrar venta</button>
+        <button class="btn btn-primary" @click="savePartnerSale" :disabled="saving">
+          {{ saving ? 'Registrando...' : 'Registrar venta' }}
+        </button>
       </template>
     </ModalBase>
 
@@ -424,6 +449,8 @@ const selectedInvoiceDetail = ref(null)
 const partnerDetail = ref(null)
 const partnerSales = ref([])
 const partnerInvoices = ref([])
+const invoicesTotalPages = ref(1)
+const invoicesPageNumber = ref(1)
 const liquidations = ref([])
 const activeTab = ref('invoices')
 const commissionForm = ref({ commissionPercent: 0, allianceCommissionPercent: 0 })
@@ -439,8 +466,12 @@ const liquidationForm = ref({ amount: 0, notes: '' })
 const partnerSaleForm = ref({
   paymentMethodId: null,
   notes: '',
+  requestId: '',
   details: [{ productId: '', quantity: 1, unitPrice: 0, partnerPrice: 0, suggestedPrice: 0, stock: 0 }]
 })
+
+// Función para generar RequestId único
+const generateRequestId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 
 const partnerPaymentMethods = ref([])
 
@@ -490,21 +521,32 @@ async function saveCommission() {
 async function openDetailModal(partner) {
   selectedPartner.value = partner
   activeTab.value = 'invoices'
+  invoicesPageNumber.value = 1
   try {
     const [summaryRes, salesRes, liqRes, invoicesRes] = await Promise.all([
       api.get(`/Partner/${partner.id}/admin-summary`),
       api.get(`/Partner/${partner.id}/sales`),
       api.get(`/Partner/${partner.id}/liquidations`),
-      api.get(`/Partner/${partner.id}/invoices`, { params: { pageNumber: 1, pageSize: 50 } })
+      api.get(`/Partner/${partner.id}/invoices`, { params: { pageNumber: 1, pageSize: 20 } })
     ])
     partnerDetail.value = summaryRes.data.data
     partnerSales.value = salesRes.data.data
     liquidations.value = liqRes.data.data
-    partnerInvoices.value = invoicesRes.data.data.data || []
+    partnerInvoices.value = invoicesRes.data.data?.data || invoicesRes.data.data || []
+    invoicesTotalPages.value = invoicesRes.data.data?.totalPages || 1
     showDetailModal.value = true
   } catch (err) {
     console.error('Error al cargar el detalle de la socia.', err)
   }
+}
+
+async function loadMoreInvoices(page) {
+  invoicesPageNumber.value = page
+  const res = await api.get(`/Partner/${selectedPartner.value.id}/invoices`, {
+    params: { pageNumber: page, pageSize: 20 }
+  })
+  partnerInvoices.value = res.data.data?.data || []
+  invoicesTotalPages.value = res.data.data?.totalPages || 1
 }
 
 function openLiquidationModal() {
@@ -531,7 +573,7 @@ async function saveLiquidation() {
     return
   }
   if (partnerDetail.value && liquidationForm.value.amount > partnerDetail.value.pendingDebt) {
-    toast.show(`El abono supera la deuda pendiente de $${formatNumber(partnerDetail.value.pendingDebt)}`, 'error')
+    toast.show(`El abono supera la deuda: $${formatNumber(partnerDetail.value.pendingDebt)}`, 'error')
     return
   }
   try {
@@ -547,13 +589,20 @@ async function saveLiquidation() {
     }
     await api.post(`/Partner/${selectedPartner.value.id}/liquidations`, payload)
     toast.show('Abono registrado correctamente', 'success')
-    showLiquidationModal.value = false
-    selectedInvoice.value = null
-    liquidationForm.value = { amount: 0, notes: '' }
-    // Recargar detalle completo de la socia
-    await openDetailModal(selectedPartner.value)
+    closeLiquidationModal()
+    
+    // Recargar resumen Y facturas para reflejar cambios dinámicamente
+    const [summaryRes, invoicesRes, liqRes] = await Promise.all([
+      api.get(`/Partner/${selectedPartner.value.id}/admin-summary`),
+      api.get(`/Partner/${selectedPartner.value.id}/invoices`, { params: { pageNumber: invoicesPageNumber.value, pageSize: 20 } }),
+      api.get(`/Partner/${selectedPartner.value.id}/liquidations`)
+    ])
+    partnerDetail.value = summaryRes.data.data
+    partnerInvoices.value = invoicesRes.data.data?.data || []
+    invoicesTotalPages.value = invoicesRes.data.data?.totalPages || 1
+    liquidations.value = liqRes.data.data
   } catch (err) {
-    toast.show(err.response?.data?.message || 'Error al registrar el abono', 'error')
+    toast.show(err.response?.data?.message || 'Error al registrar abono', 'error')
   } finally {
     saving.value = false
   }
@@ -668,6 +717,7 @@ async function openPartnerSaleModal() {
   partnerSaleForm.value = {
     paymentMethodId: defaultMethod?.id || null,
     notes: '',
+    requestId: generateRequestId(), // Generar RequestId único
     details: [{ productId: '', quantity: 1, unitPrice: 0, partnerPrice: 0, suggestedPrice: 0, stock: 0 }]
   }
   showPartnerSaleModal.value = true
@@ -711,6 +761,7 @@ async function savePartnerSale() {
     saving.value = true
 
     const payload = {
+      requestId: partnerSaleForm.value.requestId, // Incluir requestId
       partnerUserId: selectedPartner.value.userId,
       paymentMethodId: partnerSaleForm.value.paymentMethodId,
       numberOfInstallments: 1,
@@ -734,6 +785,10 @@ async function savePartnerSale() {
     
     await api.post('/Sale', payload)
     toast.show('Venta registrada correctamente', 'success')
+    
+    // Regenerar requestId para próxima venta
+    partnerSaleForm.value.requestId = generateRequestId()
+    
     showPartnerSaleModal.value = false
     openDetailModal(selectedPartner.value)
   } catch (err) {

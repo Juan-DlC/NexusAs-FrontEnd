@@ -182,7 +182,10 @@
           <p><strong>Factura:</strong> {{ selectedSale.saleNumber }}</p>
           <p><strong>Cliente/Socia:</strong> {{ selectedSale.customerName || selectedSale.sellerName || 'Sin cliente' }}</p>
           <p><strong>Fecha:</strong> {{ formatDate(selectedSale.date) }}</p>
-          <p><strong>Vendedor:</strong> {{ selectedSale.sellerName }}</p>
+          <p><strong>Vendedor:</strong> {{ selectedSale.processedByName || selectedSale.sellerName }}</p>
+          <p v-if="selectedSale.processedByName && selectedSale.sellerName && selectedSale.processedByName !== selectedSale.sellerName">
+            <strong>Socia:</strong> {{ selectedSale.sellerName }}
+          </p>
           <p><strong>Método:</strong>
             <span :class="['badge', selectedSale.paymentMethodName === 'CONTADO' || selectedSale.paymentMethod === 'Cash' ? 'badge-success' : 'badge-warning']">
               {{ selectedSale.paymentMethodName || selectedSale.paymentMethod || 'N/A' }}
@@ -339,10 +342,14 @@ const form = ref({
   paymentMethodId: null,
   customerId: '',
   numberOfInstallments: 1,
-  discount: 0,
+  discountPercent: 0,
   notes: '',
+  requestId: '',
   details: [{ productId: '', quantity: 1, unitPrice: 0 }]
 })
+
+// Función para generar RequestId único
+const generateRequestId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 
 const returnForm = ref({ notes: '', details: [] })
 
@@ -455,6 +462,7 @@ async function loadPaymentMethods() {
 function openCreateModal() {
   form.value = {
     paymentMethodId: null, customerId: '', numberOfInstallments: 1, discountPercent: 0, notes: '',
+    requestId: generateRequestId(), // Generar RequestId único
     details: [{ productId: '', quantity: 1, unitPrice: 0, stock: 0 }]
   }
   showModal.value = true
@@ -464,6 +472,7 @@ async function saveSale() {
   try {
     saving.value = true
     const payload = {
+      requestId: form.value.requestId, // Incluir requestId
       paymentMethodId: form.value.paymentMethodId,
       customerId: form.value.customerId || null,
       numberOfInstallments: form.value.numberOfInstallments || 1,
@@ -478,6 +487,10 @@ async function saveSale() {
     }
     await api.post('/Sale', payload)
     toast.show('Venta registrada correctamente', 'success')
+    
+    // Regenerar requestId para próxima venta
+    form.value.requestId = generateRequestId()
+    
     showModal.value = false
     loadSales()
   } catch (err) {
