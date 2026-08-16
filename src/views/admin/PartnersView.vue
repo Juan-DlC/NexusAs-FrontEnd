@@ -401,7 +401,7 @@
     </ModalBase>
 
     <!-- Modal Devolución desde Socia -->
-    <ModalBase v-model="showReturnFromPartnerModal" title="Registrar devolución" width="560px">
+    <ModalBase v-model="showReturnFromPartnerModal" title="Registrar devolución" width="560px" :z-index="1100">
       <div class="invoice-ref" style="margin-bottom: 16px;">
         Devolución de: <strong>{{ selectedInvoiceDetail?.saleNumber }}</strong>
       </div>
