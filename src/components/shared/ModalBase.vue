@@ -1,7 +1,7 @@
 <template>
   <Teleport to="body">
     <transition name="modal-fade">
-      <div v-if="modelValue" class="modal-overlay" @click.self="close">
+      <div v-if="modelValue" class="modal-overlay" :style="{ zIndex: zIndex }" @click.self="close">
         <transition name="modal-slide">
           <div v-if="modelValue" class="modal-box" :style="{ maxWidth: width }">
             <div class="modal-header">
@@ -25,7 +25,8 @@
 defineProps({
   modelValue: { type: Boolean, default: false },
   title: { type: String, default: '' },
-  width: { type: String, default: '480px' }
+  width: { type: String, default: '480px' },
+  zIndex: { type: Number, default: 1000 }
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -43,7 +44,6 @@ function close() {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
   padding: 20px;
 }
 

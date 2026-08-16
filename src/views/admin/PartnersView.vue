@@ -162,16 +162,16 @@
           <button class="btn btn-secondary btn-sm" @click="openLiquidationModal" style="margin-bottom: 12px;">
             + Registrar abono
           </button>
-          <table v-if="liquidations.length > 0">
+          <table v-if="sortedLiquidations.length > 0">
             <thead>
-              <tr><th>Fecha</th><th>Tipo</th><th>Monto</th><th>Notas</th></tr>
+              <tr><th>Fecha</th><th>Monto</th><th>Factura</th><th>Notas</th></tr>
             </thead>
             <tbody>
-              <tr v-for="l in liquidations" :key="l.id">
+              <tr v-for="l in sortedLiquidations" :key="l.id">
                 <td>{{ formatDate(l.date) }}</td>
-                <td>{{ l.type === 'Payment' ? 'Abono socia' : 'Pago AS' }}</td>
                 <td>${{ formatNumber(l.amount) }}</td>
-                <td>{{ l.notes || '-' }}</td>
+                <td>{{ l.saleNumber || (l.notes && l.notes.includes('FACT') ? l.notes : 'Abono general') }}</td>
+                <td>{{ (!l.notes || l.notes.includes('FACT')) ? '-' : l.notes }}</td>
               </tr>
             </tbody>
           </table>
@@ -187,7 +187,7 @@
     </ModalBase>
 
     <!-- Modal Registrar liquidación -->
-    <ModalBase v-model="showLiquidationModal" title="Registrar abono de la socia">
+    <ModalBase v-model="showLiquidationModal" title="Registrar abono de la socia" z-index="1100">
       <form @submit.prevent="saveLiquidation">
         <div v-if="selectedInvoice" class="invoice-ref">
           Abonando a factura: <strong>{{ selectedInvoice.saleNumber }}</strong>
@@ -197,6 +197,18 @@
           <p><strong>Deuda pendiente:</strong> <span style="color: var(--color-danger); font-weight: 700;">${{ formatNumber(partnerDetail.pendingDebt) }}</span></p>
           <p style="font-size: 11px; color: var(--color-text-muted);">El abono no puede superar la deuda pendiente</p>
         </div>
+        
+        <div class="form-group" v-if="selectedInvoice">
+          <label class="form-label">Factura</label>
+          <input
+            type="text"
+            class="form-input"
+            :value="selectedInvoice.saleNumber"
+            disabled
+            style="background: var(--color-bg); cursor: not-allowed;"
+          />
+        </div>
+        
         <div class="form-group">
           <label class="form-label">Monto abonado</label>
           <CurrencyInput v-model="liquidationForm.amount" />
@@ -220,7 +232,7 @@
     </ModalBase>
 
     <!-- Modal Detalle de Factura -->
-    <ModalBase v-model="showInvoiceDetailModal" title="Detalle de factura" width="600px">
+    <ModalBase v-model="showInvoiceDetailModal" title="Detalle de factura" width="600px" :z-index="1050">
       <div v-if="selectedInvoiceDetail">
         <div class="detail-summary">
           <p><strong>Factura:</strong> {{ selectedInvoiceDetail.saleNumber }}</p>
@@ -534,6 +546,20 @@ async function openDetailModal(partner) {
     liquidations.value = liqRes.data.data
     partnerInvoices.value = invoicesRes.data.data?.data || invoicesRes.data.data || []
     invoicesTotalPages.value = invoicesRes.data.data?.totalPages || 1
+    
+    // Debug: Ver qué devuelve el API
+    console.log('📋 Facturas desde API:', partnerInvoices.value)
+    if (partnerInvoices.value.length > 0) {
+      console.log('🔍 Primera factura creditStatus:', partnerInvoices.value[0].creditStatus)
+      console.log('🔍 Primera factura completa:', partnerInvoices.value[0])
+    }
+    
+    console.log('💰 Liquidaciones desde API:', liquidations.value)
+    if (liquidations.value.length > 0) {
+      console.log('🔍 Primera liquidación:', liquidations.value[0])
+      console.log('🔍 ¿Tiene saleNumber?:', liquidations.value[0].saleNumber)
+    }
+    
     showDetailModal.value = true
   } catch (err) {
     console.error('Error al cargar el detalle de la socia.', err)
@@ -689,6 +715,12 @@ const selectedPartnerPaymentMethod = computed(() =>
 )
 
 const partnerSaleIsCredit = computed(() => selectedPartnerPaymentMethod.value?.code === 'CREDIT')
+
+// Ordenar liquidaciones de más reciente a más antiguo
+const sortedLiquidations = computed(() => {
+  if (!liquidations.value || !Array.isArray(liquidations.value)) return []
+  return [...liquidations.value].sort((a, b) => new Date(b.date) - new Date(a.date))
+})
 
 function openSelectPartnerForSale() {
   showSelectPartnerModal.value = true
