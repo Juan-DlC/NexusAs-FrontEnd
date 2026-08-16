@@ -1,5 +1,26 @@
 <template>
   <div class="dashboard">
+    <!-- Botones de Acción -->
+    <div class="action-buttons-grid">
+      <div class="action-card" @click="$router.push('/ventas')">
+        <div class="action-icon">🧾</div>
+        <div class="action-info">
+          <span class="action-title">Nueva venta</span>
+          <span class="action-sub">Registrar venta al cliente</span>
+        </div>
+        <span class="action-arrow">→</span>
+      </div>
+      
+      <div class="action-card action-card-addi" @click="openAddiLink">
+        <div class="action-icon">💳</div>
+        <div class="action-info">
+          <span class="action-title">Venta con Addi</span>
+          <span class="action-sub">Financiamiento externo</span>
+        </div>
+        <span class="action-arrow">→</span>
+      </div>
+    </div>
+
     <!-- Stats -->
     <div class="stats-grid">
       <div class="stat-card" v-for="stat in stats" :key="stat.label">
@@ -40,8 +61,8 @@
               <td>{{ sale.customerName || 'Sin cliente' }}</td>
               <td>${{ formatNumber(sale.total) }}</td>
               <td>
-                <span class="badge" :class="sale.paymentMethod === 'Cash' ? 'badge-success' : 'badge-warning'">
-                  {{ sale.paymentMethod === 'Cash' ? 'Contado' : 'Crédito' }}
+                <span class="badge" :class="sale.paymentMethodName === 'Contado' || sale.paymentMethodName === 'CONTADO' ? 'badge-success' : 'badge-warning'">
+                  {{ sale.paymentMethodName || 'N/A' }}
                 </span>
               </td>
             </tr>
@@ -81,10 +102,12 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import api from '@/api/axios'
 
+const router = useRouter()
 const loading = ref(true)
-const dashboard = ref(null)
+const summary = ref(null)
 const recentSales = ref([])
 const lowStock = ref([])
 
@@ -92,55 +115,89 @@ function formatNumber(n) {
   return Number(n).toLocaleString('es-CO')
 }
 
+function openAddiLink() {
+  const addiUrl = 'https://addi.com' // TODO: configurar URL real
+  window.open(addiUrl, '_blank')
+}
+
 const stats = computed(() => {
-  if (!dashboard.value) return []
+  if (!summary.value) return []
   return [
     {
       label: 'Ventas hoy',
-      value: `$${formatNumber(dashboard.value.todaySales)}`,
-      sub: `${dashboard.value.todayTransactions} transacciones`,
+      value: `$${formatNumber(summary.value.todaySalesAmount || 0)}`,
+      sub: `${summary.value.todaySalesCount || 0} transacciones`,
       icon: '◆',
       color: 'var(--color-text)',
       subColor: 'var(--color-text-muted)'
     },
     {
-      label: 'Contado',
-      value: `$${formatNumber(dashboard.value.todayCash)}`,
-      sub: '✓ Cobrado',
+      label: 'Productos activos',
+      value: summary.value.activeProducts || 0,
+      sub: 'En catálogo',
       icon: '◉',
-      color: 'var(--color-success)',
-      subColor: 'var(--color-success)'
+      color: 'var(--color-accent)',
+      subColor: 'var(--color-text-muted)'
     },
     {
       label: 'Créditos pendientes',
-      value: `$${formatNumber(dashboard.value.pendingCreditsAmount)}`,
-      sub: `${dashboard.value.pendingCredits} deudores`,
+      value: `$${formatNumber(summary.value.pendingCreditsAmount || 0)}`,
+      sub: `${summary.value.pendingCreditsCount || 0} deudores`,
       icon: '◇',
-      color: dashboard.value.pendingCredits > 0 ? 'var(--color-danger)' : 'var(--color-text)',
+      color: summary.value.pendingCreditsCount > 0 ? 'var(--color-danger)' : 'var(--color-text)',
       subColor: 'var(--color-danger)'
     },
     {
       label: 'Stock bajo',
-      value: lowStock.value.length,
-      sub: lowStock.value.length > 0 ? 'Requieren atención' : 'Todo en orden ✓',
+      value: summary.value.lowStockCount || 0,
+      sub: summary.value.lowStockCount > 0 ? 'Requieren atención' : 'Todo en orden ✓',
       icon: '◰',
-      color: lowStock.value.length > 0 ? 'var(--color-danger)' : 'var(--color-success)',
-      subColor: lowStock.value.length > 0 ? 'var(--color-danger)' : 'var(--color-success)'
+      color: summary.value.lowStockCount > 0 ? 'var(--color-danger)' : 'var(--color-success)',
+      subColor: summary.value.lowStockCount > 0 ? 'var(--color-danger)' : 'var(--color-success)'
     }
   ]
 })
 
+async function loadSummary() {
+  try {
+    const res = await api.get('/Dashboard/summary')
+    summary.value = res.data.data
+  } catch (err) {
+    console.error('Error cargando summary:', err)
+    // Fallback a endpoint anterior si el nuevo no existe
+    try {
+      const dashRes = await api.get('/Dashboard')
+      summary.value = {
+        todaySalesAmount: dashRes.data.data.todaySales,
+        todaySalesCount: dashRes.data.data.todayTransactions,
+        activeProducts: 0,
+        pendingCreditsAmount: dashRes.data.data.pendingCreditsAmount,
+        pendingCreditsCount: dashRes.data.data.pendingCredits,
+        lowStockCount: 0
+      }
+    } catch {
+      // Silenciar error si tampoco existe el anterior
+    }
+  }
+}
+
 async function loadDashboard() {
   try {
     loading.value = true
-    const [dashRes, salesRes, stockRes] = await Promise.all([
-      api.get('/Dashboard'),
+    await loadSummary()
+    
+    const [salesRes, stockRes] = await Promise.all([
       api.get('/Sale', { params: { pageSize: 5 } }),
       api.get('/Product/low-stock')
     ])
-    dashboard.value = dashRes.data.data
+    
     recentSales.value = (salesRes.data.data?.data || []).slice(0, 5)
     lowStock.value = stockRes.data.data || []
+    
+    // Actualizar lowStockCount si no vino del summary
+    if (summary.value) {
+      summary.value.lowStockCount = lowStock.value.length
+    }
   } catch (err) {
     console.error('Error cargando dashboard:', err)
   } finally {
@@ -153,6 +210,68 @@ onMounted(loadDashboard)
 
 <style scoped>
 .dashboard { display: flex; flex-direction: column; gap: 20px; }
+
+.action-buttons-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.action-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--color-white);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.action-card:hover {
+  border-color: var(--color-accent);
+  background: var(--color-accent-light);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.action-card-addi {
+  border-color: #4CAF50;
+}
+
+.action-card-addi:hover {
+  border-color: #388E3C;
+  background: #E8F5E9;
+}
+
+.action-icon {
+  font-size: 28px;
+}
+
+.action-info {
+  flex: 1;
+}
+
+.action-title {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.action-sub {
+  display: block;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.action-arrow {
+  font-size: 18px;
+  color: var(--color-text-muted);
+}
 
 .stats-grid {
   display: grid;

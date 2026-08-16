@@ -563,6 +563,7 @@ async function openDetailModal(partner) {
     showDetailModal.value = true
   } catch (err) {
     console.error('Error al cargar el detalle de la socia.', err)
+    toast.show('Error al cargar el detalle de la socia', 'error')
   }
 }
 
