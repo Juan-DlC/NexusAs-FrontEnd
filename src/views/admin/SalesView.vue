@@ -118,23 +118,49 @@
 
         <div class="divider-label">Productos</div>
 
-        <div v-for="(detail, index) in form.details" :key="index">
-          <div class="detail-row">
-            <ProductSearch @select="(p) => onProductSelect(detail, p)" />
-            <input
-              v-model.number="detail.quantity"
-              type="number"
-              min="1"
-              class="form-input qty-input"
-              :class="{ 'input-error': isStockExceeded(detail) }"
-              placeholder="Cant."
-              required
-            />
-          <CurrencyInput v-model="detail.unitPrice" class="price-input" />            <button type="button" class="btn-icon btn-icon-danger" @click="removeDetail(index)" :title="`✕ Eliminar producto`">✕</button>
+        <div v-for="(detail, index) in form.details" :key="index" class="sale-product-row">
+          <div class="sale-product-search">
+            <ProductSearch @select="(p) => onProductSelect(detail, p)" placeholder="Buscar producto..." />
           </div>
-          <p class="stock-warning" v-if="isStockExceeded(detail)">
-            ⚠️ Stock insuficiente — disponible: {{ getProductStock(detail) }}
-          </p>
+          
+          <div class="sale-product-controls" v-if="detail.productId">
+            <div class="control-group">
+              <label class="control-label">Cantidad</label>
+              <input 
+                v-model.number="detail.quantity" 
+                type="number" 
+                min="1"
+                class="form-input qty-input"
+                :class="{ 'input-error': isStockExceeded(detail) }" 
+              />
+            </div>
+            <div class="control-group">
+              <label class="control-label">Precio unit.</label>
+              <CurrencyInput v-model="detail.unitPrice" class="price-input" />
+            </div>
+            <div class="control-group subtotal-group">
+              <label class="control-label">Subtotal</label>
+              <span class="subtotal-value">${{ formatNumber(detail.quantity * detail.unitPrice) }}</span>
+            </div>
+            <button 
+              type="button" 
+              class="btn-icon btn-icon-danger"
+              @click="removeDetail(index)"
+              v-if="form.details.length > 1"
+              title="🗑️ Quitar producto"
+            >
+              ✕
+            </button>
+          </div>
+          
+          <div class="stock-badge" v-if="detail.productId">
+            <span :class="['badge', isStockExceeded(detail) ? 'badge-danger' : 'badge-success']">
+              {{ isStockExceeded(detail) 
+                ? `⚠️ Stock insuficiente (${getProductStock(detail)} disp.)` 
+                : `✓ Stock: ${getProductStock(detail)}` 
+              }}
+            </span>
+          </div>
         </div>
 
         <button type="button" class="btn btn-secondary btn-sm" @click="addDetail" style="margin-bottom: 16px;">
@@ -157,9 +183,19 @@
           <input v-model="form.notes" type="text" class="form-input" @input="form.notes = toUpperCase(form.notes)" />
         </div>
 
-        <div class="total-preview">
-          <span>Total a pagar:</span>
-          <strong>${{ formatNumber(calculatedTotal) }}</strong>
+        <div class="sale-total-box">
+          <div class="total-line" v-if="form.discountPercent > 0">
+            <span>Subtotal</span>
+            <span>${{ formatNumber(subtotalAmount) }}</span>
+          </div>
+          <div class="total-line discount" v-if="form.discountPercent > 0">
+            <span>Descuento ({{ form.discountPercent }}%)</span>
+            <span style="color: var(--color-success)">-${{ formatNumber(calculatedDiscount) }}</span>
+          </div>
+          <div class="total-line total-final">
+            <span><strong>Total</strong></span>
+            <strong style="font-size: 18px; color: var(--color-accent)">${{ formatNumber(calculatedTotal) }}</strong>
+          </div>
         </div>
         <p class="stock-error-msg" v-if="hasStockErrors">
           ⚠️ Corrige las cantidades en rojo antes de continuar.
@@ -677,6 +713,73 @@ onMounted(() => {
   align-items: center;
 }
 
+.sale-product-row {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  margin-bottom: 10px;
+  background: var(--color-bg);
+}
+
+.sale-product-search {
+  margin-bottom: 8px;
+}
+
+.sale-product-controls {
+  display: grid;
+  grid-template-columns: 80px 1fr 1fr auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.control-label {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.subtotal-group {
+  text-align: right;
+}
+
+.subtotal-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text);
+  padding: 8px 0;
+}
+
+.stock-badge {
+  margin-top: 6px;
+}
+
+.sale-total-box {
+  background: var(--color-accent-light);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  margin-top: 16px;
+}
+
+.total-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  padding: 4px 0;
+}
+
+.total-line.total-final {
+  border-top: 1px solid var(--color-border);
+  padding-top: 10px;
+  margin-top: 6px;
+}
+
 .qty-input, .price-input { padding: 10px 8px; }
 
 .hint-text {
@@ -684,21 +787,6 @@ onMounted(() => {
   color: var(--color-accent);
   margin: -8px 0 14px;
 }
-
-.total-preview {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: var(--color-accent-light);
-  padding: 12px 16px;
-  border-radius: var(--radius-sm);
-  font-size: 15px;
-  color: var(--color-text);
-  margin-top: 8px;
-}
-
-
-.total-preview strong { color: var(--color-accent); font-size: 17px; }
 
 .return-item {
   display: grid;

@@ -162,20 +162,44 @@
           <button class="btn btn-secondary btn-sm" @click="openLiquidationModal" style="margin-bottom: 12px;">
             + Registrar abono
           </button>
-          <table v-if="sortedLiquidations.length > 0">
+          <table v-if="liquidations.length > 0">
             <thead>
-              <tr><th>Fecha</th><th>Monto</th><th>Factura</th><th>Notas</th></tr>
+              <tr>
+                <th>Fecha</th>
+                <th>Factura</th>
+                <th>Tipo</th>
+                <th>Monto</th>
+                <th>Notas</th>
+              </tr>
             </thead>
             <tbody>
-              <tr v-for="l in sortedLiquidations" :key="l.id">
+              <tr v-for="l in liquidations" :key="l.id">
                 <td>{{ formatDate(l.date) }}</td>
-                <td>${{ formatNumber(l.amount) }}</td>
-                <td>{{ l.saleNumber || (l.notes && l.notes.includes('FACT') ? l.notes : 'Abono general') }}</td>
-                <td>{{ (!l.notes || l.notes.includes('FACT')) ? '-' : l.notes }}</td>
+                <td>{{ l.saleNumber || 'Deuda general' }}</td>
+                <td>{{ l.type === 'Payment' ? 'Abono' : 'Pago AS' }}</td>
+                <td style="color: var(--color-success); font-weight: 600;">${{ formatNumber(l.amount) }}</td>
+                <td>{{ l.notes || '-' }}</td>
               </tr>
             </tbody>
           </table>
-          <p v-else class="state-text">Sin abonos registrados.</p>
+          <div class="pagination" v-if="liquidationsTotalPages > 1">
+            <button 
+              class="btn btn-secondary btn-sm"
+              :disabled="liquidationsPage <= 1"
+              @click="loadLiquidations(liquidationsPage - 1)"
+            >
+              ← Anterior
+            </button>
+            <span class="page-info">{{ liquidationsPage }} / {{ liquidationsTotalPages }}</span>
+            <button 
+              class="btn btn-secondary btn-sm"
+              :disabled="liquidationsPage >= liquidationsTotalPages"
+              @click="loadLiquidations(liquidationsPage + 1)"
+            >
+              Siguiente →
+            </button>
+          </div>
+          <p v-else-if="liquidations.length === 0" class="state-text">Sin abonos registrados.</p>
         </div>
       </div>
 
@@ -347,16 +371,19 @@
 
         <div class="partner-sale-detail" v-if="detail.productId && detail.partnerPrice > 0">
           <div class="price-row">
-            <span>💰 Precio a socia (lo que paga a AS):</span>
-            <strong style="color: var(--color-accent)">${{ formatNumber(detail.partnerPrice) }}</strong>
+            <span>💰 Lo que paga la socia ({{ detail.commissionPercent }}% ganancia):</span>
+            <strong style="color: var(--color-accent); font-size: 15px;">${{ formatNumber(detail.partnerPrice) }}</strong>
           </div>
           <div class="price-row">
-            <span>🏷️ Precio sugerido de venta:</span>
+            <span>🏷️ Precio sugerido de venta al público:</span>
             <span style="color: var(--color-text-muted)">${{ formatNumber(detail.suggestedPrice) }}</span>
           </div>
-          <div class="price-row" v-if="Number(detail.quantity) > 1">
+          <div class="price-row">
             <span>📦 Subtotal ({{ detail.quantity }} × ${{ formatNumber(detail.partnerPrice) }}):</span>
-            <strong>${{ formatNumber(detail.partnerPrice * detail.quantity) }}</strong>
+            <strong>${{ formatNumber(detail.partnerPrice * (detail.quantity || 1)) }}</strong>
+          </div>
+          <div class="price-row" style="color: var(--color-text-muted); font-size: 11px;">
+            <span>{{ detail.isPartnership ? '🤝 Producto de alianza' : '🏪 Producto tienda' }} — Ganancia socia: ${{ formatNumber(detail.partnerEarning) }} por unidad</span>
           </div>
         </div>
 
@@ -464,6 +491,8 @@ const partnerInvoices = ref([])
 const invoicesTotalPages = ref(1)
 const invoicesPageNumber = ref(1)
 const liquidations = ref([])
+const liquidationsPage = ref(1)
+const liquidationsTotalPages = ref(1)
 const activeTab = ref('invoices')
 const commissionForm = ref({ commissionPercent: 0, allianceCommissionPercent: 0 })
 
@@ -534,16 +563,18 @@ async function openDetailModal(partner) {
   selectedPartner.value = partner
   activeTab.value = 'invoices'
   invoicesPageNumber.value = 1
+  liquidationsPage.value = 1
   try {
     const [summaryRes, salesRes, liqRes, invoicesRes] = await Promise.all([
       api.get(`/Partner/${partner.id}/admin-summary`),
       api.get(`/Partner/${partner.id}/sales`),
-      api.get(`/Partner/${partner.id}/liquidations`),
+      api.get(`/Partner/${partner.id}/liquidations/paged`, { params: { pageNumber: 1, pageSize: 10 } }),
       api.get(`/Partner/${partner.id}/invoices`, { params: { pageNumber: 1, pageSize: 20 } })
     ])
     partnerDetail.value = summaryRes.data.data
     partnerSales.value = salesRes.data.data
-    liquidations.value = liqRes.data.data
+    liquidations.value = liqRes.data.data?.data || liqRes.data.data || []
+    liquidationsTotalPages.value = liqRes.data.data?.totalPages || 1
     partnerInvoices.value = invoicesRes.data.data?.data || invoicesRes.data.data || []
     invoicesTotalPages.value = invoicesRes.data.data?.totalPages || 1
     
@@ -574,6 +605,15 @@ async function loadMoreInvoices(page) {
   })
   partnerInvoices.value = res.data.data?.data || []
   invoicesTotalPages.value = res.data.data?.totalPages || 1
+}
+
+async function loadLiquidations(page = 1) {
+  const res = await api.get(`/Partner/${selectedPartner.value.id}/liquidations/paged`, {
+    params: { pageNumber: page, pageSize: 10 }
+  })
+  liquidations.value = res.data.data?.data || []
+  liquidationsTotalPages.value = res.data.data?.totalPages || 1
+  liquidationsPage.value = page
 }
 
 function openLiquidationModal() {
@@ -622,12 +662,13 @@ async function saveLiquidation() {
     const [summaryRes, invoicesRes, liqRes] = await Promise.all([
       api.get(`/Partner/${selectedPartner.value.id}/admin-summary`),
       api.get(`/Partner/${selectedPartner.value.id}/invoices`, { params: { pageNumber: invoicesPageNumber.value, pageSize: 20 } }),
-      api.get(`/Partner/${selectedPartner.value.id}/liquidations`)
+      api.get(`/Partner/${selectedPartner.value.id}/liquidations/paged`, { params: { pageNumber: liquidationsPage.value, pageSize: 10 } })
     ])
     partnerDetail.value = summaryRes.data.data
     partnerInvoices.value = invoicesRes.data.data?.data || []
     invoicesTotalPages.value = invoicesRes.data.data?.totalPages || 1
-    liquidations.value = liqRes.data.data
+    liquidations.value = liqRes.data.data?.data || []
+    liquidationsTotalPages.value = liqRes.data.data?.totalPages || 1
   } catch (err) {
     toast.show(err.response?.data?.message || 'Error al registrar abono', 'error')
   } finally {
@@ -717,12 +758,6 @@ const selectedPartnerPaymentMethod = computed(() =>
 
 const partnerSaleIsCredit = computed(() => selectedPartnerPaymentMethod.value?.code === 'CREDIT')
 
-// Ordenar liquidaciones de más reciente a más antiguo
-const sortedLiquidations = computed(() => {
-  if (!liquidations.value || !Array.isArray(liquidations.value)) return []
-  return [...liquidations.value].sort((a, b) => new Date(b.date) - new Date(a.date))
-})
-
 function openSelectPartnerForSale() {
   showSelectPartnerModal.value = true
 }
@@ -758,8 +793,10 @@ async function openPartnerSaleModal() {
 
 function onPartnerProductSelect(detail, product) {
   detail.productId = product.id
+  detail.productName = product.name
   detail.stock = product.stock
   detail.suggestedPrice = product.salePrice || 0
+  detail.isPartnership = product.isPartnership || false
 
   // Calcular precio a socia usando comisiones de selectedPartner
   const commissionPercent = product.isPartnership
@@ -767,9 +804,12 @@ function onPartnerProductSelect(detail, product) {
     : (selectedPartner.value.commissionPercent || 50)
 
   const gainAS = (product.salePrice || 0) - (product.cost || 0)
-  const calculatedPartnerPrice = (product.cost || 0) + (gainAS * commissionPercent / 100)
+  const partnerEarning = gainAS * commissionPercent / 100
+  const calculatedPartnerPrice = (product.salePrice || 0) - partnerEarning
 
   detail.partnerPrice = Math.round(calculatedPartnerPrice)
+  detail.partnerEarning = Math.round(partnerEarning)
+  detail.commissionPercent = commissionPercent
   detail.unitPrice = detail.partnerPrice
 }
 
@@ -1049,9 +1089,10 @@ onMounted(loadPartners)
 
 .partner-sale-detail {
   background: var(--color-accent-light);
-  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  padding: 10px 14px;
   border-radius: var(--radius-sm);
-  margin: -4px 0 10px 0;
+  margin: -4px 0 12px 0;
 }
 
 .price-row {
@@ -1060,6 +1101,11 @@ onMounted(loadPartners)
   align-items: center;
   font-size: 12px;
   padding: 3px 0;
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+}
+
+.price-row:last-child {
+  border-bottom: none;
 }
 
 .summary-row {
