@@ -43,7 +43,7 @@
               <span v-if="s.status === 'FullReturn'" class="badge badge-danger" style="margin-left: 4px;">Devuelta</span>
               <span v-else-if="s.status === 'PartialReturn'" class="badge badge-warning" style="margin-left: 4px;">Devolución parcial</span>
             </td>
-            <td>{{ s.customerName || s.sellerName || 'Sin cliente' }}</td>
+            <td>{{ s.customerId ? (s.customerName || 'Sin cliente') : 'Sin cliente' }}</td>
             <td>{{ formatDate(s.date) }}</td>
             <td>
               <span :class="['badge', s.paymentMethodName === 'CONTADO' || s.paymentMethod === 'Cash' ? 'badge-success' : 'badge-warning']">
@@ -216,7 +216,7 @@
       <div v-if="selectedSale">
         <div class="detail-summary">
           <p><strong>Factura:</strong> {{ selectedSale.saleNumber }}</p>
-          <p><strong>Cliente/Socia:</strong> {{ selectedSale.customerName || selectedSale.sellerName || 'Sin cliente' }}</p>
+          <p><strong>Cliente/Socia:</strong> {{ selectedSale.customerId ? (selectedSale.customerName || 'Sin cliente') : 'Sin cliente' }}</p>
           <p><strong>Fecha:</strong> {{ formatDate(selectedSale.date) }}</p>
           <p><strong>Vendedor:</strong> {{ selectedSale.processedByName || selectedSale.sellerName }}</p>
           <p v-if="selectedSale.processedByName && selectedSale.sellerName && selectedSale.processedByName !== selectedSale.sellerName">
