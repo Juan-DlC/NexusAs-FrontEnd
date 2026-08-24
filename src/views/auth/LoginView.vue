@@ -61,8 +61,14 @@ async function handleLogin() {
   loading.value = true
   error.value = ''
   try {
-    await auth.login(form.value.username, form.value.password)
-    router.push('/')
+    const userData = await auth.login(form.value.username, form.value.password)
+    
+    // Redirigir según el rol del usuario
+    if (userData.role === 'Partner') {
+      router.push('/mi-resumen')
+    } else {
+      router.push('/')
+    }
   } catch (err) {
     error.value = err.response?.data?.message || 'Usuario o contraseña incorrectos.'
   } finally {

@@ -102,22 +102,34 @@ const router = createRouter({
   ]
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach((to) => {
   const auth = useAuthStore()
 
-  if (to.meta.requiresGuest && auth.isAuthenticated) {
-    return next(getHomeRoute(auth.user?.role))
+  // Si intenta acceder a login estando autenticado, redirigir a home
+  if (to.path === '/login' && auth.isAuthenticated) {
+    const homeRoute = getHomeRoute(auth.user?.role)
+    if (to.path !== homeRoute) {
+      return homeRoute
+    }
   }
 
+  // Si intenta acceder a ruta protegida sin estar autenticado, redirigir a login
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
-    return next('/login')
+    if (to.path !== '/login') {
+      return '/login'
+    }
   }
 
-  if (to.meta.roles && !to.meta.roles.includes(auth.user?.role)) {
-    return next(getHomeRoute(auth.user?.role))
+  // Si intenta acceder a una ruta sin el rol adecuado, redirigir a home de su rol
+  if (to.meta.roles && auth.user?.role && !to.meta.roles.includes(auth.user.role)) {
+    const homeRoute = getHomeRoute(auth.user.role)
+    if (to.path !== homeRoute) {
+      return homeRoute
+    }
   }
 
-  next()
+  // Permitir navegación
+  return true
 })
 
 function getHomeRoute(role) {
