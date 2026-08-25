@@ -38,8 +38,9 @@
 import { ref } from 'vue'
 import api from '@/api/axios'
 
-defineProps({
-  placeholder: { type: String, default: 'Buscar por nombre, código o marca...' }
+const props = defineProps({
+  placeholder: { type: String, default: 'Buscar por nombre, código o marca...' },
+  filterInStock: { type: Boolean, default: true }
 })
 
 const emit = defineEmits(['select'])
@@ -64,7 +65,11 @@ function onInput() {
     try {
       loading.value = true
       const res = await api.get('/Product', {
-        params: { search: query.value, inStock: true, pageSize: 8 }
+        params: { 
+          search: query.value, 
+          inStock: props.filterInStock ? true : undefined, 
+          pageSize: 8 
+        }
       })
       results.value = res.data.data.data
     } catch {

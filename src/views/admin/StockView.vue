@@ -18,7 +18,7 @@
     <div class="card">
       <div class="form-group">
         <label class="form-label">Buscar producto</label>
-        <ProductSearch @select="onStockProductSelect" placeholder="Buscar por nombre, código..." />
+        <ProductSearch @select="onStockProductSelect" :filter-in-stock="false" placeholder="Buscar por nombre, código..." />
         <div v-if="selectedProductInfo" class="selected-product-info">
           <span>{{ selectedProductInfo.name }}</span>
           <span :class="['badge', selectedProductInfo.stock <= 0 ? 'badge-danger' : 'badge-success']">
@@ -68,7 +68,7 @@
       <form @submit.prevent="saveEntry">
         <div class="form-group">
           <label class="form-label">Producto</label>
-          <ProductSearch @select="(p) => entryForm.productId = p.id" placeholder="Buscar producto..." />
+          <ProductSearch @select="(p) => entryForm.productId = p.id" :filter-in-stock="false" placeholder="Buscar producto..." />
         </div>
         <div class="form-group">
           <label class="form-label">Cantidad a ingresar</label>
@@ -98,7 +98,7 @@
       <form @submit.prevent="saveAdjustment">
         <div class="form-group">
           <label class="form-label">Producto</label>
-          <ProductSearch @select="(p) => { adjustmentForm.productId = p.id; adjustmentForm.newStock = p.stock }" placeholder="Buscar producto..." />
+          <ProductSearch @select="(p) => { adjustmentForm.productId = p.id; adjustmentForm.newStock = p.stock }" :filter-in-stock="false" placeholder="Buscar producto..." />
         </div>
         <div class="form-group">
           <label class="form-label">Nuevo stock real</label>

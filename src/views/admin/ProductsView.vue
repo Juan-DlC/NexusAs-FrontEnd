@@ -196,9 +196,12 @@
               v-model.number="form.stock"
               type="number"
               class="form-input"
-              :disabled="!!editingProduct"
+              min="0"
               required
             />
+            <p class="hint-text" v-if="editingProduct">
+              ⚠️ Modificar stock aquí no registra movimiento en el kardex. Para trazabilidad completa usa la vista de Stock.
+            </p>
           </div>
           <div class="form-group">
             <label class="form-label">Stock mínimo</label>
