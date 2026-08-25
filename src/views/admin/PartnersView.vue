@@ -238,18 +238,37 @@ function openLiquidationModalForInvoice(invoice) {
 
 async function onPaymentSaved() {
   toast.show('Abono registrado correctamente', 'success')
+  showLiquidationModal.value = false
+  selectedInvoice.value = null
+  
+  if (!selectedPartner.value) return
 
-  // Recargar resumen Y facturas para reflejar cambios dinámicamente
-  const [summaryRes, invoicesRes, liqRes] = await Promise.all([
-    api.get(`/Partner/${selectedPartner.value.id}/admin-summary`),
-    api.get(`/Partner/${selectedPartner.value.id}/invoices`, { params: { pageNumber: invoicesPageNumber.value, pageSize: 20 } }),
-    api.get(`/Partner/${selectedPartner.value.id}/liquidations/paged`, { params: { pageNumber: liquidationsPage.value, pageSize: 10 } })
-  ])
-  partnerDetail.value = summaryRes.data.data
-  partnerInvoices.value = invoicesRes.data.data?.data || []
-  invoicesTotalPages.value = invoicesRes.data.data?.totalPages || 1
-  liquidations.value = liqRes.data.data?.data || []
-  liquidationsTotalPages.value = liqRes.data.data?.totalPages || 1
+  // Recargar resumen, facturas y liquidaciones en paralelo
+  try {
+    const [summaryRes, invoicesRes, liqRes] = await Promise.all([
+      api.get(`/Partner/${selectedPartner.value.id}/admin-summary`),
+      api.get(`/Partner/${selectedPartner.value.id}/invoices`, { 
+        params: { pageNumber: invoicesPageNumber.value, pageSize: 20 } 
+      }),
+      api.get(`/Partner/${selectedPartner.value.id}/liquidations/paged`, { 
+        params: { pageNumber: liquidationsPage.value, pageSize: 10 } 
+      })
+    ])
+    
+    partnerDetail.value = summaryRes.data.data
+    partnerInvoices.value = invoicesRes.data.data?.data || []
+    invoicesTotalPages.value = invoicesRes.data.data?.totalPages || 1
+    liquidations.value = liqRes.data.data?.data || []
+    liquidationsTotalPages.value = liqRes.data.data?.totalPages || 1
+    
+    // Si hay un modal de factura abierto, recargar sus datos actualizados
+    if (showInvoiceDetailModal.value && selectedInvoiceDetail.value) {
+      const invoiceRes = await api.get(`/Sale/${selectedInvoiceDetail.value.id}`)
+      selectedInvoiceDetail.value = invoiceRes.data.data
+    }
+  } catch (err) {
+    console.error('Error recargando datos:', err)
+  }
 }
 
 async function downloadStatement() {
@@ -322,7 +341,10 @@ async function openPartnerSaleModal() {
 
 async function onPartnerSaleCreated() {
   toast.show('Venta registrada correctamente', 'success')
-  await openDetailModal(selectedPartner.value)
+  showPartnerSaleModal.value = false  // Forzar cierre desde el padre
+  if (selectedPartner.value) {
+    await openDetailModal(selectedPartner.value)
+  }
 }
 
 onMounted(loadPartners)

@@ -43,7 +43,7 @@
               <span v-if="s.status === 'FullReturn'" class="badge badge-danger" style="margin-left: 4px;">Devuelta</span>
               <span v-else-if="s.status === 'PartialReturn'" class="badge badge-warning" style="margin-left: 4px;">Devolución parcial</span>
             </td>
-            <td>{{ s.customerId ? (s.customerName || 'Sin cliente') : 'Sin cliente' }}</td>
+            <td>{{ s.partnerUserId ? 'Venta a socia' : (s.customerId ? s.customerName : 'Sin cliente') }}</td>
             <td>{{ formatDate(s.date) }}</td>
             <td>
               <span :class="['badge', s.paymentMethodName === 'CONTADO' || s.paymentMethod === 'Cash' ? 'badge-success' : 'badge-warning']">
@@ -396,6 +396,12 @@ function formatNumber(n) {
 function formatDate(d) {
   return new Date(d).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: '2-digit' })
 }
+
+const subtotalAmount = computed(() => {
+  return form.value.details.reduce(
+    (sum, d) => sum + (d.quantity * d.unitPrice || 0), 0
+  )
+})
 
 const calculatedDiscount = computed(() => {
   const subtotal = form.value.details.reduce(

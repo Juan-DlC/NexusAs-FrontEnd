@@ -215,7 +215,9 @@ async function saveSale() {
     }
 
     await api.post('/Sale', payload)
+    toast.show('Venta registrada correctamente', 'success')
     emit('sale-created')
+    emit('update:modelValue', false)
   } catch (err) {
     console.error('❌ Error venta a socia:', err.response?.data)
     toast.show(err.response?.data?.message || 'Error al registrar venta', 'error')
