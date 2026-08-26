@@ -178,7 +178,7 @@
             </div>
           </div>
 
-          <div v-if="liquidationPreview.sales?.length > 0" style="margin-top: 16px;">
+          <div v-if="liquidationPreview.sales && liquidationPreview.sales.length > 0" style="margin-top: 16px;">
             <p style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">
               Facturas incluidas ({{ liquidationPreview.sales.length }}):
             </p>
@@ -210,22 +210,39 @@
             </table>
           </div>
 
-          <p v-else class="state-text">
-            No hay ventas completamente pagadas de este socio en el período seleccionado.
-          </p>
-
-          <div class="form-group" style="margin-top: 16px;">
-            <label class="form-label">Notas de liquidación (opcional)</label>
-            <input v-model="liquidationNotes" type="text" class="form-input"
-              @input="liquidationNotes = toUpperCase(liquidationNotes)" />
+          <div v-if="liquidationPreview && liquidationPreview.sales?.length === 0" class="empty-preview">
+            <p>⚠️ No se encontraron ventas completamente pagadas de este socio en el período seleccionado.</p>
+            <p style="font-size: 12px; color: var(--color-text-muted); margin-top: 6px;">
+              Recuerda: solo se incluyen ventas de contado o créditos completamente pagados,
+              que no hayan sido liquidados previamente.
+            </p>
           </div>
 
-          <button class="btn btn-primary"
-            @click="confirmLiquidation"
-            :disabled="saving || liquidationPreview.sales?.length === 0"
-            style="margin-top: 8px; width: 100%;">
-            {{ saving ? 'Confirmando...' : '✅ Confirmar y registrar liquidación' }}
-          </button>
+          <div v-if="liquidationPreview && liquidationPreview.sales?.length > 0" class="confirm-liquidation-box">
+            <div class="confirm-summary">
+              <p>✅ Se liquidarán <strong>{{ liquidationPreview.sales.length }} facturas</strong></p>
+              <p>💰 Total para <strong>{{ selectedPartner.name }}</strong>: 
+                <strong style="color: var(--color-accent);">${{ formatNumber(liquidationPreview.businessPartnerEarning) }}</strong>
+              </p>
+              <p>🏪 Total para <strong>AS Accesorios</strong>: 
+                <strong style="color: var(--color-success);">${{ formatNumber(liquidationPreview.asEarning) }}</strong>
+              </p>
+            </div>
+            
+            <div class="form-group" style="margin-top: 12px;">
+              <label class="form-label">Notas de liquidación (opcional)</label>
+              <input v-model="liquidationNotes" type="text" class="form-input"
+                @input="liquidationNotes = toUpperCase(liquidationNotes)"
+                placeholder="Ej: LIQUIDACIÓN AGOSTO 2026" />
+            </div>
+
+            <button class="btn btn-primary"
+              @click="confirmLiquidation"
+              :disabled="saving"
+              style="width: 100%; margin-top: 10px; padding: 12px;">
+              {{ saving ? 'Registrando liquidación...' : '✅ Confirmar y registrar liquidación' }}
+            </button>
+          </div>
         </div>
 
         <div class="section-header" style="margin-top: 24px;">
@@ -239,25 +256,39 @@
             <tr>
               <th>Fecha</th>
               <th>Período</th>
+              <th>Facturas</th>
               <th>Ventas</th>
               <th>G. Neta</th>
-              <th>Socio</th>
+              <th>Socio ({{ selectedPartner?.commissionPercent }}%)</th>
               <th>AS</th>
               <th>Estado</th>
+              <th>PDF</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="l in liquidations" :key="l.id">
-              <td>{{ formatDate(l.date) }}</td>
-              <td>{{ formatDate(l.periodFrom) }} — {{ formatDate(l.periodTo) }}</td>
+              <td>{{ formatDate(l.date || l.createdAt) }}</td>
+              <td style="font-size: 11px;">
+                {{ formatDate(l.periodFrom) }} —<br>{{ formatDate(l.periodTo) }}
+              </td>
+              <td style="text-align: center;">{{ l.detailCount || '-' }}</td>
               <td>${{ formatNumber(l.totalRevenue) }}</td>
               <td>${{ formatNumber(l.netProfit) }}</td>
-              <td style="color: var(--color-accent);">${{ formatNumber(l.businessPartnerEarning) }}</td>
-              <td style="color: var(--color-success);">${{ formatNumber(l.asEarning) }}</td>
+              <td style="color: var(--color-accent); font-weight: 600;">
+                ${{ formatNumber(l.businessPartnerEarning) }}
+              </td>
+              <td style="color: var(--color-success); font-weight: 600;">
+                ${{ formatNumber(l.asEarning) }}
+              </td>
               <td>
                 <span :class="['badge', l.status === 'Confirmed' ? 'badge-success' : 'badge-warning']">
                   {{ l.status === 'Confirmed' ? 'Confirmada' : 'Borrador' }}
                 </span>
+              </td>
+              <td>
+                <button class="btn-icon" @click.stop="downloadLiquidationPdf(l.id)" title="📄 PDF">
+                  📄
+                </button>
               </td>
             </tr>
           </tbody>
@@ -453,18 +484,41 @@ async function confirmLiquidation() {
       to: liquidationTo.value + 'T23:59:59',
       notes: liquidationNotes.value || null
     })
-    toast.show('Liquidación confirmada y registrada', 'success')
+    toast.show('✅ Liquidación confirmada y registrada correctamente', 'success')
     liquidationPreview.value = null
     liquidationNotes.value = ''
 
-    const res = await api.get(`/BusinessPartner/${selectedPartner.value.id}/liquidations`, {
+    // Recargar historial
+    loadingLiquidations.value = true
+    const liqRes = await api.get(`/BusinessPartner/${selectedPartner.value.id}/liquidations`, {
       params: { pageNumber: 1, pageSize: 20 }
     })
-    liquidations.value = res.data.data?.data || []
+    liquidations.value = liqRes.data.data?.data || []
+
+    // Actualizar lista de socios (puede cambiar productCount)
+    await loadPartners()
   } catch (err) {
     toast.show(err.response?.data?.message || 'Error al confirmar liquidación', 'error')
   } finally {
     saving.value = false
+    loadingLiquidations.value = false
+  }
+}
+
+async function downloadLiquidationPdf(liquidationId) {
+  try {
+    const res = await api.get(`/BusinessPartner/liquidations/${liquidationId}/pdf`, {
+      responseType: 'blob'
+    })
+    const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `liquidacion-${liquidationId}.pdf`
+    link.click()
+    window.URL.revokeObjectURL(url)
+    toast.show('PDF generado correctamente', 'success')
+  } catch {
+    toast.show('Error al generar el PDF', 'error')
   }
 }
 
@@ -628,5 +682,28 @@ onMounted(loadPartners)
 
 .btn-icon:hover {
   background: var(--color-accent-light);
+}
+
+.empty-preview {
+  background: #FFF8E1;
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--color-text);
+}
+
+.confirm-liquidation-box {
+  background: var(--color-bg);
+  border: 2px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.confirm-summary p {
+  font-size: 13px;
+  margin-bottom: 6px;
 }
 </style>
