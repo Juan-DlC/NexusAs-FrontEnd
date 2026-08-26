@@ -56,8 +56,8 @@
             <td>{{ p.code }}</td>
             <td>
               <strong>{{ p.name }}</strong>
-              <span v-if="p.isPartnership" class="badge badge-pink" style="margin-left: 6px;">
-                Alianza
+              <span v-if="p.businessPartnerName" class="badge badge-pink" style="margin-left: 6px;">
+                🤝 {{ p.businessPartnerName }}
               </span>
             </td>
             <td>{{ p.categoryName }}</td>
@@ -105,7 +105,7 @@
             <td>{{ p.code }}</td>
             <td>
               <strong>{{ p.name }}</strong>
-              <span v-if="p.isPartnership" class="badge badge-pink" style="margin-left: 6px;">
+              <span v-if="p.businessPartnerName" class="badge badge-pink" style="margin-left: 6px;">
                 Alianza
               </span>
             </td>
@@ -209,11 +209,18 @@
           </div>
         </div>
 
-        <div class="form-group checkbox-group">
-          <label class="checkbox-label">
-            <input type="checkbox" v-model="form.isPartnership" />
-            Producto de alianza (sociedad con socio externo)
-          </label>
+        <div class="form-group">
+          <label class="form-label">Socio comercial (opcional)</label>
+          <select v-model="form.businessPartnerId" class="form-input">
+            <option :value="null">Sin socio — producto propio de AS</option>
+            <option v-for="bp in businessPartners" :key="bp.id" :value="bp.id">
+              {{ bp.name }}
+            </option>
+          </select>
+          <p class="hint-text" v-if="form.businessPartnerId">
+            Este producto pertenece a la sociedad con {{ businessPartners.find(bp => bp.id === form.businessPartnerId)?.name }}.
+            La ganancia se dividirá en la liquidación.
+          </p>
         </div>
       </form>
 
@@ -263,6 +270,10 @@
           <strong>{{ selectedProduct.minStock }} uds</strong>
         </div>
         <div class="detail-row-info">
+          <span>Socio comercial:</span>
+          <strong>{{ selectedProduct.businessPartnerName || 'Producto propio de AS' }}</strong>
+        </div>
+        <div class="detail-row-info">
           <span>Es alianza:</span>
           <span :class="['badge', selectedProduct.isPartnership ? 'badge-pink' : 'badge-success']">
             {{ selectedProduct.isPartnership ? 'Sí' : 'No' }}
@@ -304,6 +315,7 @@ const toast = useToastStore()
 const products = ref([])
 const categories = ref([])
 const suppliers = ref([])
+const businessPartners = ref([])
 const loading = ref(true)
 const saving = ref(false)
 const search = ref('')
@@ -324,7 +336,7 @@ const hasPreviousPage = ref(false)
 
 const form = ref({
   code: '', name: '', categoryId: '', supplierId: '', cost: 0,
-  salePrice: 0, stock: 0, minStock: 0, isPartnership: false
+  salePrice: 0, stock: 0, minStock: 0, isPartnership: false, businessPartnerId: null
 })
 
 function formatNumber(n) {
@@ -413,6 +425,15 @@ async function loadSuppliers() {
   }
 }
 
+async function loadBusinessPartners() {
+  try {
+    const res = await api.get('/BusinessPartner', { params: { pageSize: 100 } })
+    businessPartners.value = res.data.data?.data || res.data.data || []
+  } catch {
+    businessPartners.value = []
+  }
+}
+
 function changePage(page) {
   pageNumber.value = page
   loadProducts()
@@ -420,7 +441,7 @@ function changePage(page) {
 
 function openCreateModal() {
   editingProduct.value = null
-  form.value = { code: '', name: '', categoryId: '', supplierId: '', cost: 0, salePrice: 0, stock: 0, minStock: 0, isPartnership: false }
+  form.value = { code: '', name: '', categoryId: '', supplierId: '', cost: 0, salePrice: 0, stock: 0, minStock: 0, isPartnership: false, businessPartnerId: null }
   suggestedPrice.value = 0
   showModal.value = true
 }
@@ -436,7 +457,8 @@ function openEditModal(product) {
     stock: product.stock,
     minStock: product.minStock,
     isPartnership: product.isPartnership || false,
-    supplierId: product.supplierId || ''
+    supplierId: product.supplierId || '',
+    businessPartnerId: product.businessPartnerId || null
   }
   showModal.value = true
 }
@@ -497,6 +519,7 @@ onMounted(() => {
   if (!auth.isPartner) {
     loadCategories()
     loadSuppliers()
+    loadBusinessPartners()
   }
 })
 </script>

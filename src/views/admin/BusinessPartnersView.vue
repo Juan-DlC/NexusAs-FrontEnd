@@ -1,0 +1,632 @@
+<template>
+  <div class="business-partners-view">
+    <div class="page-header-row">
+      <div>
+        <h2 class="page-title">Socios Comerciales</h2>
+        <p class="page-sub">{{ partners.length }} socios registrados</p>
+      </div>
+      <button class="btn btn-primary floating-action-btn" @click="openCreateModal">
+        + Nuevo socio
+      </button>
+    </div>
+
+    <div class="card">
+      <div v-if="loading" class="state-text">Cargando...</div>
+      <div v-else-if="partners.length === 0" class="state-text">
+        No hay socios comerciales registrados.
+      </div>
+      <table v-else>
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Contacto</th>
+            <th>Teléfono</th>
+            <th>% Comisión</th>
+            <th>Productos</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="p in partners" :key="p.id" class="clickable-row" @click="openDetailModal(p)">
+            <td><strong>{{ p.name }}</strong></td>
+            <td>{{ p.contactName || '-' }}</td>
+            <td>{{ p.phone || '-' }}</td>
+            <td>{{ p.commissionPercent }}%</td>
+            <td>{{ p.productCount }} productos</td>
+            <td>
+              <span :class="['badge', p.isActive ? 'badge-success' : 'badge-danger']">
+                {{ p.isActive ? 'Activo' : 'Inactivo' }}
+              </span>
+            </td>
+            <td>
+              <button class="btn-icon" @click.stop="openEditModal(p)" title="✏️ Editar">✎</button>
+              <button class="btn-icon" @click.stop="openCommissionModal(p)" title="💰 Comisión">%</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Modal Crear/Editar -->
+    <ModalBase v-model="showModal" :title="editingPartner ? 'Editar socio' : 'Nuevo socio comercial'">
+      <div class="form-group">
+        <label class="form-label">Nombre del socio *</label>
+        <input v-model="form.name" type="text" class="form-input" required
+          @input="form.name = toUpperCase(form.name)" />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Nombre de contacto</label>
+          <input v-model="form.contactName" type="text" class="form-input"
+            @input="form.contactName = toUpperCase(form.contactName)" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Teléfono</label>
+          <input v-model="form.phone" type="text" class="form-input" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input v-model="form.email" type="email" class="form-input" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">% de comisión sobre ganancia neta</label>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <input v-model.number="form.commissionPercent" type="number"
+            min="1" max="100" class="form-input" style="max-width: 80px;" />
+          <span style="font-size: 13px; color: var(--color-text-muted);">%</span>
+        </div>
+        <p class="hint-text">Porcentaje de la ganancia neta que recibe el socio. Default: 50%</p>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Notas (opcional)</label>
+        <input v-model="form.notes" type="text" class="form-input"
+          @input="form.notes = toUpperCase(form.notes)" />
+      </div>
+
+      <template #footer>
+        <button class="btn btn-secondary" @click="showModal = false">Cancelar</button>
+        <button class="btn btn-primary" @click="savePartner" :disabled="saving">
+          {{ saving ? 'Guardando...' : 'Guardar' }}
+        </button>
+      </template>
+    </ModalBase>
+
+    <!-- Modal Editar Comisión -->
+    <ModalBase v-model="showCommissionModal" title="Editar comisión">
+      <div v-if="selectedPartner" class="form-group">
+        <label class="form-label">Socio: {{ selectedPartner.name }}</label>
+        <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
+          <input v-model.number="newCommission" type="number" min="1" max="100" class="form-input"
+            style="max-width: 80px;" />
+          <span>%</span>
+        </div>
+        <p class="hint-text">% de la ganancia neta que recibe este socio en la liquidación.</p>
+      </div>
+
+      <template #footer>
+        <button class="btn btn-secondary" @click="showCommissionModal = false">Cancelar</button>
+        <button class="btn btn-primary" @click="saveCommission" :disabled="saving">
+          {{ saving ? 'Guardando...' : 'Actualizar' }}
+        </button>
+      </template>
+    </ModalBase>
+
+    <!-- Modal Detalle: Liquidaciones e historial -->
+    <ModalBase v-model="showDetailModal"
+      :title="`Socio: ${selectedPartner?.name || ''}`" width="760px">
+      <div v-if="selectedPartner">
+        <div class="partner-info-bar">
+          <span>Comisión: <strong>{{ selectedPartner.commissionPercent }}%</strong></span>
+          <span>Productos: <strong>{{ selectedPartner.productCount }}</strong></span>
+          <span v-if="selectedPartner.phone">📞 {{ selectedPartner.phone }}</span>
+        </div>
+
+        <div class="section-header">
+          <h3>Vista previa de liquidación</h3>
+          <p class="hint-text">Selecciona el período de ventas COMPLETAMENTE PAGADAS para calcular</p>
+        </div>
+
+        <div class="liquidation-period-row">
+          <div class="form-group">
+            <label class="form-label">Desde</label>
+            <input v-model="liquidationFrom" type="date" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Hasta</label>
+            <input v-model="liquidationTo" type="date" class="form-input" />
+          </div>
+          <button class="btn btn-secondary" @click="previewLiquidation" :disabled="loadingPreview">
+            {{ loadingPreview ? 'Calculando...' : '🔍 Calcular' }}
+          </button>
+        </div>
+
+        <div v-if="liquidationPreview" class="liquidation-preview">
+          <div class="preview-grid">
+            <div class="preview-card">
+              <span class="preview-label">Ventas brutas</span>
+              <strong>${{ formatNumber(liquidationPreview.totalRevenue) }}</strong>
+            </div>
+            <div class="preview-card">
+              <span class="preview-label">Costo (inversión)</span>
+              <strong>${{ formatNumber(liquidationPreview.totalCost) }}</strong>
+            </div>
+            <div class="preview-card success">
+              <span class="preview-label">Ganancia bruta</span>
+              <strong>${{ formatNumber(liquidationPreview.grossProfit) }}</strong>
+            </div>
+            <div class="preview-card warning">
+              <span class="preview-label">Descuento socias vendedoras</span>
+              <strong>-${{ formatNumber(liquidationPreview.partnerSalesDiscount) }}</strong>
+            </div>
+            <div class="preview-card">
+              <span class="preview-label">Ganancia neta</span>
+              <strong>${{ formatNumber(liquidationPreview.netProfit) }}</strong>
+            </div>
+            <div class="preview-card accent">
+              <span class="preview-label">Le corresponde al socio ({{ selectedPartner.commissionPercent }}%)</span>
+              <strong>${{ formatNumber(liquidationPreview.businessPartnerEarning) }}</strong>
+            </div>
+            <div class="preview-card success">
+              <span class="preview-label">Le corresponde a AS</span>
+              <strong>${{ formatNumber(liquidationPreview.asEarning) }}</strong>
+            </div>
+          </div>
+
+          <div v-if="liquidationPreview.sales?.length > 0" style="margin-top: 16px;">
+            <p style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">
+              Facturas incluidas ({{ liquidationPreview.sales.length }}):
+            </p>
+            <table>
+              <thead>
+                <tr>
+                  <th>Factura</th>
+                  <th>Fecha</th>
+                  <th>Vendedor</th>
+                  <th>Venta</th>
+                  <th>Costo</th>
+                  <th>G. Neta</th>
+                  <th>Socio {{ selectedPartner.commissionPercent }}%</th>
+                  <th>AS</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="s in liquidationPreview.sales" :key="s.saleId">
+                  <td><strong>{{ s.saleNumber }}</strong></td>
+                  <td>{{ formatDate(s.saleDate) }}</td>
+                  <td>{{ s.sellerName }}</td>
+                  <td>${{ formatNumber(s.revenue) }}</td>
+                  <td>${{ formatNumber(s.cost) }}</td>
+                  <td>${{ formatNumber(s.netProfit) }}</td>
+                  <td style="color: var(--color-accent);">${{ formatNumber(s.businessPartnerEarning) }}</td>
+                  <td style="color: var(--color-success);">${{ formatNumber(s.asEarning) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p v-else class="state-text">
+            No hay ventas completamente pagadas de este socio en el período seleccionado.
+          </p>
+
+          <div class="form-group" style="margin-top: 16px;">
+            <label class="form-label">Notas de liquidación (opcional)</label>
+            <input v-model="liquidationNotes" type="text" class="form-input"
+              @input="liquidationNotes = toUpperCase(liquidationNotes)" />
+          </div>
+
+          <button class="btn btn-primary"
+            @click="confirmLiquidation"
+            :disabled="saving || liquidationPreview.sales?.length === 0"
+            style="margin-top: 8px; width: 100%;">
+            {{ saving ? 'Confirmando...' : '✅ Confirmar y registrar liquidación' }}
+          </button>
+        </div>
+
+        <div class="section-header" style="margin-top: 24px;">
+          <h3>Historial de liquidaciones</h3>
+        </div>
+
+        <div v-if="loadingLiquidations" class="state-text">Cargando...</div>
+
+        <table v-else-if="liquidations.length > 0">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Período</th>
+              <th>Ventas</th>
+              <th>G. Neta</th>
+              <th>Socio</th>
+              <th>AS</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="l in liquidations" :key="l.id">
+              <td>{{ formatDate(l.date) }}</td>
+              <td>{{ formatDate(l.periodFrom) }} — {{ formatDate(l.periodTo) }}</td>
+              <td>${{ formatNumber(l.totalRevenue) }}</td>
+              <td>${{ formatNumber(l.netProfit) }}</td>
+              <td style="color: var(--color-accent);">${{ formatNumber(l.businessPartnerEarning) }}</td>
+              <td style="color: var(--color-success);">${{ formatNumber(l.asEarning) }}</td>
+              <td>
+                <span :class="['badge', l.status === 'Confirmed' ? 'badge-success' : 'badge-warning']">
+                  {{ l.status === 'Confirmed' ? 'Confirmada' : 'Borrador' }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p v-else class="state-text">Sin liquidaciones registradas.</p>
+      </div>
+
+      <template #footer>
+        <button class="btn btn-secondary" @click="showDetailModal = false">Cerrar</button>
+      </template>
+    </ModalBase>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue'
+import api from '@/api/axios'
+import { useToastStore } from '@/stores/toast'
+import ModalBase from '@/components/shared/ModalBase.vue'
+import { toUpperCase } from '@/utils/textFormat'
+
+const toast = useToastStore()
+
+const partners = ref([])
+const loading = ref(true)
+const saving = ref(false)
+const selectedPartner = ref(null)
+const editingPartner = ref(null)
+const newCommission = ref(50)
+const liquidations = ref([])
+const loadingLiquidations = ref(false)
+const liquidationPreview = ref(null)
+const loadingPreview = ref(false)
+const liquidationFrom = ref('')
+const liquidationTo = ref('')
+const liquidationNotes = ref('')
+
+const showModal = ref(false)
+const showCommissionModal = ref(false)
+const showDetailModal = ref(false)
+
+const form = ref({
+  name: '',
+  contactName: '',
+  phone: '',
+  email: '',
+  commissionPercent: 50,
+  notes: ''
+})
+
+function formatNumber(n) {
+  return Number(n || 0).toLocaleString('es-CO')
+}
+
+function formatDate(d) {
+  return new Date(d).toLocaleDateString('es-CO', {
+    day: '2-digit',
+    month: '2-digit',
+    year: '2-digit'
+  })
+}
+
+async function loadPartners() {
+  try {
+    loading.value = true
+    const res = await api.get('/BusinessPartner', { params: { pageSize: 100 } })
+    partners.value = res.data.data?.data || res.data.data || []
+  } finally {
+    loading.value = false
+  }
+}
+
+function openCreateModal() {
+  editingPartner.value = null
+  form.value = {
+    name: '',
+    contactName: '',
+    phone: '',
+    email: '',
+    commissionPercent: 50,
+    notes: ''
+  }
+  showModal.value = true
+}
+
+function openEditModal(partner) {
+  editingPartner.value = partner
+  form.value = {
+    name: partner.name,
+    contactName: partner.contactName || '',
+    phone: partner.phone || '',
+    email: partner.email || '',
+    commissionPercent: partner.commissionPercent,
+    notes: partner.notes || ''
+  }
+  showModal.value = true
+}
+
+async function savePartner() {
+  if (!form.value.name.trim()) {
+    toast.show('El nombre es obligatorio', 'warning')
+    return
+  }
+
+  try {
+    saving.value = true
+    if (editingPartner.value) {
+      await api.put(`/BusinessPartner/${editingPartner.value.id}`, form.value)
+      toast.show('Socio actualizado correctamente', 'success')
+    } else {
+      await api.post('/BusinessPartner', form.value)
+      toast.show('Socio creado correctamente', 'success')
+    }
+    showModal.value = false
+    await loadPartners()
+  } catch (err) {
+    toast.show(err.response?.data?.message || 'Error al guardar', 'error')
+  } finally {
+    saving.value = false
+  }
+}
+
+function openCommissionModal(partner) {
+  selectedPartner.value = partner
+  newCommission.value = partner.commissionPercent
+  showCommissionModal.value = true
+}
+
+async function saveCommission() {
+  try {
+    saving.value = true
+    await api.patch(`/BusinessPartner/${selectedPartner.value.id}/commission`, { commissionPercent: newCommission.value })
+    toast.show('Comisión actualizada', 'success')
+    showCommissionModal.value = false
+    await loadPartners()
+  } catch (err) {
+    toast.show(err.response?.data?.message || 'Error al actualizar comisión', 'error')
+  } finally {
+    saving.value = false
+  }
+}
+
+async function openDetailModal(partner) {
+  selectedPartner.value = partner
+  liquidationPreview.value = null
+  liquidationNotes.value = ''
+
+  const now = new Date()
+  liquidationFrom.value = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+  liquidationTo.value = now.toISOString().split('T')[0]
+
+  showDetailModal.value = true
+  loadingLiquidations.value = true
+
+  try {
+    const res = await api.get(`/BusinessPartner/${partner.id}/liquidations`, {
+      params: { pageNumber: 1, pageSize: 20 }
+    })
+    liquidations.value = res.data.data?.data || []
+  } finally {
+    loadingLiquidations.value = false
+  }
+}
+
+async function previewLiquidation() {
+  if (!liquidationFrom.value || !liquidationTo.value) {
+    toast.show('Selecciona el período', 'warning')
+    return
+  }
+
+  try {
+    loadingPreview.value = true
+    const res = await api.get(`/BusinessPartner/${selectedPartner.value.id}/liquidation/preview`, {
+      params: {
+        from: liquidationFrom.value,
+        to: liquidationTo.value + 'T23:59:59'
+      }
+    })
+    liquidationPreview.value = res.data.data
+  } catch (err) {
+    toast.show(err.response?.data?.message || 'Error al calcular', 'error')
+  } finally {
+    loadingPreview.value = false
+  }
+}
+
+async function confirmLiquidation() {
+  try {
+    saving.value = true
+    await api.post(`/BusinessPartner/${selectedPartner.value.id}/liquidation/confirm`, {
+      from: liquidationFrom.value,
+      to: liquidationTo.value + 'T23:59:59',
+      notes: liquidationNotes.value || null
+    })
+    toast.show('Liquidación confirmada y registrada', 'success')
+    liquidationPreview.value = null
+    liquidationNotes.value = ''
+
+    const res = await api.get(`/BusinessPartner/${selectedPartner.value.id}/liquidations`, {
+      params: { pageNumber: 1, pageSize: 20 }
+    })
+    liquidations.value = res.data.data?.data || []
+  } catch (err) {
+    toast.show(err.response?.data?.message || 'Error al confirmar liquidación', 'error')
+  } finally {
+    saving.value = false
+  }
+}
+
+onMounted(loadPartners)
+</script>
+
+<style scoped>
+.business-partners-view {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.page-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.page-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.page-sub {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.state-text {
+  text-align: center;
+  padding: 30px 0;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 6px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.hint-text {
+  font-size: 12px;
+  color: var(--color-accent);
+  margin-top: 4px;
+}
+
+.partner-info-bar {
+  display: flex;
+  gap: 20px;
+  padding: 10px 14px;
+  background: var(--color-bg);
+  border-radius: var(--radius-sm);
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+
+.section-header {
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 8px;
+}
+
+.section-header h3 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.liquidation-period-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 16px;
+}
+
+.liquidation-preview {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  background: var(--color-bg);
+}
+
+.preview-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.preview-card {
+  background: var(--color-white);
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  text-align: center;
+  border: 1px solid var(--color-border);
+}
+
+.preview-card.success {
+  border-color: var(--color-success);
+  background: #F0FFF4;
+}
+
+.preview-card.warning {
+  border-color: var(--color-warning);
+  background: #FFF8E1;
+}
+
+.preview-card.accent {
+  border-color: var(--color-accent);
+  background: var(--color-accent-light);
+}
+
+.preview-label {
+  display: block;
+  font-size: 10px;
+  color: var(--color-text-muted);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.preview-card strong {
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.clickable-row {
+  cursor: pointer;
+}
+
+.clickable-row:hover {
+  background: var(--color-accent-light) !important;
+}
+
+.btn-icon {
+  background: var(--color-bg);
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  margin-right: 4px;
+  transition: var(--transition);
+  border: none;
+  cursor: pointer;
+}
+
+.btn-icon:hover {
+  background: var(--color-accent-light);
+}
+</style>
