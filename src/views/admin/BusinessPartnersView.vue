@@ -448,7 +448,53 @@ async function openDetailModal(partner) {
     const res = await api.get(`/BusinessPartner/${partner.id}/liquidations`, {
       params: { pageNumber: 1, pageSize: 20 }
     })
-    liquidations.value = res.data.data?.data || []
+    
+    console.log('📜 Historial de liquidaciones - Response:', res.data.data)
+    if (res.data.data?.data && res.data.data.data.length > 0) {
+      console.log('📊 Primera liquidación del historial:', res.data.data.data[0])
+      console.log('🔑 Propiedades disponibles:', Object.keys(res.data.data.data[0]))
+    }
+    
+    // ✅ TRANSFORMAR: Mapear propiedades del backend al formato que espera el frontend
+    const rawLiquidations = res.data.data?.data || []
+    liquidations.value = rawLiquidations.map(liq => {
+      // Calcular totales desde details si existen
+      let totalRevenue = 0
+      let totalCost = 0
+      let grossProfit = 0
+      let partnerCommissionAmount = 0
+      let businessPartnerEarning = 0
+      let asEarning = 0
+      
+      if (liq.details && liq.details.length > 0) {
+        liq.details.forEach(d => {
+          totalRevenue += (d.salePrice || 0) * (d.quantity || 0)
+          totalCost += (d.costPrice || 0) * (d.quantity || 0)
+          grossProfit += d.grossProfit || 0
+          partnerCommissionAmount += d.partnerCommissionAmount || 0
+          businessPartnerEarning += d.businessPartnerAmount || 0
+          asEarning += d.asAmount || 0
+        })
+      }
+      
+      return {
+        id: liq.id,
+        liquidationNumber: liq.liquidationNumber,
+        date: liq.liquidationDate,
+        createdAt: liq.createdAt,
+        periodFrom: liq.fromDate,
+        periodTo: liq.toDate,
+        detailCount: liq.totalSales,
+        totalRevenue: totalRevenue,
+        totalCost: totalCost,
+        grossProfit: grossProfit,
+        netProfit: grossProfit - partnerCommissionAmount,
+        businessPartnerEarning: businessPartnerEarning,
+        asEarning: asEarning,
+        status: liq.isActive ? 'Confirmed' : 'Draft',
+        notes: liq.notes
+      }
+    })
   } finally {
     loadingLiquidations.value = false
   }
@@ -462,14 +508,112 @@ async function previewLiquidation() {
 
   try {
     loadingPreview.value = true
+    
+    // Debug: mostrar qué estamos enviando
+    console.log('🔍 Preview Liquidation Request:', {
+      businessPartnerId: selectedPartner.value.id,
+      businessPartnerName: selectedPartner.value.name,
+      from: liquidationFrom.value,
+      to: liquidationTo.value + 'T23:59:59',
+      url: `/BusinessPartner/${selectedPartner.value.id}/liquidation/preview`
+    })
+    
     const res = await api.get(`/BusinessPartner/${selectedPartner.value.id}/liquidation/preview`, {
       params: {
         from: liquidationFrom.value,
         to: liquidationTo.value + 'T23:59:59'
       }
     })
-    liquidationPreview.value = res.data.data
+    
+    // Debug: mostrar qué recibimos
+    console.log('📊 Preview Liquidation Response:', res.data.data)
+    console.log('📋 Líneas de venta recibidas:', res.data.data?.sales?.length || 0)
+    
+    // ✅ TRANSFORMACIÓN: Agrupar líneas de venta por factura y mapear propiedades
+    const rawData = res.data.data
+    
+    if (rawData.sales && rawData.sales.length > 0) {
+      // Agrupar por saleNumber (factura)
+      const salesByInvoice = {}
+      
+      rawData.sales.forEach(line => {
+        const invoiceNum = line.saleNumber
+        
+        if (!salesByInvoice[invoiceNum]) {
+          salesByInvoice[invoiceNum] = {
+            saleId: line.saleId,
+            saleNumber: line.saleNumber,
+            saleDate: line.saleDate,
+            sellerName: line.sellerName,
+            paymentMethodName: line.paymentMethodName,
+            revenue: 0,
+            cost: 0,
+            grossProfit: 0,
+            partnerCommissionAmount: 0,
+            businessPartnerEarning: 0,
+            asEarning: 0
+          }
+        }
+        
+        // Sumar los valores de cada línea
+        salesByInvoice[invoiceNum].revenue += (line.salePrice || 0) * (line.quantity || 0)
+        salesByInvoice[invoiceNum].cost += (line.costPrice || 0) * (line.quantity || 0)
+        salesByInvoice[invoiceNum].grossProfit += line.grossProfit || 0
+        salesByInvoice[invoiceNum].partnerCommissionAmount += line.partnerCommissionAmount || 0
+        salesByInvoice[invoiceNum].businessPartnerEarning += line.businessPartnerAmount || 0
+        salesByInvoice[invoiceNum].asEarning += line.asAmount || 0
+      })
+      
+      // Convertir objeto a array
+      const aggregatedSales = Object.values(salesByInvoice)
+      
+      // Calcular netProfit (grossProfit - partnerCommissionAmount)
+      aggregatedSales.forEach(sale => {
+        sale.netProfit = sale.grossProfit - sale.partnerCommissionAmount
+      })
+      
+      console.log('✅ Facturas agrupadas:', aggregatedSales.length)
+      console.log('📊 Primera factura procesada:', aggregatedSales[0])
+      
+      // ✅ RECALCULAR TOTALES AGREGADOS desde las facturas agrupadas
+      const totals = aggregatedSales.reduce((acc, sale) => {
+        acc.totalRevenue += sale.revenue
+        acc.totalCost += sale.cost
+        acc.grossProfit += sale.grossProfit
+        acc.partnerSalesDiscount += sale.partnerCommissionAmount
+        acc.netProfit += sale.netProfit
+        acc.businessPartnerEarning += sale.businessPartnerEarning
+        acc.asEarning += sale.asEarning
+        return acc
+      }, {
+        totalRevenue: 0,
+        totalCost: 0,
+        grossProfit: 0,
+        partnerSalesDiscount: 0,
+        netProfit: 0,
+        businessPartnerEarning: 0,
+        asEarning: 0
+      })
+      
+      console.log('💰 Totales recalculados:', totals)
+      
+      // Reemplazar sales y totales con datos agregados
+      liquidationPreview.value = {
+        ...rawData,
+        sales: aggregatedSales,
+        totalRevenue: totals.totalRevenue,
+        totalCost: totals.totalCost,
+        grossProfit: totals.grossProfit,
+        partnerSalesDiscount: totals.partnerSalesDiscount,
+        netProfit: totals.netProfit,
+        businessPartnerEarning: totals.businessPartnerEarning,
+        asEarning: totals.asEarning
+      }
+    } else {
+      liquidationPreview.value = rawData
+    }
   } catch (err) {
+    console.error('❌ Error en preview:', err.response?.data || err.message)
     toast.show(err.response?.data?.message || 'Error al calcular', 'error')
   } finally {
     loadingPreview.value = false
@@ -479,11 +623,23 @@ async function previewLiquidation() {
 async function confirmLiquidation() {
   try {
     saving.value = true
-    await api.post(`/BusinessPartner/${selectedPartner.value.id}/liquidation/confirm`, {
+    
+    // Debug: mostrar qué estamos enviando
+    const payload = {
       from: liquidationFrom.value,
+      fromDate: liquidationFrom.value,
       to: liquidationTo.value + 'T23:59:59',
+      toDate: liquidationTo.value + 'T23:59:59',
       notes: liquidationNotes.value || null
+    }
+    
+    console.log('🔒 Confirm Liquidation Request:', {
+      url: `/BusinessPartner/${selectedPartner.value.id}/liquidation/confirm`,
+      payload: payload
     })
+    
+    await api.post(`/BusinessPartner/${selectedPartner.value.id}/liquidation/confirm`, payload)
+    
     toast.show('✅ Liquidación confirmada y registrada correctamente', 'success')
     liquidationPreview.value = null
     liquidationNotes.value = ''
@@ -493,11 +649,58 @@ async function confirmLiquidation() {
     const liqRes = await api.get(`/BusinessPartner/${selectedPartner.value.id}/liquidations`, {
       params: { pageNumber: 1, pageSize: 20 }
     })
-    liquidations.value = liqRes.data.data?.data || []
+    
+    console.log('📜 Historial después de confirmar - Response:', liqRes.data.data)
+    if (liqRes.data.data?.data && liqRes.data.data.data.length > 0) {
+      console.log('📊 Primera liquidación recargada:', liqRes.data.data.data[0])
+      console.log('🔑 Propiedades disponibles:', Object.keys(liqRes.data.data.data[0]))
+    }
+    
+    // ✅ TRANSFORMAR: Mapear propiedades del backend al formato que espera el frontend
+    const rawLiquidations = liqRes.data.data?.data || []
+    liquidations.value = rawLiquidations.map(liq => {
+      // Calcular totales desde details si existen
+      let totalRevenue = 0
+      let totalCost = 0
+      let grossProfit = 0
+      let partnerCommissionAmount = 0
+      let businessPartnerEarning = 0
+      let asEarning = 0
+      
+      if (liq.details && liq.details.length > 0) {
+        liq.details.forEach(d => {
+          totalRevenue += (d.salePrice || 0) * (d.quantity || 0)
+          totalCost += (d.costPrice || 0) * (d.quantity || 0)
+          grossProfit += d.grossProfit || 0
+          partnerCommissionAmount += d.partnerCommissionAmount || 0
+          businessPartnerEarning += d.businessPartnerAmount || 0
+          asEarning += d.asAmount || 0
+        })
+      }
+      
+      return {
+        id: liq.id,
+        liquidationNumber: liq.liquidationNumber,
+        date: liq.liquidationDate,
+        createdAt: liq.createdAt,
+        periodFrom: liq.fromDate,
+        periodTo: liq.toDate,
+        detailCount: liq.totalSales,
+        totalRevenue: totalRevenue,
+        totalCost: totalCost,
+        grossProfit: grossProfit,
+        netProfit: grossProfit - partnerCommissionAmount,
+        businessPartnerEarning: businessPartnerEarning,
+        asEarning: asEarning,
+        status: liq.isActive ? 'Confirmed' : 'Draft',
+        notes: liq.notes
+      }
+    })
 
     // Actualizar lista de socios (puede cambiar productCount)
     await loadPartners()
   } catch (err) {
+    console.error('❌ Error al confirmar liquidación:', err.response?.data || err.message)
     toast.show(err.response?.data?.message || 'Error al confirmar liquidación', 'error')
   } finally {
     saving.value = false
@@ -511,11 +714,7 @@ async function downloadLiquidationPdf(liquidationId) {
       responseType: 'blob'
     })
     const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `liquidacion-${liquidationId}.pdf`
-    link.click()
-    window.URL.revokeObjectURL(url)
+    window.open(url, '_blank')
     toast.show('PDF generado correctamente', 'success')
   } catch {
     toast.show('Error al generar el PDF', 'error')
