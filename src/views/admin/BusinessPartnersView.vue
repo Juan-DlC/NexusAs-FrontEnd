@@ -262,6 +262,7 @@
               <th>Socio ({{ selectedPartner?.commissionPercent }}%)</th>
               <th>AS</th>
               <th>Estado</th>
+              <th>Notas</th>
               <th>PDF</th>
             </tr>
           </thead>
@@ -284,6 +285,16 @@
                 <span :class="['badge', l.status === 'Confirmed' ? 'badge-success' : 'badge-warning']">
                   {{ l.status === 'Confirmed' ? 'Confirmada' : 'Borrador' }}
                 </span>
+              </td>
+              <td>
+                <span 
+                  v-if="l.notes" 
+                  :title="l.notes"
+                  style="cursor: help; font-size: 12px;"
+                >
+                  📝
+                </span>
+                <span v-else style="color: var(--color-text-muted);">-</span>
               </td>
               <td>
                 <button class="btn-icon" @click.stop="downloadLiquidationPdf(l.id)" title="📄 PDF">

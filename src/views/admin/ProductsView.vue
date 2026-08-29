@@ -101,7 +101,12 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="p in products" :key="p.productId">
+          <tr 
+            v-for="p in products" 
+            :key="p.productId" 
+            class="clickable-row" 
+            @click="openProductDetail(p)"
+          >
             <td>{{ p.code }}</td>
             <td>
               <strong>{{ p.name }}</strong>
@@ -235,6 +240,7 @@
     <!-- Modal Detalle de Producto -->
     <ModalBase v-model="showProductDetailModal" title="Detalle del producto" width="480px">
       <div v-if="selectedProduct" class="product-detail">
+        <!-- Campos para todos los roles -->
         <div class="detail-row-info">
           <span>Código:</span>
           <strong>{{ selectedProduct.code }}</strong>
@@ -248,43 +254,59 @@
           <strong>{{ selectedProduct.categoryName || '-' }}</strong>
         </div>
         <div class="detail-row-info">
-          <span>Proveedor:</span>
-          <strong>{{ selectedProduct.supplierName || 'Sin proveedor' }}</strong>
-        </div>
-        <div class="detail-row-info">
-          <span>Descripción:</span>
-          <strong>{{ selectedProduct.description || '-' }}</strong>
-        </div>
-        <div class="detail-row-info">
-          <span>Precio venta:</span>
-          <strong>${{ formatNumber(selectedProduct.salePrice) }}</strong>
-        </div>
-        <div class="detail-row-info">
-          <span>Stock actual:</span>
-          <strong :style="{ color: selectedProduct.isLowStock ? 'var(--color-danger)' : 'var(--color-success)' }">
-            {{ selectedProduct.stock }} uds {{ selectedProduct.isLowStock ? '⚠️' : '✓' }}
+          <span>Stock disponible:</span>
+          <strong :style="{ color: selectedProduct.stock <= 0 ? 'var(--color-danger)' : 'var(--color-success)' }">
+            {{ selectedProduct.stock }} uds
           </strong>
         </div>
-        <div class="detail-row-info">
-          <span>Stock mínimo:</span>
-          <strong>{{ selectedProduct.minStock }} uds</strong>
-        </div>
-        <div class="detail-row-info">
-          <span>Socio comercial:</span>
-          <strong>{{ selectedProduct.businessPartnerName || 'Producto propio de AS' }}</strong>
-        </div>
-        <div class="detail-row-info">
-          <span>Es alianza:</span>
-          <span :class="['badge', selectedProduct.isPartnership ? 'badge-pink' : 'badge-success']">
-            {{ selectedProduct.isPartnership ? 'Sí' : 'No' }}
-          </span>
-        </div>
-        <div class="detail-row-info">
-          <span>Estado:</span>
-          <span :class="['badge', selectedProduct.isActive ? 'badge-success' : 'badge-danger']">
-            {{ selectedProduct.isActive ? 'Activo' : 'Inactivo' }}
-          </span>
-        </div>
+
+        <!-- Solo para Partner: precios -->
+        <template v-if="auth.isPartner">
+          <div class="detail-row-info" style="border-top: 1px solid var(--color-border); margin-top: 8px; padding-top: 8px;">
+            <span>💰 Te cuesta:</span>
+            <strong style="color: var(--color-accent); font-size: 15px;">
+              ${{ formatNumber(selectedProduct.partnerPrice) }}
+            </strong>
+          </div>
+          <div class="detail-row-info">
+            <span>🏷️ Precio sugerido venta:</span>
+            <strong>${{ formatNumber(selectedProduct.suggestedPrice || selectedProduct.salePrice) }}</strong>
+          </div>
+          <div class="detail-row-info" v-if="selectedProduct.businessPartnerName">
+            <span>Tipo:</span>
+            <span class="badge badge-pink">🤝 Alianza</span>
+          </div>
+        </template>
+
+        <!-- Solo para Admin/Seller: info completa -->
+        <template v-if="!auth.isPartner">
+          <div class="detail-row-info">
+            <span>Precio venta:</span>
+            <strong>${{ formatNumber(selectedProduct.salePrice) }}</strong>
+          </div>
+          <div class="detail-row-info" v-if="auth.isAdmin">
+            <span>Costo:</span>
+            <strong>${{ formatNumber(selectedProduct.cost) }}</strong>
+          </div>
+          <div class="detail-row-info">
+            <span>Stock mínimo:</span>
+            <strong>{{ selectedProduct.minStock }} uds</strong>
+          </div>
+          <div class="detail-row-info" v-if="auth.isAdmin">
+            <span>Proveedor:</span>
+            <strong>{{ selectedProduct.supplierName || 'Sin proveedor' }}</strong>
+          </div>
+          <div class="detail-row-info" v-if="auth.isAdmin">
+            <span>Socio comercial:</span>
+            <strong>{{ selectedProduct.businessPartnerName || 'Producto propio de AS' }}</strong>
+          </div>
+          <div class="detail-row-info">
+            <span>Estado:</span>
+            <span :class="['badge', selectedProduct.isActive ? 'badge-success' : 'badge-danger']">
+              {{ selectedProduct.isActive ? 'Activo' : 'Inactivo' }}
+            </span>
+          </div>
+        </template>
       </div>
       <template #footer>
         <button class="btn btn-secondary" @click="showProductDetailModal = false">Cerrar</button>

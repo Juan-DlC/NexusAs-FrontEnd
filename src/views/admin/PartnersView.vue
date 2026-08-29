@@ -18,17 +18,50 @@
     />
 
     <!-- Modal Editar comisión -->
-    <ModalBase v-model="showCommissionModal" title="Editar comisión">
+    <ModalBase v-model="showCommissionModal" title="Editar comisión" width="520px">
       <div v-if="selectedPartner">
         <div class="form-group">
-          <label class="form-label">% comisión productos normales</label>
-          <input v-model.number="commissionForm.commissionPercent" type="number" min="1" max="100" class="form-input" />
-          <p class="hint-text">% de la ganancia de AS en productos normales</p>
+          <label class="form-label">% comisión productos normales (AS)</label>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <input 
+              v-model.number="commissionForm.commissionPercent" 
+              type="number" 
+              min="1" 
+              max="100" 
+              class="form-input"
+              style="max-width: 80px;" 
+            />
+            <span>%</span>
+          </div>
+          <p class="hint-text">% de la ganancia de AS en productos normales que recibe esta socia.</p>
         </div>
-        <div class="form-group">
-          <label class="form-label">% comisión productos de alianza</label>
-          <input v-model.number="commissionForm.allianceCommissionPercent" type="number" min="1" max="100" class="form-input" />
-          <p class="hint-text">% de la ganancia de AS en productos de alianza</p>
+        
+        <div class="form-group" style="margin-top: 12px;">
+          <label class="form-label">% comisión por socio comercial (Alianza)</label>
+          
+          <div v-if="businessPartners.length === 0" class="hint-text">
+            No hay socios comerciales registrados. Créalos en "Socios Comerciales".
+          </div>
+          
+          <div v-for="bp in businessPartners" :key="bp.id" class="alliance-commission-row">
+            <span class="alliance-name">🤝 {{ bp.name }}</span>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <input 
+                v-model.number="commissionForm.allianceCommissionPercent" 
+                type="number" 
+                min="1" 
+                max="100" 
+                class="form-input"
+                style="max-width: 70px;" 
+              />
+              <span>%</span>
+            </div>
+          </div>
+          
+          <p class="hint-text" v-if="businessPartners.length > 0">
+            % de la ganancia que recibe esta socia al vender productos de alianza.
+            (Actualmente aplica igual para todos los socios comerciales.)
+          </p>
         </div>
       </div>
       <template #footer>
@@ -142,6 +175,7 @@ const liquidationsPage = ref(1)
 const liquidationsTotalPages = ref(1)
 const activeTab = ref('invoices')
 const commissionForm = ref({ commissionPercent: 0, allianceCommissionPercent: 0 })
+const businessPartners = ref([])
 
 const partnerPaymentMethods = ref([])
 
@@ -161,8 +195,17 @@ async function loadPartners() {
   }
 }
 
-function openCommissionModal(partner) {
+async function openCommissionModal(partner) {
   selectedPartner.value = partner
+  
+  // Cargar socios comerciales
+  try {
+    const res = await api.get('/BusinessPartner', { params: { pageSize: 100 } })
+    businessPartners.value = res.data.data?.data || res.data.data || []
+  } catch {
+    businessPartners.value = []
+  }
+  
   commissionForm.value = {
     commissionPercent: partner.commissionPercent,
     allianceCommissionPercent: partner.allianceCommissionPercent || 20
@@ -421,5 +464,28 @@ onMounted(loadPartners)
 
 .partner-select-item:hover {
   background: var(--color-accent-light);
+}
+
+.hint-text {
+  font-size: 12px;
+  color: var(--color-accent);
+  margin-top: 4px;
+}
+
+.alliance-commission-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--color-bg);
+  border-radius: var(--radius-sm);
+  margin-bottom: 6px;
+  border: 1px solid var(--color-border);
+}
+
+.alliance-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text);
 }
 </style>
