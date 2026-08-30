@@ -177,6 +177,7 @@ import { useToastStore } from '@/stores/toast'
 import ModalBase from '@/components/shared/ModalBase.vue'
 import CurrencyInput from '@/components/shared/CurrencyInput.vue'
 import { toUpperCase } from '@/utils/textFormat'
+import { formatNumber, formatDate } from '@/utils/format'
 
 const toast = useToastStore()
 const showDetailModal = ref(false)
@@ -198,10 +199,6 @@ const totalPages = ref(1)
 const hasNextPage = ref(false)
 const hasPreviousPage = ref(false)
 
-function formatNumber(n) {
-  return Number(n).toLocaleString('es-CO')
-}
-
 function statusLabel(status) {
   const map = { Pending: 'Pendiente', Partial: 'Pago parcial', Paid: 'Pagado' }
   return map[status] || status
@@ -212,17 +209,13 @@ function statusBadge(status) {
   return map[status] || ''
 }
 
-function formatDate(d) {
-  return new Date(d).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: '2-digit' })
-}
-
 async function openDetailModal(credit) {
   try {
     const res = await api.get(`/Credit/${credit.id}/details`)
     creditDetail.value = res.data.data
     showDetailModal.value = true
   } catch (err) {
-    console.error('Error al cargar el detalle del crédito.', err)
+    toast.show('Error al cargar el detalle del crédito', 'error')
   }
 }
 
@@ -263,7 +256,7 @@ async function loadCredits() {
     hasNextPage.value = data.hasNextPage
     hasPreviousPage.value = data.hasPreviousPage
   } catch (err) {
-    console.error('Error cargando créditos:', err)
+    toast.show('Error al cargar los créditos', 'error')
   } finally {
     loading.value = false
   }

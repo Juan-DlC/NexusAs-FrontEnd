@@ -51,10 +51,6 @@ const showResults = ref(false)
 const loading = ref(false)
 let searchTimeout = null
 
-function formatNumber(n) {
-  return Number(n).toLocaleString('es-CO')
-}
-
 function onInput() {
   if (query.value.length < 2) {
     results.value = []

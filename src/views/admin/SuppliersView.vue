@@ -132,6 +132,13 @@
         </button>
       </template>
     </ModalBase>
+
+    <ConfirmDialog
+      v-model="showConfirm"
+      :title="confirmConfig.title"
+      :message="confirmConfig.message"
+      @confirm="handleConfirm"
+    />
   </div>
 </template>
 
@@ -140,7 +147,9 @@ import { ref, onMounted } from 'vue'
 import api from '@/api/axios'
 import { useToastStore } from '@/stores/toast'
 import ModalBase from '@/components/shared/ModalBase.vue'
+import ConfirmDialog from '@/components/shared/ConfirmDialog.vue'
 import { toUpperCase } from '@/utils/textFormat'
+import { formatNumber, formatDate } from '@/utils/format'
 
 const toast = useToastStore()
 
@@ -150,6 +159,9 @@ const saving = ref(false)
 const search = ref('')
 const showModal = ref(false)
 const editingSupplier = ref(null)
+
+const showConfirm = ref(false)
+const confirmConfig = ref({ title: '', message: '', action: null })
 
 const pageNumber = ref(1)
 const pageSize = ref(10)
@@ -189,7 +201,7 @@ async function loadSuppliers() {
     hasNextPage.value = data.hasNextPage
     hasPreviousPage.value = data.hasPreviousPage
   } catch (err) {
-    console.error('Error cargando proveedores:', err)
+    toast.show('Error al cargar los proveedores', 'error')
   } finally {
     loading.value = false
   }
@@ -238,8 +250,26 @@ async function saveSupplier() {
   }
 }
 
-async function confirmDelete(supplier) {
-  if (!confirm(`¿Eliminar el proveedor "${supplier.name}"?`)) return
+function openConfirm(title, message, action) {
+  confirmConfig.value = { title, message, action }
+  showConfirm.value = true
+}
+
+async function handleConfirm() {
+  if (confirmConfig.value.action) {
+    await confirmConfig.value.action()
+  }
+}
+
+function confirmDelete(supplier) {
+  openConfirm(
+    '¿Eliminar proveedor?',
+    `¿Deseas eliminar al proveedor "${supplier.name}"?`,
+    () => deleteSupplier(supplier)
+  )
+}
+
+async function deleteSupplier(supplier) {
   try {
     await api.delete(`/Supplier/${supplier.id}`)
     toast.show('Proveedor eliminado correctamente', 'success')

@@ -24,10 +24,12 @@
 
       <div class="actions-row">
         <button class="btn btn-primary" @click="downloadSalesPdf" :disabled="loadingSalesPdf">
-          {{ loadingSalesPdf ? 'Generando...' : '📄 Ver informe PDF' }}
+          <span v-if="loadingSalesPdf">⏳ Generando...</span>
+          <span v-else>📄 Ver informe PDF</span>
         </button>
         <button class="btn btn-secondary" @click="downloadSalesExcel" :disabled="loadingSalesExcel">
-          {{ loadingSalesExcel ? 'Generando...' : '📊 Descargar Excel' }}
+          <span v-if="loadingSalesExcel">⏳ Generando...</span>
+          <span v-else>📊 Descargar Excel</span>
         </button>
       </div>
     </div>
@@ -46,7 +48,8 @@
 
       <div class="actions-row">
         <button class="btn btn-primary" @click="downloadCatalogPdf" :disabled="loadingCatalog">
-          {{ loadingCatalog ? 'Generando...' : '📄 Ver catálogo PDF' }}
+          <span v-if="loadingCatalog">⏳ Generando...</span>
+          <span v-else>📄 Ver catálogo PDF</span>
         </button>
       </div>
     </div>
@@ -66,7 +69,8 @@
   </div>
 
   <button class="btn btn-primary" @click="loadAllianceReport" :disabled="loadingAlliance">
-    {{ loadingAlliance ? 'Cargando...' : '🔍 Consultar' }}
+    <span v-if="loadingAlliance">⏳ Cargando...</span>
+    <span v-else>🔍 Consultar</span>
   </button>
 
   <div v-if="allianceReport" style="margin-top: 20px;">
@@ -140,14 +144,6 @@ const loadingSalesPdf = ref(false)
 const loadingSalesExcel = ref(false)
 const loadingCatalog = ref(false)
 
-function formatNumber(n) {
-  return Number(n).toLocaleString('es-CO')
-}
-
-function formatDate(d) {
-  return new Date(d).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: '2-digit' })
-}
-
 async function loadAllianceReport() {
   try {
     loadingAlliance.value = true
@@ -159,7 +155,7 @@ async function loadAllianceReport() {
     })
     allianceReport.value = res.data.data
   } catch (err) {
-    console.error('Error al cargar el reporte de alianza.', err)
+    toast.show('Error al cargar el reporte de alianza', 'error')
   } finally {
     loadingAlliance.value = false
   }
@@ -195,7 +191,7 @@ async function downloadSalesPdf() {
     })
     openPdfInNewTab(res.data)
   } catch (err) {
-    console.error('Error al generar el informe.', err)
+    toast.show('Error al generar el informe', 'error')
   } finally {
     loadingSalesPdf.value = false
   }
@@ -217,7 +213,7 @@ async function downloadSalesExcel() {
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
   } catch (err) {
-    console.error('Error al generar el Excel.', err)
+    toast.show('Error al generar el Excel', 'error')
   } finally {
     loadingSalesExcel.value = false
   }
@@ -232,7 +228,7 @@ async function downloadCatalogPdf() {
     })
     openPdfInNewTab(res.data)
   } catch (err) {
-    console.error('Error al generar el catálogo.', err)
+    toast.show('Error al generar el catálogo', 'error')
   } finally {
     loadingCatalog.value = false
   }

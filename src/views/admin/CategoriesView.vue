@@ -74,6 +74,13 @@
         </button>
       </template>
     </ModalBase>
+
+    <ConfirmDialog
+      v-model="showConfirm"
+      :title="confirmConfig.title"
+      :message="confirmConfig.message"
+      @confirm="handleConfirm"
+    />
   </div>
 </template>
 
@@ -82,7 +89,9 @@ import { ref, onMounted } from 'vue'
 import api from '@/api/axios'
 import { useToastStore } from '@/stores/toast'
 import ModalBase from '@/components/shared/ModalBase.vue'
+import ConfirmDialog from '@/components/shared/ConfirmDialog.vue'
 import { toUpperCase } from '@/utils/textFormat'
+import { formatNumber, formatDate } from '@/utils/format'
 
 const toast = useToastStore()
 
@@ -93,6 +102,9 @@ const search = ref('')
 const showModal = ref(false)
 const editingCategory = ref(null)
 const form = ref({ name: '', description: '' })
+
+const showConfirm = ref(false)
+const confirmConfig = ref({ title: '', message: '', action: null })
 
 const pageNumber = ref(1)
 const pageSize = ref(10)
@@ -128,7 +140,7 @@ async function loadCategories() {
     hasNextPage.value = data.hasNextPage
     hasPreviousPage.value = data.hasPreviousPage
   } catch (err) {
-    console.error('Error cargando categorías:', err)
+    toast.show('Error al cargar las categorías', 'error')
   } finally {
     loading.value = false
   }
@@ -165,8 +177,26 @@ async function saveCategory() {
   }
 }
 
-async function confirmDelete(cat) {
-  if (!confirm(`¿Desactivar la categoría "${cat.name}"?`)) return
+function openConfirm(title, message, action) {
+  confirmConfig.value = { title, message, action }
+  showConfirm.value = true
+}
+
+async function handleConfirm() {
+  if (confirmConfig.value.action) {
+    await confirmConfig.value.action()
+  }
+}
+
+function confirmDelete(cat) {
+  openConfirm(
+    '¿Eliminar categoría?',
+    `¿Deseas eliminar la categoría "${cat.name}"?`,
+    () => deleteCategory(cat)
+  )
+}
+
+async function deleteCategory(cat) {
   try {
     await api.delete(`/Category/${cat.id}`)
     toast.show('Categoría desactivada correctamente', 'success')

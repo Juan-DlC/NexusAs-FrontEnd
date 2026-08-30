@@ -136,6 +136,7 @@ import { useToastStore } from '@/stores/toast'
 import ModalBase from '@/components/shared/ModalBase.vue'
 import ProductSearch from '@/components/shared/ProductSearch.vue'
 import { toUpperCase } from '@/utils/textFormat'
+import { formatNumber, formatDate } from '@/utils/format'
 
 const toast = useToastStore()
 
@@ -151,10 +152,6 @@ const showAdjustmentModal = ref(false)
 
 const entryForm = ref({ productId: '', quantity: 1, reason: '' })
 const adjustmentForm = ref({ productId: '', newStock: 0, reason: '' })
-
-function formatDate(d) {
-  return new Date(d).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: '2-digit' })
-}
 
 function typeLabel(type) {
   const map = { Entry: 'Entrada', Exit: 'Salida', Adjustment: 'Ajuste' }
@@ -193,7 +190,7 @@ async function loadMovements() {
     const res = await api.get(`/Stock/${selectedProductId.value}/movements`)
     movements.value = res.data.data
   } catch (err) {
-    console.error('Error cargando movimientos:', err)
+    toast.show('Error al cargar los movimientos', 'error')
   } finally {
     loading.value = false
   }

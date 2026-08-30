@@ -59,6 +59,7 @@ import { useToastStore } from '@/stores/toast'
 import ModalBase from '@/components/shared/ModalBase.vue'
 import CurrencyInput from '@/components/shared/CurrencyInput.vue'
 import { toUpperCase } from '@/utils/textFormat'
+import { formatNumber, formatDate } from '@/utils/format'
 
 const props = defineProps({
   modelValue: { type: Boolean, required: true },
@@ -72,10 +73,6 @@ const emit = defineEmits(['update:modelValue', 'payment-saved'])
 const toast = useToastStore()
 const liquidationForm = ref({ amount: 0, notes: '' })
 const saving = ref(false)
-
-function formatNumber(n) {
-  return Number(n).toLocaleString('es-CO')
-}
 
 watch(() => props.modelValue, (val) => {
   if (val) {

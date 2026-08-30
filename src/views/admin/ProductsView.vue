@@ -77,7 +77,7 @@
               <button 
                 class="btn-icon" 
                 :class="p.isActive ? 'btn-icon-warning' : 'btn-icon-success'"
-                @click.stop="toggleProductStatus(p)" 
+                @click.stop="confirmToggleStatus(p)" 
                 :title="`${p.isActive ? '🔴 Desactivar' : '🟢 Activar'} ${p.name}`"
               >
                 {{ p.isActive ? '🔴' : '🟢' }}
@@ -319,6 +319,13 @@
         </button>
       </template>
     </ModalBase>
+
+    <ConfirmDialog
+      v-model="showConfirm"
+      :title="confirmConfig.title"
+      :message="confirmConfig.message"
+      @confirm="handleConfirm"
+    />
   </div>
 </template>
 
@@ -329,7 +336,9 @@ import { useAuthStore } from '@/stores/auth'
 import { useToastStore } from '@/stores/toast'
 import ModalBase from '@/components/shared/ModalBase.vue'
 import CurrencyInput from '@/components/shared/CurrencyInput.vue'
+import ConfirmDialog from '@/components/shared/ConfirmDialog.vue'
 import { toUpperCase } from '@/utils/textFormat'
+import { formatNumber, formatDate } from '@/utils/format'
 
 const auth = useAuthStore()
 const toast = useToastStore()
@@ -349,6 +358,9 @@ const editingProduct = ref(null)
 const selectedProduct = ref(null)
 const suggestedPrice = ref(0)
 
+const showConfirm = ref(false)
+const confirmConfig = ref({ title: '', message: '', action: null })
+
 const pageNumber = ref(1)
 const pageSize = ref(10)
 const totalRecords = ref(0)
@@ -360,10 +372,6 @@ const form = ref({
   code: '', name: '', categoryId: '', supplierId: '', cost: 0,
   salePrice: 0, stock: 0, minStock: 0, isPartnership: false, businessPartnerId: null
 })
-
-function formatNumber(n) {
-  return Number(n).toLocaleString('es-CO')
-}
 
 function suggestPrice() {
   suggestedPrice.value = Math.round(form.value.cost * 1.7)
@@ -423,7 +431,7 @@ async function loadProducts() {
       hasPreviousPage.value = data.hasPreviousPage
     }
   } catch (err) {
-    console.error('Error cargando productos:', err)
+    toast.show('Error al cargar los productos', 'error')
   } finally {
     loading.value = false
   }
@@ -434,7 +442,7 @@ async function loadCategories() {
     const res = await api.get('/Category', { params: { pageSize: 100 } })
     categories.value = res.data.data.data
   } catch (err) {
-    console.error('Error cargando categorías:', err)
+    toast.show('Error al cargar las categorías', 'error')
   }
 }
 
@@ -443,7 +451,7 @@ async function loadSuppliers() {
     const res = await api.get('/Supplier', { params: { pageSize: 100 } })
     suppliers.value = res.data.data.data
   } catch (err) {
-    console.error('Error cargando proveedores:', err)
+    toast.show('Error al cargar los proveedores', 'error')
   }
 }
 
@@ -508,8 +516,26 @@ async function saveProduct() {
   }
 }
 
-async function confirmDelete(product) {
-  if (!confirm(`¿Eliminar el producto "${product.name}"?`)) return
+function openConfirm(title, message, action) {
+  confirmConfig.value = { title, message, action }
+  showConfirm.value = true
+}
+
+async function handleConfirm() {
+  if (confirmConfig.value.action) {
+    await confirmConfig.value.action()
+  }
+}
+
+function confirmDelete(product) {
+  openConfirm(
+    '¿Eliminar producto?',
+    `¿Deseas eliminar "${product.name}"? Esta acción no se puede deshacer.`,
+    () => deleteProduct(product)
+  )
+}
+
+async function deleteProduct(product) {
   try {
     await api.delete(`/Product/${product.id}`)
     toast.show('Producto eliminado correctamente', 'success')
@@ -519,9 +545,17 @@ async function confirmDelete(product) {
   }
 }
 
+function confirmToggleStatus(product) {
+  const action = product.isActive ? 'desactivar' : 'activar'
+  openConfirm(
+    `¿${action.charAt(0).toUpperCase() + action.slice(1)} producto?`,
+    `¿Deseas ${action} "${product.name}"?${product.isActive ? ' Puedes reactivarlo después desde los filtros.' : ''}`,
+    () => toggleProductStatus(product)
+  )
+}
+
 async function toggleProductStatus(product) {
   const action = product.isActive ? 'desactivar' : 'activar'
-  if (!confirm(`¿Está seguro de ${action} el producto "${product.name}"?`)) return
   try {
     await api.patch(`/Product/${product.id}/toggle-status`)
     toast.show(`Producto ${action}do correctamente`, 'success')

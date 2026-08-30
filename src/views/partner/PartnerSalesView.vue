@@ -54,12 +54,7 @@ import api from '@/api/axios'
 const sales = ref([])
 const loading = ref(true)
 
-function formatNumber(n) {
-  return Number(n).toLocaleString('es-CO')
-}
-
-function formatDate(d) {
-  return new Date(d).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: '2-digit' })
+)
 }
 
 async function loadSales() {
@@ -68,7 +63,7 @@ async function loadSales() {
     const res = await api.get('/Partner/my/sales')
     sales.value = res.data.data
   } catch (err) {
-    console.error('Error cargando ventas:', err)
+    toast.show('Error al cargar las ventas', 'error')
   } finally {
     loading.value = false
   }

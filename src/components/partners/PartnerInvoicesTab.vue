@@ -75,6 +75,8 @@
 </template>
 
 <script setup>
+import { formatNumber, formatDate } from '@/utils/format'
+
 const props = defineProps({
   invoices: { type: Array, required: true, default: () => [] },
   currentPage: { type: Number, default: 1 },
@@ -82,14 +84,6 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['invoice-clicked', 'payment-clicked', 'page-changed'])
-
-function formatNumber(n) {
-  return Number(n).toLocaleString('es-CO')
-}
-
-function formatDate(d) {
-  return new Date(d).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: '2-digit' })
-}
 </script>
 
 <style scoped>

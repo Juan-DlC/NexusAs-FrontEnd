@@ -142,7 +142,8 @@
             <input v-model="liquidationTo" type="date" class="form-input" />
           </div>
           <button class="btn btn-secondary" @click="previewLiquidation" :disabled="loadingPreview">
-            {{ loadingPreview ? 'Calculando...' : '🔍 Calcular' }}
+            <span v-if="loadingPreview">⏳ Calculando...</span>
+            <span v-else>🔍 Calcular liquidación</span>
           </button>
         </div>
 
@@ -238,9 +239,10 @@
 
             <button class="btn btn-primary"
               @click="confirmLiquidation"
-              :disabled="saving"
+              :disabled="saving || !liquidationPreview?.sales?.length"
               style="width: 100%; margin-top: 10px; padding: 12px;">
-              {{ saving ? 'Registrando liquidación...' : '✅ Confirmar y registrar liquidación' }}
+              <span v-if="saving">⏳ Registrando...</span>
+              <span v-else>✅ Confirmar y registrar liquidación</span>
             </button>
           </div>
         </div>
@@ -321,6 +323,7 @@ import api from '@/api/axios'
 import { useToastStore } from '@/stores/toast'
 import ModalBase from '@/components/shared/ModalBase.vue'
 import { toUpperCase } from '@/utils/textFormat'
+import { formatNumber, formatDate } from '@/utils/format'
 
 const toast = useToastStore()
 
@@ -350,18 +353,6 @@ const form = ref({
   commissionPercent: 50,
   notes: ''
 })
-
-function formatNumber(n) {
-  return Number(n || 0).toLocaleString('es-CO')
-}
-
-function formatDate(d) {
-  return new Date(d).toLocaleDateString('es-CO', {
-    day: '2-digit',
-    month: '2-digit',
-    year: '2-digit'
-  })
-}
 
 async function loadPartners() {
   try {
@@ -460,12 +451,6 @@ async function openDetailModal(partner) {
       params: { pageNumber: 1, pageSize: 20 }
     })
     
-    console.log('📜 Historial de liquidaciones - Response:', res.data.data)
-    if (res.data.data?.data && res.data.data.data.length > 0) {
-      console.log('📊 Primera liquidación del historial:', res.data.data.data[0])
-      console.log('🔑 Propiedades disponibles:', Object.keys(res.data.data.data[0]))
-    }
-    
     // ✅ TRANSFORMAR: Mapear propiedades del backend al formato que espera el frontend
     const rawLiquidations = res.data.data?.data || []
     liquidations.value = rawLiquidations.map(liq => {
@@ -520,25 +505,12 @@ async function previewLiquidation() {
   try {
     loadingPreview.value = true
     
-    // Debug: mostrar qué estamos enviando
-    console.log('🔍 Preview Liquidation Request:', {
-      businessPartnerId: selectedPartner.value.id,
-      businessPartnerName: selectedPartner.value.name,
-      from: liquidationFrom.value,
-      to: liquidationTo.value + 'T23:59:59',
-      url: `/BusinessPartner/${selectedPartner.value.id}/liquidation/preview`
-    })
-    
     const res = await api.get(`/BusinessPartner/${selectedPartner.value.id}/liquidation/preview`, {
       params: {
         from: liquidationFrom.value,
         to: liquidationTo.value + 'T23:59:59'
       }
     })
-    
-    // Debug: mostrar qué recibimos
-    console.log('📊 Preview Liquidation Response:', res.data.data)
-    console.log('📋 Líneas de venta recibidas:', res.data.data?.sales?.length || 0)
     
     // ✅ TRANSFORMACIÓN: Agrupar líneas de venta por factura y mapear propiedades
     const rawData = res.data.data
@@ -583,9 +555,6 @@ async function previewLiquidation() {
         sale.netProfit = sale.grossProfit - sale.partnerCommissionAmount
       })
       
-      console.log('✅ Facturas agrupadas:', aggregatedSales.length)
-      console.log('📊 Primera factura procesada:', aggregatedSales[0])
-      
       // ✅ RECALCULAR TOTALES AGREGADOS desde las facturas agrupadas
       const totals = aggregatedSales.reduce((acc, sale) => {
         acc.totalRevenue += sale.revenue
@@ -606,8 +575,6 @@ async function previewLiquidation() {
         asEarning: 0
       })
       
-      console.log('💰 Totales recalculados:', totals)
-      
       // Reemplazar sales y totales con datos agregados
       liquidationPreview.value = {
         ...rawData,
@@ -624,7 +591,6 @@ async function previewLiquidation() {
       liquidationPreview.value = rawData
     }
   } catch (err) {
-    console.error('❌ Error en preview:', err.response?.data || err.message)
     toast.show(err.response?.data?.message || 'Error al calcular', 'error')
   } finally {
     loadingPreview.value = false
@@ -635,7 +601,6 @@ async function confirmLiquidation() {
   try {
     saving.value = true
     
-    // Debug: mostrar qué estamos enviando
     const payload = {
       from: liquidationFrom.value,
       fromDate: liquidationFrom.value,
@@ -643,11 +608,6 @@ async function confirmLiquidation() {
       toDate: liquidationTo.value + 'T23:59:59',
       notes: liquidationNotes.value || null
     }
-    
-    console.log('🔒 Confirm Liquidation Request:', {
-      url: `/BusinessPartner/${selectedPartner.value.id}/liquidation/confirm`,
-      payload: payload
-    })
     
     await api.post(`/BusinessPartner/${selectedPartner.value.id}/liquidation/confirm`, payload)
     
@@ -660,12 +620,6 @@ async function confirmLiquidation() {
     const liqRes = await api.get(`/BusinessPartner/${selectedPartner.value.id}/liquidations`, {
       params: { pageNumber: 1, pageSize: 20 }
     })
-    
-    console.log('📜 Historial después de confirmar - Response:', liqRes.data.data)
-    if (liqRes.data.data?.data && liqRes.data.data.data.length > 0) {
-      console.log('📊 Primera liquidación recargada:', liqRes.data.data.data[0])
-      console.log('🔑 Propiedades disponibles:', Object.keys(liqRes.data.data.data[0]))
-    }
     
     // ✅ TRANSFORMAR: Mapear propiedades del backend al formato que espera el frontend
     const rawLiquidations = liqRes.data.data?.data || []
@@ -711,7 +665,6 @@ async function confirmLiquidation() {
     // Actualizar lista de socios (puede cambiar productCount)
     await loadPartners()
   } catch (err) {
-    console.error('❌ Error al confirmar liquidación:', err.response?.data || err.message)
     toast.show(err.response?.data?.message || 'Error al confirmar liquidación', 'error')
   } finally {
     saving.value = false

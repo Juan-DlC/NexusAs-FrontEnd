@@ -246,6 +246,7 @@ import CurrencyInput from '@/components/shared/CurrencyInput.vue'
 import ProductSearch from '@/components/shared/ProductSearch.vue'
 import { useToastStore } from '@/stores/toast'
 import { toUpperCase } from '@/utils/textFormat'
+import { formatNumber } from '@/utils/format'
 
 const router = useRouter()
 const toast = useToastStore()
@@ -267,10 +268,6 @@ const form = ref({
   requestId: '',
   details: [{ productId: '', quantity: 1, unitPrice: 0, stock: 0 }]
 })
-
-function formatNumber(n) {
-  return Number(n).toLocaleString('es-CO')
-}
 
 function openAddiLink() {
   const addiUrl = 'https://addi.com' // TODO: configurar URL real
@@ -419,7 +416,6 @@ async function saveSale() {
     showSaleModal.value = false
     loadDashboard() // Recargar dashboard para mostrar la nueva venta
   } catch (err) {
-    console.error('Error al registrar venta:', err)
     toast.show(err.response?.data?.message || 'Error al registrar venta', 'error')
   } finally {
     saving.value = false
@@ -460,12 +456,7 @@ async function loadSummary() {
   try {
     const res = await api.get('/Dashboard/summary')
     summary.value = res.data.data
-    
-    console.log('📊 Dashboard Summary Response:', res.data.data)
-    console.log('💰 Ventas hoy - Amount:', summary.value.todaySalesAmount)
-    console.log('📝 Ventas hoy - Count:', summary.value.todaySalesCount)
   } catch (err) {
-    console.error('Error cargando summary:', err)
     // Fallback a endpoint anterior si el nuevo no existe
     try {
       const dashRes = await api.get('/Dashboard')
@@ -501,7 +492,7 @@ async function loadDashboard() {
       summary.value.lowStockCount = lowStock.value.length
     }
   } catch (err) {
-    console.error('Error cargando dashboard:', err)
+    toast.show('Error al cargar el dashboard', 'error')
   } finally {
     loading.value = false
   }

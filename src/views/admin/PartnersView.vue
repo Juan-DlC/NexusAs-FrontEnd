@@ -179,17 +179,13 @@ const businessPartners = ref([])
 
 const partnerPaymentMethods = ref([])
 
-// function formatNumber(n) {
-//   return Number(n).toLocaleString('es-CO')
-// }
-
 async function loadPartners() {
   try {
     loading.value = true
     const res = await api.get('/Partner')
     partners.value = res.data.data
   } catch (err) {
-    console.error('Error cargando socias:', err)
+    toast.show('Error al cargar las socias', 'error')
   } finally {
     loading.value = false
   }
@@ -246,7 +242,6 @@ async function openDetailModal(partner) {
 
     showDetailModal.value = true
   } catch (err) {
-    console.error('Error al cargar el detalle de la socia.', err)
     toast.show('Error al cargar el detalle de la socia', 'error')
   }
 }
@@ -310,7 +305,7 @@ async function onPaymentSaved() {
       selectedInvoiceDetail.value = invoiceRes.data.data
     }
   } catch (err) {
-    console.error('Error recargando datos:', err)
+    toast.show('Error al recargar los datos', 'error')
   }
 }
 
@@ -326,7 +321,7 @@ async function downloadStatement() {
     const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
     window.open(url, '_blank')
   } catch (err) {
-    console.error('Error al descargar el estado de cuenta.', err)
+    toast.show('Error al descargar el estado de cuenta', 'error')
   }
 }
 

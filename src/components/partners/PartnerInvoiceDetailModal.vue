@@ -67,6 +67,7 @@
 import api from '@/api/axios'
 import { useToastStore } from '@/stores/toast'
 import ModalBase from '@/components/shared/ModalBase.vue'
+import { formatNumber, formatDate } from '@/utils/format'
 
 const props = defineProps({
   modelValue: { type: Boolean, required: true },
@@ -76,14 +77,6 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'open-return', 'open-payment'])
 
 const toast = useToastStore()
-
-function formatNumber(n) {
-  return Number(n).toLocaleString('es-CO')
-}
-
-function formatDate(d) {
-  return new Date(d).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: '2-digit' })
-}
 
 async function downloadPdf() {
   try {

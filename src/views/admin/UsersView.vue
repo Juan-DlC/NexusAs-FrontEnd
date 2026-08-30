@@ -44,7 +44,7 @@
               </span>
             </td>
             <td>
-              <button class="btn btn-secondary btn-sm" @click="toggleStatus(u)">
+              <button class="btn btn-secondary btn-sm" @click="confirmToggleStatus(u)">
                 {{ u.isActive ? 'Desactivar' : 'Activar' }}
               </button>
             </td>
@@ -87,6 +87,13 @@
         </button>
       </template>
     </ModalBase>
+
+    <ConfirmDialog
+      v-model="showConfirm"
+      :title="confirmConfig.title"
+      :message="confirmConfig.message"
+      @confirm="handleConfirm"
+    />
   </div>
 </template>
 
@@ -95,6 +102,7 @@ import { ref, onMounted } from 'vue'
 import api from '@/api/axios'
 import { useToastStore } from '@/stores/toast'
 import ModalBase from '@/components/shared/ModalBase.vue'
+import ConfirmDialog from '@/components/shared/ConfirmDialog.vue'
 
 const toast = useToastStore()
 
@@ -104,6 +112,9 @@ const saving = ref(false)
 const showModal = ref(false)
 const showInactive = ref(false)
 const form = ref({ fullName: '', username: '', password: '', role: '' })
+
+const showConfirm = ref(false)
+const confirmConfig = ref({ title: '', message: '', action: null })
 
 function roleLabel(role) {
   const map = { Admin: 'Administrador', Seller: 'Vendedor', Partner: 'Socia' }
@@ -121,7 +132,7 @@ async function loadUsers() {
     const res = await api.get('/User', { params: { includeInactive: showInactive.value } })
     users.value = res.data.data
   } catch (err) {
-    console.error('Error cargando usuarios:', err)
+    toast.show('Error al cargar los usuarios', 'error')
   } finally {
     loading.value = false
   }
@@ -146,8 +157,27 @@ async function saveUser() {
   }
 }
 
+function openConfirm(title, message, action) {
+  confirmConfig.value = { title, message, action }
+  showConfirm.value = true
+}
+
+async function handleConfirm() {
+  if (confirmConfig.value.action) {
+    await confirmConfig.value.action()
+  }
+}
+
+function confirmToggleStatus(user) {
+  const action = user.isActive ? 'desactivar' : 'activar'
+  openConfirm(
+    `¿${action.charAt(0).toUpperCase() + action.slice(1)} usuario?`,
+    `¿Deseas ${action} al usuario "${user.fullName}"?`,
+    () => toggleStatus(user)
+  )
+}
+
 async function toggleStatus(user) {
-  if (!confirm(`¿${user.isActive ? 'Desactivar' : 'Activar'} a "${user.fullName}"?`)) return
   try {
     await api.patch(`/User/${user.id}/toggle-status`)
     toast.show(`Usuario ${user.isActive ? 'desactivado' : 'activado'} correctamente`, 'success')

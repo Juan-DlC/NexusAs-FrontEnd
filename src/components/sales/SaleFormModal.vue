@@ -151,6 +151,7 @@ import ModalBase from '@/components/shared/ModalBase.vue'
 import ProductSearch from '@/components/shared/ProductSearch.vue'
 import CurrencyInput from '@/components/shared/CurrencyInput.vue'
 import { toUpperCase } from '@/utils/textFormat'
+import { formatNumber, formatDate } from '@/utils/format'
 
 const props = defineProps({
   modelValue: { type: Boolean, required: true },
@@ -178,10 +179,6 @@ const generateRequestId = () => `${Date.now()}-${Math.random().toString(36).subs
 
 // Inicializar requestId
 form.value.requestId = generateRequestId()
-
-function formatNumber(n) {
-  return Number(n).toLocaleString('es-CO')
-}
 
 const subtotalAmount = computed(() => {
   return form.value.details.reduce(

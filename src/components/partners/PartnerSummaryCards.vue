@@ -24,9 +24,6 @@ const props = defineProps({
   }
 })
 
-function formatNumber(n) {
-  return Number(n).toLocaleString('es-CO')
-}
 </script>
 
 <style scoped>

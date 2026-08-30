@@ -90,18 +90,6 @@ const myInvoices = ref([])
 const loading = ref(true)
 const loadingInvoices = ref(true)
 
-function formatNumber(n) {
-  return Number(n || 0).toLocaleString('es-CO')
-}
-
-function formatDate(d) {
-  return new Date(d).toLocaleDateString('es-CO', {
-    day: '2-digit',
-    month: '2-digit',
-    year: '2-digit'
-  })
-}
-
 async function loadData() {
   try {
     loading.value = true

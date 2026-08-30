@@ -5,7 +5,11 @@
         <h2 class="page-title">Ventas</h2>
         <p class="page-sub">{{ totalRecords }} ventas registradas</p>
       </div>
-      <button class="btn btn-primary floating-action-btn" @click="showFormModal = true">
+      <button 
+        v-if="auth.isAdmin || auth.isSeller"
+        class="btn btn-primary floating-action-btn" 
+        @click="showFormModal = true"
+      >
         + Nueva venta
       </button>
     </div>
@@ -119,18 +123,6 @@ const totalRecords = ref(0)
 const totalPages = ref(1)
 const hasNextPage = ref(false)
 const hasPreviousPage = ref(false)
-
-function formatNumber(n) {
-  return Number(n).toLocaleString('es-CO')
-}
-
-function formatDate(d) {
-  return new Date(d).toLocaleDateString('es-CO', {
-    day: '2-digit',
-    month: '2-digit',
-    year: '2-digit'
-  })
-}
 
 async function loadSales() {
   try {

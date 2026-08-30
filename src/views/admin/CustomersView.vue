@@ -94,6 +94,13 @@
         </button>
       </template>
     </ModalBase>
+
+    <ConfirmDialog
+      v-model="showConfirm"
+      :title="confirmConfig.title"
+      :message="confirmConfig.message"
+      @confirm="handleConfirm"
+    />
   </div>
 </template>
 
@@ -103,7 +110,9 @@ import api from '@/api/axios'
 import { useAuthStore } from '@/stores/auth'
 import { useToastStore } from '@/stores/toast'
 import ModalBase from '@/components/shared/ModalBase.vue'
+import ConfirmDialog from '@/components/shared/ConfirmDialog.vue'
 import { toUpperCase } from '@/utils/textFormat'
+import { formatNumber, formatDate } from '@/utils/format'
 
 const auth = useAuthStore()
 const toast = useToastStore()
@@ -113,6 +122,9 @@ const saving = ref(false)
 const search = ref('')
 const showModal = ref(false)
 const editingCustomer = ref(null)
+
+const showConfirm = ref(false)
+const confirmConfig = ref({ title: '', message: '', action: null })
 
 const pageNumber = ref(1)
 const pageSize = ref(10)
@@ -145,7 +157,7 @@ async function loadCustomers() {
     hasNextPage.value = data.hasNextPage
     hasPreviousPage.value = data.hasPreviousPage
   } catch (err) {
-    console.error('Error cargando clientes:', err)
+    toast.show('Error al cargar los clientes', 'error')
   } finally {
     loading.value = false
   }
@@ -200,8 +212,26 @@ async function saveCustomer() {
   }
 }
 
-async function confirmDelete(customer) {
-  if (!confirm(`¿Desactivar el cliente "${customer.name}"?`)) return
+function openConfirm(title, message, action) {
+  confirmConfig.value = { title, message, action }
+  showConfirm.value = true
+}
+
+async function handleConfirm() {
+  if (confirmConfig.value.action) {
+    await confirmConfig.value.action()
+  }
+}
+
+function confirmDelete(customer) {
+  openConfirm(
+    '¿Eliminar cliente?',
+    `¿Deseas eliminar a "${customer.name}"? Esta acción no se puede deshacer.`,
+    () => deleteCustomer(customer)
+  )
+}
+
+async function deleteCustomer(customer) {
   try {
     await api.delete(`/Customer/${customer.id}`)
     toast.show('Cliente desactivado correctamente', 'success')

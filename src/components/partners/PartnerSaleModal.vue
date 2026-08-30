@@ -105,6 +105,7 @@ import { useToastStore } from '@/stores/toast'
 import ModalBase from '@/components/shared/ModalBase.vue'
 import ProductSearch from '@/components/shared/ProductSearch.vue'
 import { toUpperCase } from '@/utils/textFormat'
+import { formatNumber, formatDate } from '@/utils/format'
 
 const props = defineProps({
   modelValue: Boolean,
@@ -138,10 +139,6 @@ const calculatedTotal = computed(() => {
     return sum + (price * qty)
   }, 0)
 })
-
-function formatNumber(n) {
-  return Number(n).toLocaleString('es-CO')
-}
 
 function addDetail() {
   form.value.details.push({ productId: '', quantity: 1, unitPrice: 0, partnerPrice: 0, suggestedPrice: 0, stock: 0 })
@@ -219,7 +216,6 @@ async function saveSale() {
     emit('sale-created')
     emit('update:modelValue', false)
   } catch (err) {
-    console.error('❌ Error venta a socia:', err.response?.data)
     toast.show(err.response?.data?.message || 'Error al registrar venta', 'error')
   } finally {
     saving.value = false
