@@ -19,7 +19,7 @@
         <thead>
           <tr>
             <th>Nombre</th>
-            <th>Contacto</th>
+            <th>Documento</th>
             <th>Teléfono</th>
             <th>% Comisión</th>
             <th>Productos</th>
@@ -30,7 +30,7 @@
         <tbody>
           <tr v-for="p in partners" :key="p.id" class="clickable-row" @click="openDetailModal(p)">
             <td><strong>{{ p.name }}</strong></td>
-            <td>{{ p.contactName || '-' }}</td>
+            <td>{{ p.documentNumber || '-' }}</td>
             <td>{{ p.phone || '-' }}</td>
             <td>{{ p.commissionPercent }}%</td>
             <td>{{ p.productCount }} productos</td>
@@ -56,37 +56,38 @@
           @input="form.name = toUpperCase(form.name)" />
       </div>
 
+      <div class="form-group">
+        <label class="form-label">Documento (NIT, cédula) *</label>
+        <input v-model="form.documentNumber" type="text" class="form-input" required
+          placeholder="Ej: 900123456" />
+        <p class="hint-text">Número de identificación del socio comercial</p>
+      </div>
+
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label">Nombre de contacto</label>
-          <input v-model="form.contactName" type="text" class="form-input"
-            @input="form.contactName = toUpperCase(form.contactName)" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Teléfono</label>
+          <label class="form-label">Teléfono (opcional)</label>
           <input v-model="form.phone" type="text" class="form-input" />
         </div>
+        <div class="form-group">
+          <label class="form-label">Email (opcional)</label>
+          <input v-model="form.email" type="email" class="form-input" />
+        </div>
       </div>
 
       <div class="form-group">
-        <label class="form-label">Email</label>
-        <input v-model="form.email" type="email" class="form-input" />
+        <label class="form-label">Dirección (opcional)</label>
+        <input v-model="form.address" type="text" class="form-input"
+          @input="form.address = toUpperCase(form.address)" />
       </div>
 
       <div class="form-group">
-        <label class="form-label">% de comisión sobre ganancia neta</label>
+        <label class="form-label">% de comisión sobre ganancia neta *</label>
         <div style="display: flex; align-items: center; gap: 8px;">
           <input v-model.number="form.commissionPercent" type="number"
-            min="1" max="100" class="form-input" style="max-width: 80px;" />
+            min="0" max="100" class="form-input" style="max-width: 80px;" required />
           <span style="font-size: 13px; color: var(--color-text-muted);">%</span>
         </div>
         <p class="hint-text">Porcentaje de la ganancia neta que recibe el socio. Default: 50%</p>
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">Notas (opcional)</label>
-        <input v-model="form.notes" type="text" class="form-input"
-          @input="form.notes = toUpperCase(form.notes)" />
       </div>
 
       <template #footer>
@@ -347,11 +348,11 @@ const showDetailModal = ref(false)
 
 const form = ref({
   name: '',
-  contactName: '',
+  documentNumber: '',
   phone: '',
   email: '',
-  commissionPercent: 50,
-  notes: ''
+  address: '',
+  commissionPercent: 50
 })
 
 async function loadPartners() {
@@ -368,11 +369,11 @@ function openCreateModal() {
   editingPartner.value = null
   form.value = {
     name: '',
-    contactName: '',
+    documentNumber: '',
     phone: '',
     email: '',
-    commissionPercent: 50,
-    notes: ''
+    address: '',
+    commissionPercent: 50
   }
   showModal.value = true
 }
@@ -381,11 +382,11 @@ function openEditModal(partner) {
   editingPartner.value = partner
   form.value = {
     name: partner.name,
-    contactName: partner.contactName || '',
+    documentNumber: partner.documentNumber || '',
     phone: partner.phone || '',
     email: partner.email || '',
-    commissionPercent: partner.commissionPercent,
-    notes: partner.notes || ''
+    address: partner.address || '',
+    commissionPercent: partner.commissionPercent
   }
   showModal.value = true
 }
@@ -395,14 +396,30 @@ async function savePartner() {
     toast.show('El nombre es obligatorio', 'warning')
     return
   }
+  
+  if (!form.value.documentNumber.trim()) {
+    toast.show('El documento es obligatorio', 'warning')
+    return
+  }
 
   try {
     saving.value = true
+    
+    // Construir payload según especificación del backend
+    const payload = {
+      name: form.value.name,
+      documentNumber: form.value.documentNumber,
+      email: form.value.email || null,
+      phone: form.value.phone || null,
+      address: form.value.address || null,
+      commissionPercent: form.value.commissionPercent
+    }
+    
     if (editingPartner.value) {
-      await api.put(`/BusinessPartner/${editingPartner.value.id}`, form.value)
+      await api.put(`/BusinessPartner/${editingPartner.value.id}`, payload)
       toast.show('Socio actualizado correctamente', 'success')
     } else {
-      await api.post('/BusinessPartner', form.value)
+      await api.post('/BusinessPartner', payload)
       toast.show('Socio creado correctamente', 'success')
     }
     showModal.value = false

@@ -55,6 +55,7 @@
             <td>
               <span v-if="s.status === 'FullReturn'" class="badge badge-danger">Devuelta</span>
               <span v-else-if="s.status === 'PartialReturn'" class="badge badge-warning">Dev. parcial</span>
+              <span v-else class="badge badge-success">Completada</span>
             </td>
             <td>
               <button class="btn-icon" @click.stop="downloadReceipt(s.id)" title="📄 Ver recibo">
@@ -102,10 +103,13 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '@/api/axios'
+import { useAuthStore } from '@/stores/auth'
 import { useToastStore } from '@/stores/toast'
 import SaleFormModal from '@/components/sales/SaleFormModal.vue'
 import SaleDetailModal from '@/components/sales/SaleDetailModal.vue'
+import { formatNumber, formatDate } from '@/utils/format'
 
+const auth = useAuthStore()
 const toast = useToastStore()
 
 const sales = ref([])
