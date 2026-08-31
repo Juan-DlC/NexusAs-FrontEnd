@@ -15,7 +15,7 @@
         v-model="search"
         type="text"
         class="form-input search-input"
-        placeholder="Buscar por nombre, contacto o teléfono..."
+        placeholder="Buscar por nombre, teléfono o email..."
         @input="onSearchInput"
       />
     </div>
@@ -30,18 +30,18 @@
         <thead>
           <tr>
             <th>Nombre</th>
-            <th>Contacto</th>
             <th>Teléfono</th>
             <th>Email</th>
+            <th>Notas</th>
             <th>Acciones</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="s in suppliers" :key="s.id" class="clickable-row" @click="openEditModal(s)">
             <td><strong>{{ s.name }}</strong></td>
-            <td>{{ s.contactName || '-' }}</td>
             <td>{{ s.phone || '-' }}</td>
             <td>{{ s.email || '-' }}</td>
+            <td>{{ s.notes || '-' }}</td>
             <td>
               <button class="btn-icon" @click.stop="openEditModal(s)" :title="`✏️ Editar ${s.name}`">✏️</button>
               <button class="btn-icon btn-icon-danger" @click.stop="confirmDelete(s)" :title="`🗑️ Eliminar ${s.name}`">🗑️</button>
@@ -83,16 +83,6 @@
           />
         </div>
 
-        <div class="form-group">
-          <label class="form-label">Nombre de contacto (opcional)</label>
-          <input
-            v-model="form.contactName"
-            type="text"
-            class="form-input"
-            @input="form.contactName = toUpperCase(form.contactName)"
-          />
-        </div>
-
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Teléfono (opcional)</label>
@@ -102,16 +92,6 @@
             <label class="form-label">Email (opcional)</label>
             <input v-model="form.email" type="email" class="form-input" />
           </div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Dirección (opcional)</label>
-          <input
-            v-model="form.address"
-            type="text"
-            class="form-input"
-            @input="form.address = toUpperCase(form.address)"
-          />
         </div>
 
         <div class="form-group">
@@ -172,10 +152,8 @@ const hasPreviousPage = ref(false)
 
 const form = ref({
   name: '',
-  contactName: '',
   phone: '',
   email: '',
-  address: '',
   notes: ''
 })
 
@@ -214,7 +192,7 @@ function changePage(page) {
 
 function openCreateModal() {
   editingSupplier.value = null
-  form.value = { name: '', contactName: '', phone: '', email: '', address: '', notes: '' }
+  form.value = { name: '', phone: '', email: '', notes: '' }
   showModal.value = true
 }
 
@@ -222,10 +200,8 @@ function openEditModal(supplier) {
   editingSupplier.value = supplier
   form.value = {
     name: supplier.name,
-    contactName: supplier.contactName || '',
     phone: supplier.phone || '',
     email: supplier.email || '',
-    address: supplier.address || '',
     notes: supplier.notes || ''
   }
   showModal.value = true
@@ -234,11 +210,20 @@ function openEditModal(supplier) {
 async function saveSupplier() {
   try {
     saving.value = true
+    
+    // ✅ Payload exacto según backend: name, phone, email, notes
+    const payload = {
+      name: form.value.name,
+      phone: form.value.phone || null,
+      email: form.value.email || null,
+      notes: form.value.notes || null
+    }
+    
     if (editingSupplier.value) {
-      await api.put(`/Supplier/${editingSupplier.value.id}`, form.value)
+      await api.put(`/Supplier/${editingSupplier.value.id}`, payload)
       toast.show('Proveedor actualizado correctamente', 'success')
     } else {
-      await api.post('/Supplier', form.value)
+      await api.post('/Supplier', payload)
       toast.show('Proveedor creado correctamente', 'success')
     }
     showModal.value = false

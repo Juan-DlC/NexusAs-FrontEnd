@@ -479,12 +479,21 @@ async function loadDashboard() {
     loading.value = true
     await loadSummary()
     
+    // ✅ Cargar customers primero
+    await loadCustomersMap()
+    
     const [salesRes, stockRes] = await Promise.all([
       api.get('/Sale', { params: { pageSize: 5 } }),
       api.get('/Product/low-stock')
     ])
     
-    recentSales.value = (salesRes.data.data?.data || []).slice(0, 5)
+    // ✅ Enriquecer ventas con customerName
+    const rawSales = (salesRes.data.data?.data || []).slice(0, 5)
+    recentSales.value = rawSales.map(sale => ({
+      ...sale,
+      customerName: sale.customerName || (sale.customerId ? customersMap.value[sale.customerId] : null)
+    }))
+    
     lowStock.value = stockRes.data.data || []
     
     // Actualizar lowStockCount si no vino del summary
@@ -495,6 +504,22 @@ async function loadDashboard() {
     toast.show('Error al cargar el dashboard', 'error')
   } finally {
     loading.value = false
+  }
+}
+
+// ✅ Función para cargar customers
+const customersMap = ref({})
+async function loadCustomersMap() {
+  try {
+    const res = await api.get('/Customer', { params: { pageSize: 200 } })
+    const customersList = res.data.data?.data || []
+    const map = {}
+    customersList.forEach(c => {
+      map[c.id] = c.name
+    })
+    customersMap.value = map
+  } catch {
+    customersMap.value = {}
   }
 }
 

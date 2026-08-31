@@ -26,7 +26,7 @@
 
     <div class="card">
       <div v-if="loading" class="state-text">Cargando...</div>
-      <div v-else-if="sales.length === 0" class="state-text">
+      <div v-else-if="enrichedSales.length === 0" class="state-text">
         No hay ventas registradas.
       </div>
       <table v-else>
@@ -42,9 +42,9 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="s in sales" :key="s.id" class="clickable-row" @click="openDetail(s)">
+          <tr v-for="s in enrichedSales" :key="s.id" class="clickable-row" @click="openDetail(s)">
             <td><strong>{{ s.saleNumber }}</strong></td>
-            <td>{{ s.partnerUserId ? 'Venta a socia' : (s.customerId ? s.customerName : 'Sin cliente') }}</td>
+            <td>{{ s.partnerUserId ? 'Venta a socia' : (s.customerId ? (s.customerName || 'Cargando...') : 'Sin cliente') }}</td>
             <td>{{ formatDate(s.date) }}</td>
             <td>
               <span :class="['badge', s.paymentMethodName === 'Contado' ? 'badge-success' : 'badge-warning']">
@@ -101,7 +101,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import api from '@/api/axios'
 import { useAuthStore } from '@/stores/auth'
 import { useToastStore } from '@/stores/toast'
@@ -127,6 +127,23 @@ const totalRecords = ref(0)
 const totalPages = ref(1)
 const hasNextPage = ref(false)
 const hasPreviousPage = ref(false)
+
+// ✅ Mapa para hacer JOIN con customers en memoria
+const customersMap = computed(() => {
+  const map = {}
+  customers.value.forEach(c => {
+    map[c.id] = c.name
+  })
+  return map
+})
+
+// ✅ Ventas enriquecidas con nombre del cliente
+const enrichedSales = computed(() => {
+  return sales.value.map(sale => ({
+    ...sale,
+    customerName: sale.customerName || (sale.customerId ? customersMap.value[sale.customerId] : null)
+  }))
+})
 
 async function loadSales() {
   try {

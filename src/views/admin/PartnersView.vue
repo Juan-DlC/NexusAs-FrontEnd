@@ -378,8 +378,8 @@ async function openPartnerSaleModal() {
 }
 
 async function onPartnerSaleCreated() {
-  toast.show('Venta registrada correctamente', 'success')
-  showPartnerSaleModal.value = false  // Forzar cierre desde el padre
+  // ✅ Toast ya se muestra en PartnerSaleModal, no duplicar aquí
+  showPartnerSaleModal.value = false
   if (selectedPartner.value) {
     await openDetailModal(selectedPartner.value)
   }

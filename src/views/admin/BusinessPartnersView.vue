@@ -324,7 +324,11 @@ import api from '@/api/axios'
 import { useToastStore } from '@/stores/toast'
 import ModalBase from '@/components/shared/ModalBase.vue'
 import { toUpperCase } from '@/utils/textFormat'
-import { formatNumber, formatDate } from '@/utils/format'
+import { formatNumber as utilFormatNumber, formatDate as utilFormatDate } from '@/utils/format'
+
+// ✅ Re-exportar las funciones para asegurar que estén disponibles en el template
+const formatNumber = utilFormatNumber
+const formatDate = utilFormatDate
 
 const toast = useToastStore()
 
@@ -452,6 +456,8 @@ async function saveCommission() {
 }
 
 async function openDetailModal(partner) {
+  console.log('🔍 ABRIENDO DETALLE DE SOCIA:', partner.name)
+  
   selectedPartner.value = partner
   liquidationPreview.value = null
   liquidationNotes.value = ''
@@ -461,12 +467,16 @@ async function openDetailModal(partner) {
   liquidationTo.value = now.toISOString().split('T')[0]
 
   showDetailModal.value = true
+  console.log('✅ showDetailModal =', showDetailModal.value)
+  
   loadingLiquidations.value = true
 
   try {
     const res = await api.get(`/BusinessPartner/${partner.id}/liquidations`, {
       params: { pageNumber: 1, pageSize: 20 }
     })
+    
+    console.log('📦 Liquidaciones recibidas:', res.data.data)
     
     // ✅ TRANSFORMAR: Mapear propiedades del backend al formato que espera el frontend
     const rawLiquidations = res.data.data?.data || []
@@ -508,6 +518,8 @@ async function openDetailModal(partner) {
         notes: liq.notes
       }
     })
+  } catch (err) {
+    console.error('❌ Error cargando liquidaciones:', err)
   } finally {
     loadingLiquidations.value = false
   }

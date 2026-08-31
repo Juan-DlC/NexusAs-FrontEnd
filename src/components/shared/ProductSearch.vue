@@ -37,6 +37,7 @@
 <script setup>
 import { ref } from 'vue'
 import api from '@/api/axios'
+import { formatNumber } from '@/utils/format'
 
 const props = defineProps({
   placeholder: { type: String, default: 'Buscar por nombre, código o marca...' },

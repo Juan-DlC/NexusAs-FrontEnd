@@ -16,6 +16,8 @@
 </template>
 
 <script setup>
+import { formatNumber } from '@/utils/format'
+
 const props = defineProps({
   summary: {
     type: Object,

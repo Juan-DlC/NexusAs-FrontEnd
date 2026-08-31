@@ -238,6 +238,19 @@ function removeDetail(index) {
 }
 
 async function saveSale() {
+  // ✅ VALIDACIÓN: Método de pago es obligatorio
+  if (!form.value.paymentMethodId || form.value.paymentMethodId <= 0) {
+    toast.show('Debe seleccionar un método de pago', 'warning')
+    return
+  }
+  
+  // ✅ VALIDACIÓN: Al menos un producto válido
+  const validDetails = form.value.details.filter(d => d.productId && d.productId > 0)
+  if (validDetails.length === 0) {
+    toast.show('Debe agregar al menos un producto a la venta', 'warning')
+    return
+  }
+  
   try {
     saving.value = true
     const payload = {
@@ -248,7 +261,8 @@ async function saveSale() {
       discountPercent: form.value.discountPercent || 0,
       discountAmount: discountAmount.value,
       notes: form.value.notes || null,
-      details: form.value.details.map(d => ({
+      // ✅ Solo enviar detalles válidos (backend también filtra, pero mejor UX)
+      details: validDetails.map(d => ({
         productId: d.productId,
         quantity: Number(d.quantity) || 1,
         unitPrice: Number(d.unitPrice) || 0

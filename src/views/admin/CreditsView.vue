@@ -25,7 +25,7 @@
 
     <div class="card">
       <div v-if="loading" class="state-text">Cargando...</div>
-      <div v-else-if="credits.length === 0" class="state-text">
+      <div v-else-if="enrichedCredits.length === 0" class="state-text">
         No hay créditos con este filtro.
       </div>
       <table v-else>
@@ -41,7 +41,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="c in credits" :key="c.id" class="clickable-row" @click="openDetailModal(c)">
+          <tr v-for="c in enrichedCredits" :key="c.id" class="clickable-row" @click="openDetailModal(c)">
             <td><strong>{{ c.saleNumber }}</strong></td>
             <td>{{ c.customerName || c.sellerName || 'Sin cliente' }}</td>
             <td>${{ formatNumber(c.totalAmount) }}</td>
@@ -59,7 +59,7 @@
                 v-if="c.status !== 'Paid'"
                 class="btn btn-secondary btn-sm"
                 @click.stop="openPaymentModal(c)"
-                :title="`💳 Registrar abono para ${c.customerName}`"
+                :title="`💳 Registrar abono para ${c.customerName || 'cliente'}`"
               >
                 💳 Registrar abono
               </button>
@@ -171,7 +171,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import api from '@/api/axios'
 import { useToastStore } from '@/stores/toast'
 import ModalBase from '@/components/shared/ModalBase.vue'
@@ -191,6 +191,7 @@ const search = ref('')
 const showModal = ref(false)
 const selectedCredit = ref(null)
 const paymentForm = ref({ amount: 0, notes: '' })
+const customers = ref([])
 
 const pageNumber = ref(1)
 const pageSize = ref(10)
@@ -198,6 +199,23 @@ const totalRecords = ref(0)
 const totalPages = ref(1)
 const hasNextPage = ref(false)
 const hasPreviousPage = ref(false)
+
+// ✅ Mapa para hacer JOIN con customers en memoria
+const customersMap = computed(() => {
+  const map = {}
+  customers.value.forEach(c => {
+    map[c.id] = c.name
+  })
+  return map
+})
+
+// ✅ Créditos enriquecidos con nombre del cliente
+const enrichedCredits = computed(() => {
+  return credits.value.map(credit => ({
+    ...credit,
+    customerName: credit.customerName || (credit.customerId ? customersMap.value[credit.customerId] : null)
+  }))
+})
 
 function statusLabel(status) {
   const map = { Pending: 'Pendiente', Partial: 'Pago parcial', Paid: 'Pagado' }
@@ -236,6 +254,15 @@ function onFilterChange() {
 function changePage(page) {
   pageNumber.value = page
   loadCredits()
+}
+
+async function loadCustomers() {
+  try {
+    const res = await api.get('/Customer', { params: { pageSize: 200 } })
+    customers.value = res.data.data?.data || []
+  } catch {
+    customers.value = []
+  }
 }
 
 async function loadCredits() {
@@ -282,7 +309,10 @@ async function savePayment() {
   }
 }
 
-onMounted(loadCredits)
+onMounted(() => {
+  loadCustomers()
+  loadCredits()
+})
 </script>
 
 <style scoped>
