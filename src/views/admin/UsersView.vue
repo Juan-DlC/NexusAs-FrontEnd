@@ -44,6 +44,7 @@
               </span>
             </td>
             <td>
+              <button class="btn-icon" @click.stop="openResetModal(u)" title="🔑 Resetear contraseña">🔑</button>
               <button class="btn btn-secondary btn-sm" @click="confirmToggleStatus(u)">
                 {{ u.isActive ? 'Desactivar' : 'Activar' }}
               </button>
@@ -94,6 +95,60 @@
       :message="confirmConfig.message"
       @confirm="handleConfirm"
     />
+
+    <!-- Modal Reset de Contraseña -->
+    <ModalBase v-model="showResetModal" title="Resetear contraseña" width="420px">
+      <div v-if="resetTarget">
+        <div class="reset-user-info">
+          <span class="reset-user-icon">👤</span>
+          <div>
+            <p class="reset-user-name">{{ resetTarget.fullName }}</p>
+            <p class="reset-user-role">{{ resetTarget.username }} — {{ roleLabel(resetTarget.role) }}</p>
+          </div>
+        </div>
+
+        <div class="reset-warning">
+          ⚠️ Esta acción cambiará la contraseña del usuario inmediatamente.
+          Comunícale la nueva contraseña de forma segura.
+        </div>
+
+        <div class="form-group" style="margin-top: 16px;">
+          <label class="form-label">Nueva contraseña</label>
+          <input
+            v-model="resetForm.newPassword"
+            type="password"
+            class="form-input"
+            placeholder="Mínimo 6 caracteres"
+            autocomplete="new-password"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Confirmar contraseña</label>
+          <input
+            v-model="resetForm.confirmPassword"
+            type="password"
+            class="form-input"
+            placeholder="Repite la contraseña"
+            autocomplete="new-password"
+            @keyup.enter="resetPassword"
+          />
+          <p v-if="resetForm.confirmPassword && resetForm.newPassword !== resetForm.confirmPassword" class="error-hint">
+            ❌ Las contraseñas no coinciden
+          </p>
+          <p v-else-if="resetForm.confirmPassword && resetForm.newPassword === resetForm.confirmPassword" class="success-hint">
+            ✅ Las contraseñas coinciden
+          </p>
+        </div>
+      </div>
+
+      <template #footer>
+        <button class="btn btn-secondary" @click="showResetModal = false">Cancelar</button>
+        <button class="btn btn-primary" @click="resetPassword" :disabled="resetting">
+          {{ resetting ? '⏳ Actualizando...' : '🔑 Cambiar contraseña' }}
+        </button>
+      </template>
+    </ModalBase>
   </div>
 </template>
 
@@ -115,6 +170,12 @@ const form = ref({ fullName: '', username: '', password: '', role: '' })
 
 const showConfirm = ref(false)
 const confirmConfig = ref({ title: '', message: '', action: null })
+
+// ✅ Variables para reset de contraseña
+const showResetModal = ref(false)
+const resetTarget = ref(null)
+const resetForm = ref({ newPassword: '', confirmPassword: '' })
+const resetting = ref(false)
 
 function roleLabel(role) {
   const map = { Admin: 'Administrador', Seller: 'Vendedor', Partner: 'Socia' }
@@ -187,6 +248,40 @@ async function toggleStatus(user) {
   }
 }
 
+// ✅ Funciones para reset de contraseña
+function openResetModal(user) {
+  resetTarget.value = user
+  resetForm.value = { newPassword: '', confirmPassword: '' }
+  showResetModal.value = true
+}
+
+async function resetPassword() {
+  if (!resetForm.value.newPassword || resetForm.value.newPassword.length < 6) {
+    toast.show('La contraseña debe tener al menos 6 caracteres', 'warning')
+    return
+  }
+
+  if (resetForm.value.newPassword !== resetForm.value.confirmPassword) {
+    toast.show('Las contraseñas no coinciden', 'warning')
+    return
+  }
+
+  try {
+    resetting.value = true
+    await api.patch(`/User/${resetTarget.value.id}/reset-password`, {
+      newPassword: resetForm.value.newPassword,
+      confirmPassword: resetForm.value.confirmPassword
+    })
+    toast.show(`Contraseña de "${resetTarget.value.fullName}" actualizada correctamente`, 'success')
+    showResetModal.value = false
+    resetForm.value = { newPassword: '', confirmPassword: '' }
+  } catch (err) {
+    toast.show(err.response?.data?.message || 'Error al resetear la contraseña', 'error')
+  } finally {
+    resetting.value = false
+  }
+}
+
 onMounted(loadUsers)
 </script>
 
@@ -213,4 +308,69 @@ onMounted(loadUsers)
 .page-sub { font-size: 12px; color: var(--color-text-muted); margin-top: 2px; }
 .state-text { text-align: center; padding: 40px 0; color: var(--color-text-muted); font-size: 13px; }
 .hint-text { font-size: 12px; color: var(--color-accent); margin-top: 6px; }
+
+/* ✅ Estilos para modal de reset de contraseña */
+.btn-icon {
+  background: var(--color-bg);
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  margin-right: 8px;
+  transition: var(--transition);
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn-icon:hover {
+  background: var(--color-accent-light);
+}
+
+.reset-user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--color-bg);
+  border-radius: var(--radius-sm);
+  margin-bottom: 14px;
+}
+
+.reset-user-icon { 
+  font-size: 28px; 
+}
+
+.reset-user-name { 
+  font-size: 14px; 
+  font-weight: 700; 
+  color: var(--color-text); 
+}
+
+.reset-user-role { 
+  font-size: 12px; 
+  color: var(--color-text-muted); 
+  margin-top: 2px; 
+}
+
+.reset-warning {
+  background: #FFF8E1;
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 12px;
+  color: #856404;
+  line-height: 1.5;
+}
+
+.error-hint { 
+  font-size: 12px; 
+  color: var(--color-danger); 
+  margin-top: 4px; 
+}
+
+.success-hint { 
+  font-size: 12px; 
+  color: var(--color-success); 
+  margin-top: 4px; 
+}
 </style>
