@@ -58,11 +58,25 @@
       <form @submit.prevent="saveUser">
         <div class="form-group">
           <label class="form-label">Nombre completo</label>
-          <input v-model="form.fullName" type="text" class="form-input" required />
+          <input 
+            v-model="form.fullName" 
+            type="text" 
+            class="form-input" 
+            required 
+            style="text-transform: uppercase;"
+            @input="form.fullName = form.fullName.toUpperCase()"
+          />
         </div>
         <div class="form-group">
           <label class="form-label">Usuario (username)</label>
-          <input v-model="form.username" type="text" class="form-input" required />
+          <input 
+            v-model="form.username" 
+            type="text" 
+            class="form-input" 
+            required 
+            style="text-transform: uppercase;"
+            @input="form.username = form.username.toUpperCase()"
+          />
         </div>
         <div class="form-group">
           <label class="form-label">Contraseña</label>

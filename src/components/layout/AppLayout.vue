@@ -1,7 +1,7 @@
 <template>
   <div class="app-layout">
     <ToastNotification />
-    <aside class="sidebar">
+    <aside class="sidebar" :data-collapsed="sidebarCollapsed">
       <div class="sidebar-header">
         <div class="logo">
           <div class="logo-icon">✦</div>
@@ -10,7 +10,7 @@
             <span class="logo-sub">AS Accesorios</span>
           </div>
         </div>
-        <button class="collapse-btn" @click="sidebarCollapsed = !sidebarCollapsed">
+        <button class="collapse-btn" @click="sidebarCollapsed = !sidebarCollapsed" :title="sidebarCollapsed ? 'Expandir menú' : 'Contraer menú'">
           <span>{{ sidebarCollapsed ? '→' : '←' }}</span>
         </button>
       </div>
@@ -157,71 +157,113 @@ function handleLogout() {
 }
 
 .sidebar {
-  width: 230px;
-  min-width: 230px;
+  width: 240px;
+  min-width: 240px;
   background: var(--sidebar-bg);
   display: flex;
   flex-direction: column;
-  transition: var(--transition);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 4px 0 12px rgba(0,0,0,0.15);
+}
+
+.sidebar[data-collapsed="true"] {
+  width: 70px;
+  min-width: 70px;
+}
+
+.sidebar[data-collapsed="true"] .logo {
+  justify-content: center;
+}
+
+.sidebar[data-collapsed="true"] .logo-text,
+.sidebar[data-collapsed="true"] .nav-label,
+.sidebar[data-collapsed="true"] .nav-section,
+.sidebar[data-collapsed="true"] .user-details,
+.sidebar[data-collapsed="true"] .logout-btn {
+  display: none;
 }
 
 .sidebar-header {
-  padding: 22px 18px 18px;
+  padding: 24px 20px 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  gap: 8px;
+}
+
+.sidebar[data-collapsed="true"] .sidebar-header {
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 10px 16px;
 }
 
 .logo {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  transition: justify-content 0.3s ease;
+  width: 100%;
 }
 
 .logo-icon {
-  width: 34px;
-  height: 34px;
-  background: var(--sidebar-accent);
-  border-radius: 10px;
+  width: 38px;
+  height: 38px;
+  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-dark));
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  font-size: 16px;
+  font-size: 18px;
   flex-shrink: 0;
+  box-shadow: 0 4px 8px rgba(200,149,108,0.3);
+}
+
+.logo-text {
+  transition: opacity 0.2s ease, visibility 0.2s ease;
 }
 
 .logo-name {
   display: block;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   color: white;
-  letter-spacing: 0.02em;
+  letter-spacing: -0.01em;
 }
 
 .logo-sub {
   display: block;
-  font-size: 10px;
+  font-size: 11px;
   color: var(--sidebar-accent);
-  margin-top: 1px;
+  margin-top: 2px;
 }
 
 .collapse-btn {
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.4);
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
-  font-size: 11px;
-  display: flex;
+  background: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.6);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  font-size: 14px;
+  display: flex !important;
   align-items: center;
   justify-content: center;
-  transition: var(--transition);
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  border: 1px solid rgba(255,255,255,0.1);
+  cursor: pointer;
 }
+
 .collapse-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255,255,255,0.2);
   color: white;
+  transform: scale(1.05);
+  border-color: rgba(255,255,255,0.2);
+}
+
+.collapse-btn:active {
+  transform: scale(0.95);
 }
 
 .sidebar-nav {
@@ -242,42 +284,36 @@ function handleLogout() {
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 9px 10px;
-  border-radius: 10px;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
   color: var(--sidebar-text);
   transition: var(--transition);
   margin-bottom: 2px;
 }
 
 .nav-item:hover {
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(255,255,255,0.08);
   color: white;
 }
 
 .nav-item.active {
-  background: var(--sidebar-active);
-  color: var(--sidebar-text-active);
+  background: linear-gradient(135deg, rgba(200,149,108,0.25), rgba(200,149,108,0.15));
+  color: white;
+  border: 1px solid rgba(200,149,108,0.3);
 }
 
 .nav-icon {
   font-size: 16px;
+  width: 22px;
+  text-align: center;
   flex-shrink: 0;
-  opacity: 0.7;
-  transition: var(--transition);
-}
-
-.nav-item.active .nav-icon {
-  opacity: 1;
-}
-
-.nav-item:hover .nav-icon {
-  opacity: 1;
 }
 
 .nav-label {
   font-size: 13px;
   font-weight: 500;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
 }
 
 .sidebar-footer {
@@ -345,31 +381,36 @@ function handleLogout() {
 .topbar {
   background: var(--color-white);
   border-bottom: 1px solid var(--color-border);
-  padding: 0 28px;
-  height: 58px;
+  padding: 0 32px;
+  height: 64px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-shrink: 0;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-xs);
 }
 
 .page-title {
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--color-text);
+  letter-spacing: -0.01em;
 }
 
 .topbar-date {
   font-size: 12px;
   color: var(--color-text-muted);
   text-transform: capitalize;
+  background: var(--color-bg);
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--color-border);
 }
 
 .page-content {
   flex: 1;
   overflow-y: auto;
-  padding: 28px;
+  padding: 28px 32px;
 }
 
 .fade-enter-active,
