@@ -2,7 +2,7 @@
   <div class="suppliers-view">
     <div class="page-header-row">
       <div>
-        <h2 class="page-title">Proveedores</h2>
+        <!-- <h2 class="page-title">Proveedores</h2> -->
         <p class="page-sub">{{ totalRecords }} proveedores registrados</p>
       </div>
       <button class="btn btn-primary floating-action-btn" @click="openCreateModal">
@@ -11,17 +11,21 @@
     </div>
 
     <div class="search-bar">
-      <input
-        v-model="search"
-        type="text"
-        class="form-input search-input"
-        placeholder="Buscar por nombre, teléfono o email..."
-        @input="onSearchInput"
-      />
+      <div class="search-input-wrapper">
+        <input
+          v-model="search"
+          type="text"
+          class="form-input search-input"
+          placeholder="Buscar por nombre, teléfono o email..."
+          @input="onSearchInput"
+        />
+        <span v-if="searching" class="search-spinner" title="Buscando...">🔍</span>
+      </div>
     </div>
 
     <div class="card">
-      <div v-if="loading" class="state-text">Cargando proveedores...</div>
+      <SkeletonLoader v-if="loading" type="table" :rows="8" :columns="5" />
+
       <div v-else-if="suppliers.length === 0" class="state-text">
         No se encontraron proveedores.
       </div>
@@ -128,6 +132,7 @@ import api from '@/api/axios'
 import { useToastStore } from '@/stores/toast'
 import ModalBase from '@/components/shared/ModalBase.vue'
 import ConfirmDialog from '@/components/shared/ConfirmDialog.vue'
+import SkeletonLoader from '@/components/shared/SkeletonLoader.vue'
 import { toUpperCase } from '@/utils/textFormat'
 import { formatNumber, formatDate } from '@/utils/format'
 
@@ -136,6 +141,7 @@ const toast = useToastStore()
 const suppliers = ref([])
 const loading = ref(true)
 const saving = ref(false)
+const searching = ref(false)
 const search = ref('')
 const showModal = ref(false)
 const editingSupplier = ref(null)
@@ -159,11 +165,13 @@ const form = ref({
 
 let searchTimeout = null
 function onSearchInput() {
+  searching.value = true
   clearTimeout(searchTimeout)
-  searchTimeout = setTimeout(() => {
+  searchTimeout = setTimeout(async () => {
     pageNumber.value = 1
-    loadSuppliers()
-  }, 400)
+    await loadSuppliers()
+    searching.value = false
+  }, 300)
 }
 
 async function loadSuppliers() {
@@ -210,7 +218,7 @@ function openEditModal(supplier) {
 async function saveSupplier() {
   try {
     saving.value = true
-    
+
     // ✅ Payload exacto según backend: name, phone, email, notes
     const payload = {
       name: form.value.name,
@@ -218,7 +226,7 @@ async function saveSupplier() {
       email: form.value.email || null,
       notes: form.value.notes || null
     }
-    
+
     if (editingSupplier.value) {
       await api.put(`/Supplier/${editingSupplier.value.id}`, payload)
       toast.show('Proveedor actualizado correctamente', 'success')
@@ -298,8 +306,30 @@ onMounted(() => {
   display: flex;
 }
 
-.search-input {
+.search-input-wrapper {
+  position: relative;
   max-width: 400px;
+  flex: 1;
+}
+
+.search-input {
+  width: 100%;
+  padding-right: 36px;
+}
+
+.search-spinner {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  animation: spin 1s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes spin {
+  from { transform: translateY(-50%) rotate(0deg); }
+  to { transform: translateY(-50%) rotate(360deg); }
 }
 
 .state-text {

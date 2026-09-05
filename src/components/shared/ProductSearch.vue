@@ -1,15 +1,18 @@
 <template>
   <div class="product-search">
-    <input
-      v-model="query"
-      type="text"
-      class="form-input"
-      :placeholder="placeholder"
-      @input="onInput"
-      @focus="showResults = true"
-      @blur="onBlur"
-      autocomplete="off"
-    />
+    <div class="search-input-wrapper">
+      <input
+        v-model="query"
+        type="text"
+        class="form-input"
+        :placeholder="placeholder"
+        @input="onInput"
+        @focus="showResults = true"
+        @blur="onBlur"
+        autocomplete="off"
+      />
+      <span v-if="loading" class="search-spinner">🔍</span>
+    </div>
     <div class="results-dropdown" v-if="showResults && results.length > 0">
       <div
         class="result-item"
@@ -98,6 +101,25 @@ defineExpose({ clear })
 
 <style scoped>
 .product-search { position: relative; }
+
+.search-input-wrapper {
+  position: relative;
+}
+
+.search-spinner {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  animation: spin 1s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes spin {
+  from { transform: translateY(-50%) rotate(0deg); }
+  to { transform: translateY(-50%) rotate(360deg); }
+}
 
 .results-dropdown {
   position: absolute;

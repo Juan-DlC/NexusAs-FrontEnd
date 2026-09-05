@@ -2,7 +2,7 @@
   <div class="products-view">
     <div class="page-header-row">
       <div>
-        <h2 class="page-title">Productos</h2>
+        <!-- <h2 class="page-title">Productos</h2> -->
         <p class="page-sub" v-if="!auth.isPartner">{{ totalRecords }} productos registrados</p>
         <p class="page-sub" v-else>Precios a los que AS te entrega cada producto</p>
       </div>
@@ -12,13 +12,16 @@
     </div>
 
     <div class="search-bar" v-if="!auth.isPartner">
-      <input
-        v-model="search"
-        type="text"
-        class="form-input search-input"
-        placeholder="Buscar por nombre o código..."
-        @input="onSearchInput"
-      />
+      <div class="search-input-wrapper">
+        <input
+          v-model="search"
+          type="text"
+          class="form-input search-input"
+          placeholder="Buscar por nombre o código..."
+          @input="onSearchInput"
+        />
+        <span v-if="searching" class="search-spinner" title="Buscando...">🔍</span>
+      </div>
       <select v-model="filterCategory" class="form-input filter-select" @change="onFilterChange">
         <option value="">Todas las categorías</option>
         <option v-for="cat in categories" :key="cat.id" :value="cat.id">
@@ -33,7 +36,9 @@
     </div>
 
     <div class="card">
-      <div v-if="loading" class="state-text">Cargando productos...</div>
+      <!-- Skeleton Loader mientras carga -->
+      <SkeletonLoader v-if="loading" type="table" :rows="10" :columns="7" />
+
       <div v-else-if="products.length === 0" class="state-text">
         No se encontraron productos.
       </div>
@@ -74,10 +79,10 @@
             </td>
             <td v-if="auth.isAdmin">
               <button class="btn-icon" @click.stop="openEditModal(p)" :title="`✏️ Editar ${p.name}`">✏️</button>
-              <button 
-                class="btn-icon" 
+              <button
+                class="btn-icon"
                 :class="p.isActive ? 'btn-icon-warning' : 'btn-icon-success'"
-                @click.stop="confirmToggleStatus(p)" 
+                @click.stop="confirmToggleStatus(p)"
                 :title="`${p.isActive ? '🔴 Desactivar' : '🟢 Activar'} ${p.name}`"
               >
                 {{ p.isActive ? '🔴' : '🟢' }}
@@ -101,10 +106,10 @@
           </tr>
         </thead>
         <tbody>
-          <tr 
-            v-for="p in products" 
-            :key="p.productId" 
-            class="clickable-row" 
+          <tr
+            v-for="p in products"
+            :key="p.productId"
+            class="clickable-row"
             @click="openProductDetail(p)"
           >
             <td>{{ p.code }}</td>
@@ -310,9 +315,9 @@
       </div>
       <template #footer>
         <button class="btn btn-secondary" @click="showProductDetailModal = false">Cerrar</button>
-        <button 
-          class="btn btn-primary" 
-          @click="showProductDetailModal = false; openEditModal(selectedProduct)" 
+        <button
+          class="btn btn-primary"
+          @click="showProductDetailModal = false; openEditModal(selectedProduct)"
           v-if="auth.isAdmin"
         >
           ✏️ Editar
@@ -337,6 +342,7 @@ import { useToastStore } from '@/stores/toast'
 import ModalBase from '@/components/shared/ModalBase.vue'
 import CurrencyInput from '@/components/shared/CurrencyInput.vue'
 import ConfirmDialog from '@/components/shared/ConfirmDialog.vue'
+import SkeletonLoader from '@/components/shared/SkeletonLoader.vue'
 import { toUpperCase } from '@/utils/textFormat'
 import { formatNumber, formatDate } from '@/utils/format'
 
@@ -349,6 +355,7 @@ const suppliers = ref([])
 const businessPartners = ref([])
 const loading = ref(true)
 const saving = ref(false)
+const searching = ref(false)
 const search = ref('')
 const filterCategory = ref('')
 const filterStatus = ref('')
@@ -380,11 +387,13 @@ function suggestPrice() {
 
 let searchTimeout = null
 function onSearchInput() {
+  searching.value = true
   clearTimeout(searchTimeout)
-  searchTimeout = setTimeout(() => {
+  searchTimeout = setTimeout(async () => {
     pageNumber.value = 1
-    loadProducts()
-  }, 400)
+    await loadProducts()
+    searching.value = false
+  }, 300)
 }
 
 function onFilterChange() {
@@ -400,17 +409,17 @@ async function loadProducts() {
       const res = await api.get('/Partner/my/products')
       products.value = res.data.data
     } else {
-      const params = { 
-        pageNumber: pageNumber.value, 
-        pageSize: pageSize.value, 
-        search: search.value 
+      const params = {
+        pageNumber: pageNumber.value,
+        pageSize: pageSize.value,
+        search: search.value
       }
-      
+
       // Agregar filtros opcionales
       if (filterCategory.value) {
         params.categoryId = filterCategory.value
       }
-      
+
       // Filtro de estado
       if (filterStatus.value === 'inactive') {
         params.isActive = false
@@ -421,7 +430,7 @@ async function loadProducts() {
         // Default '' → solo activos
         params.isActive = true
       }
-      
+
       const res = await api.get('/Product', { params })
       const data = res.data.data
       products.value = data.data
@@ -592,16 +601,37 @@ onMounted(() => {
 .page-title { font-size: 18px; font-weight: 700; color: var(--color-text); }
 .page-sub { font-size: 12px; color: var(--color-text-muted); margin-top: 2px; }
 
-.search-bar { 
-  display: flex; 
+.search-bar {
+  display: flex;
   gap: 12px;
   flex-wrap: wrap;
 }
 
-.search-input { 
-  max-width: 320px; 
+.search-input-wrapper {
+  position: relative;
+  max-width: 320px;
   flex: 1;
   min-width: 200px;
+}
+
+.search-input {
+  width: 100%;
+  padding-right: 36px;
+}
+
+.search-spinner {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  animation: spin 1s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes spin {
+  from { transform: translateY(-50%) rotate(0deg); }
+  to { transform: translateY(-50%) rotate(360deg); }
 }
 
 .filter-select {

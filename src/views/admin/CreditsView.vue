@@ -2,7 +2,7 @@
   <div class="credits-view">
     <div class="page-header-row">
       <div>
-        <h2 class="page-title">Créditos</h2>
+        <!-- <h2 class="page-title">Créditos</h2> -->
         <p class="page-sub">{{ totalRecords }} créditos registrados</p>
       </div>
       <select v-model="statusFilter" class="form-input filter-select" @change="onFilterChange">
@@ -14,13 +14,16 @@
     </div>
 
     <div class="search-bar">
-      <input
-        v-model="search"
-        type="text"
-        class="form-input search-input"
-        placeholder="Buscar por factura o cliente..."
-        @input="onSearchInput"
-      />
+      <div class="search-input-wrapper">
+        <input
+          v-model="search"
+          type="text"
+          class="form-input search-input"
+          placeholder="Buscar por factura o cliente..."
+          @input="onSearchInput"
+        />
+        <span v-if="searching" class="search-spinner" title="Buscando...">🔍</span>
+      </div>
     </div>
 
     <div class="card">
@@ -186,6 +189,7 @@ const creditDetail = ref(null)
 const credits = ref([])
 const loading = ref(true)
 const saving = ref(false)
+const searching = ref(false)
 const statusFilter = ref('')
 const search = ref('')
 const showModal = ref(false)
@@ -239,11 +243,13 @@ async function openDetailModal(credit) {
 
 let searchTimeout = null
 function onSearchInput() {
+  searching.value = true
   clearTimeout(searchTimeout)
-  searchTimeout = setTimeout(() => {
+  searchTimeout = setTimeout(async () => {
     pageNumber.value = 1
-    loadCredits()
-  }, 400)
+    await loadCredits()
+    searching.value = false
+  }, 300)
 }
 
 function onFilterChange() {
@@ -360,7 +366,27 @@ onMounted(() => {
 .page-sub { font-size: 12px; color: var(--color-text-muted); margin-top: 2px; }
 .filter-select { max-width: 200px; }
 .search-bar { display: flex; }
-.search-input { max-width: 320px; }
+.search-input-wrapper {
+  position: relative;
+  max-width: 320px;
+}
+.search-input {
+  width: 100%;
+  padding-right: 36px;
+}
+.search-spinner {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  animation: spin 1s linear infinite;
+  pointer-events: none;
+}
+@keyframes spin {
+  from { transform: translateY(-50%) rotate(0deg); }
+  to { transform: translateY(-50%) rotate(360deg); }
+}
 .state-text { text-align: center; padding: 40px 0; color: var(--color-text-muted); font-size: 13px; }
 
 .pagination {

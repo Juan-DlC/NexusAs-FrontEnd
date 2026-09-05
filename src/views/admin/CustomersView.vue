@@ -2,7 +2,7 @@
   <div class="customers-view">
     <div class="page-header-row">
       <div>
-        <h2 class="page-title">Clientes</h2>
+        <!-- <h2 class="page-title">Clientes</h2> -->
         <p class="page-sub">{{ totalRecords }} clientes registrados</p>
       </div>
       <button class="btn btn-primary floating-action-btn" @click="openCreateModal" v-if="auth.isAdmin">
@@ -11,17 +11,22 @@
     </div>
 
     <div class="search-bar">
-      <input
-        v-model="search"
-        type="text"
-        class="form-input search-input"
-        placeholder="Buscar por nombre o documento..."
-        @input="onSearchInput"
-      />
+      <div class="search-input-wrapper">
+        <input
+          v-model="search"
+          type="text"
+          class="form-input search-input"
+          placeholder="Buscar por nombre o documento..."
+          @input="onSearchInput"
+        />
+        <span v-if="searching" class="search-spinner" title="Buscando...">🔍</span>
+      </div>
     </div>
 
     <div class="card">
-      <div v-if="loading" class="state-text">Cargando...</div>
+      <!-- Skeleton Loader mientras carga -->
+      <SkeletonLoader v-if="loading" type="table" :rows="8" :columns="6" />
+
       <div v-else-if="customers.length === 0" class="state-text">
         No se encontraron clientes.
       </div>
@@ -111,6 +116,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useToastStore } from '@/stores/toast'
 import ModalBase from '@/components/shared/ModalBase.vue'
 import ConfirmDialog from '@/components/shared/ConfirmDialog.vue'
+import SkeletonLoader from '@/components/shared/SkeletonLoader.vue'
 import { toUpperCase } from '@/utils/textFormat'
 import { formatNumber, formatDate } from '@/utils/format'
 
@@ -119,6 +125,7 @@ const toast = useToastStore()
 const customers = ref([])
 const loading = ref(true)
 const saving = ref(false)
+const searching = ref(false)
 const search = ref('')
 const showModal = ref(false)
 const editingCustomer = ref(null)
@@ -137,11 +144,13 @@ const form = ref({ name: '', document: '', phone: '', email: '', notes: '' })
 
 let searchTimeout = null
 function onSearchInput() {
+  searching.value = true
   clearTimeout(searchTimeout)
-  searchTimeout = setTimeout(() => {
+  searchTimeout = setTimeout(async () => {
     pageNumber.value = 1
-    loadCustomers()
-  }, 400)
+    await loadCustomers()
+    searching.value = false
+  }, 300)
 }
 
 async function loadCustomers() {
@@ -245,18 +254,32 @@ onMounted(loadCustomers)
 </script>
 
 <style scoped>
-.notes-cell {
-  max-width: 180px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 .customers-view { display: flex; flex-direction: column; gap: 16px; }
 .page-header-row { display: flex; align-items: center; justify-content: space-between; }
 .page-title { font-size: 18px; font-weight: 700; color: var(--color-text); }
 .page-sub { font-size: 12px; color: var(--color-text-muted); margin-top: 2px; }
 .search-bar { display: flex; }
-.search-input { max-width: 320px; }
+.search-input-wrapper {
+  position: relative;
+  max-width: 320px;
+}
+.search-input {
+  width: 100%;
+  padding-right: 36px;
+}
+.search-spinner {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  animation: spin 1s linear infinite;
+  pointer-events: none;
+}
+@keyframes spin {
+  from { transform: translateY(-50%) rotate(0deg); }
+  to { transform: translateY(-50%) rotate(360deg); }
+}
 .state-text { text-align: center; padding: 40px 0; color: var(--color-text-muted); font-size: 13px; }
 .btn-icon { background: var(--color-bg); width: 30px; height: 30px; border-radius: 8px; margin-right: 6px; transition: var(--transition); }
 .btn-icon:hover { background: var(--color-accent-light); }

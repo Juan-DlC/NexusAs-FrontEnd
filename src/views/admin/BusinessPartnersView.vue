@@ -2,7 +2,7 @@
   <div class="business-partners-view">
     <div class="page-header-row">
       <div>
-        <h2 class="page-title">Socios Comerciales</h2>
+        <!-- <h2 class="page-title">Socios Comerciales</h2> -->
         <p class="page-sub">{{ partners.length }} socios registrados</p>
       </div>
       <button class="btn btn-primary floating-action-btn" @click="openCreateModal">
@@ -18,8 +18,8 @@
       <table v-else>
         <thead>
           <tr>
-            <th>Nombre</th>
-            <th>Documento</th>
+            <th>Nombre COMERCIAL</th>
+            <th>NOMBRE NATURAL</th>
             <th>Teléfono</th>
             <th>% Comisión</th>
             <th>Productos</th>
@@ -223,14 +223,14 @@
           <div v-if="liquidationPreview && liquidationPreview.sales?.length > 0" class="confirm-liquidation-box">
             <div class="confirm-summary">
               <p>✅ Se liquidarán <strong>{{ liquidationPreview.sales.length }} facturas</strong></p>
-              <p>💰 Total para <strong>{{ selectedPartner.name }}</strong>: 
+              <p>💰 Total para <strong>{{ selectedPartner.name }}</strong>:
                 <strong style="color: var(--color-accent);">${{ formatNumber(liquidationPreview.businessPartnerEarning) }}</strong>
               </p>
-              <p>🏪 Total para <strong>AS Accesorios</strong>: 
+              <p>🏪 Total para <strong>AS Accesorios</strong>:
                 <strong style="color: var(--color-success);">${{ formatNumber(liquidationPreview.asEarning) }}</strong>
               </p>
             </div>
-            
+
             <div class="form-group" style="margin-top: 12px;">
               <label class="form-label">Notas de liquidación (opcional)</label>
               <input v-model="liquidationNotes" type="text" class="form-input"
@@ -290,8 +290,8 @@
                 </span>
               </td>
               <td>
-                <span 
-                  v-if="l.notes" 
+                <span
+                  v-if="l.notes"
                   :title="l.notes"
                   style="cursor: help; font-size: 12px;"
                 >
@@ -400,7 +400,7 @@ async function savePartner() {
     toast.show('El nombre es obligatorio', 'warning')
     return
   }
-  
+
   if (!form.value.documentNumber.trim()) {
     toast.show('El documento es obligatorio', 'warning')
     return
@@ -408,7 +408,7 @@ async function savePartner() {
 
   try {
     saving.value = true
-    
+
     // Construir payload según especificación del backend
     const payload = {
       name: form.value.name,
@@ -418,7 +418,7 @@ async function savePartner() {
       address: form.value.address || null,
       commissionPercent: form.value.commissionPercent
     }
-    
+
     if (editingPartner.value) {
       await api.put(`/BusinessPartner/${editingPartner.value.id}`, payload)
       toast.show('Socio actualizado correctamente', 'success')
@@ -457,7 +457,7 @@ async function saveCommission() {
 
 async function openDetailModal(partner) {
   console.log('🔍 ABRIENDO DETALLE DE SOCIA:', partner.name)
-  
+
   selectedPartner.value = partner
   liquidationPreview.value = null
   liquidationNotes.value = ''
@@ -468,16 +468,16 @@ async function openDetailModal(partner) {
 
   showDetailModal.value = true
   console.log('✅ showDetailModal =', showDetailModal.value)
-  
+
   loadingLiquidations.value = true
 
   try {
     const res = await api.get(`/BusinessPartner/${partner.id}/liquidations`, {
       params: { pageNumber: 1, pageSize: 20 }
     })
-    
+
     console.log('📦 Liquidaciones recibidas:', res.data.data)
-    
+
     // ✅ TRANSFORMAR: Mapear propiedades del backend al formato que espera el frontend
     const rawLiquidations = res.data.data?.data || []
     liquidations.value = rawLiquidations.map(liq => {
@@ -488,7 +488,7 @@ async function openDetailModal(partner) {
       let partnerCommissionAmount = 0
       let businessPartnerEarning = 0
       let asEarning = 0
-      
+
       if (liq.details && liq.details.length > 0) {
         liq.details.forEach(d => {
           totalRevenue += (d.salePrice || 0) * (d.quantity || 0)
@@ -499,7 +499,7 @@ async function openDetailModal(partner) {
           asEarning += d.asAmount || 0
         })
       }
-      
+
       return {
         id: liq.id,
         liquidationNumber: liq.liquidationNumber,
@@ -533,24 +533,24 @@ async function previewLiquidation() {
 
   try {
     loadingPreview.value = true
-    
+
     const res = await api.get(`/BusinessPartner/${selectedPartner.value.id}/liquidation/preview`, {
       params: {
         from: liquidationFrom.value,
         to: liquidationTo.value + 'T23:59:59'
       }
     })
-    
+
     // ✅ TRANSFORMACIÓN: Agrupar líneas de venta por factura y mapear propiedades
     const rawData = res.data.data
-    
+
     if (rawData.sales && rawData.sales.length > 0) {
       // Agrupar por saleNumber (factura)
       const salesByInvoice = {}
-      
+
       rawData.sales.forEach(line => {
         const invoiceNum = line.saleNumber
-        
+
         if (!salesByInvoice[invoiceNum]) {
           salesByInvoice[invoiceNum] = {
             saleId: line.saleId,
@@ -566,7 +566,7 @@ async function previewLiquidation() {
             asEarning: 0
           }
         }
-        
+
         // Sumar los valores de cada línea
         salesByInvoice[invoiceNum].revenue += (line.salePrice || 0) * (line.quantity || 0)
         salesByInvoice[invoiceNum].cost += (line.costPrice || 0) * (line.quantity || 0)
@@ -575,15 +575,15 @@ async function previewLiquidation() {
         salesByInvoice[invoiceNum].businessPartnerEarning += line.businessPartnerAmount || 0
         salesByInvoice[invoiceNum].asEarning += line.asAmount || 0
       })
-      
+
       // Convertir objeto a array
       const aggregatedSales = Object.values(salesByInvoice)
-      
+
       // Calcular netProfit (grossProfit - partnerCommissionAmount)
       aggregatedSales.forEach(sale => {
         sale.netProfit = sale.grossProfit - sale.partnerCommissionAmount
       })
-      
+
       // ✅ RECALCULAR TOTALES AGREGADOS desde las facturas agrupadas
       const totals = aggregatedSales.reduce((acc, sale) => {
         acc.totalRevenue += sale.revenue
@@ -603,7 +603,7 @@ async function previewLiquidation() {
         businessPartnerEarning: 0,
         asEarning: 0
       })
-      
+
       // Reemplazar sales y totales con datos agregados
       liquidationPreview.value = {
         ...rawData,
@@ -629,7 +629,7 @@ async function previewLiquidation() {
 async function confirmLiquidation() {
   try {
     saving.value = true
-    
+
     const payload = {
       from: liquidationFrom.value,
       fromDate: liquidationFrom.value,
@@ -637,9 +637,9 @@ async function confirmLiquidation() {
       toDate: liquidationTo.value + 'T23:59:59',
       notes: liquidationNotes.value || null
     }
-    
+
     await api.post(`/BusinessPartner/${selectedPartner.value.id}/liquidation/confirm`, payload)
-    
+
     toast.show('✅ Liquidación confirmada y registrada correctamente', 'success')
     liquidationPreview.value = null
     liquidationNotes.value = ''
@@ -649,7 +649,7 @@ async function confirmLiquidation() {
     const liqRes = await api.get(`/BusinessPartner/${selectedPartner.value.id}/liquidations`, {
       params: { pageNumber: 1, pageSize: 20 }
     })
-    
+
     // ✅ TRANSFORMAR: Mapear propiedades del backend al formato que espera el frontend
     const rawLiquidations = liqRes.data.data?.data || []
     liquidations.value = rawLiquidations.map(liq => {
@@ -660,7 +660,7 @@ async function confirmLiquidation() {
       let partnerCommissionAmount = 0
       let businessPartnerEarning = 0
       let asEarning = 0
-      
+
       if (liq.details && liq.details.length > 0) {
         liq.details.forEach(d => {
           totalRevenue += (d.salePrice || 0) * (d.quantity || 0)
@@ -671,7 +671,7 @@ async function confirmLiquidation() {
           asEarning += d.asAmount || 0
         })
       }
-      
+
       return {
         id: liq.id,
         liquidationNumber: liq.liquidationNumber,

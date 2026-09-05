@@ -2,7 +2,7 @@
   <div class="users-view">
     <div class="page-header-row">
       <div>
-        <h2 class="page-title">Usuarios</h2>
+        <!-- <h2 class="page-title">Usuarios</h2> -->
         <p class="page-sub">{{ users.length }} usuarios registrados</p>
       </div>
       <div class="header-actions">
@@ -17,7 +17,8 @@
     </div>
 
     <div class="card">
-      <div v-if="loading" class="state-text">Cargando...</div>
+      <SkeletonLoader v-if="loading" type="table" :rows="6" :columns="5" />
+
       <div v-else-if="users.length === 0" class="state-text">
         No hay usuarios registrados.
       </div>
@@ -58,22 +59,22 @@
       <form @submit.prevent="saveUser">
         <div class="form-group">
           <label class="form-label">Nombre completo</label>
-          <input 
-            v-model="form.fullName" 
-            type="text" 
-            class="form-input" 
-            required 
+          <input
+            v-model="form.fullName"
+            type="text"
+            class="form-input"
+            required
             style="text-transform: uppercase;"
             @input="form.fullName = form.fullName.toUpperCase()"
           />
         </div>
         <div class="form-group">
           <label class="form-label">Usuario (username)</label>
-          <input 
-            v-model="form.username" 
-            type="text" 
-            class="form-input" 
-            required 
+          <input
+            v-model="form.username"
+            type="text"
+            class="form-input"
+            required
             style="text-transform: uppercase;"
             @input="form.username = form.username.toUpperCase()"
           />
@@ -172,6 +173,7 @@ import api from '@/api/axios'
 import { useToastStore } from '@/stores/toast'
 import ModalBase from '@/components/shared/ModalBase.vue'
 import ConfirmDialog from '@/components/shared/ConfirmDialog.vue'
+import SkeletonLoader from '@/components/shared/SkeletonLoader.vue'
 
 const toast = useToastStore()
 
@@ -350,20 +352,20 @@ onMounted(loadUsers)
   margin-bottom: 14px;
 }
 
-.reset-user-icon { 
-  font-size: 28px; 
+.reset-user-icon {
+  font-size: 28px;
 }
 
-.reset-user-name { 
-  font-size: 14px; 
-  font-weight: 700; 
-  color: var(--color-text); 
+.reset-user-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text);
 }
 
-.reset-user-role { 
-  font-size: 12px; 
-  color: var(--color-text-muted); 
-  margin-top: 2px; 
+.reset-user-role {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
 }
 
 .reset-warning {
@@ -376,15 +378,15 @@ onMounted(loadUsers)
   line-height: 1.5;
 }
 
-.error-hint { 
-  font-size: 12px; 
-  color: var(--color-danger); 
-  margin-top: 4px; 
+.error-hint {
+  font-size: 12px;
+  color: var(--color-danger);
+  margin-top: 4px;
 }
 
-.success-hint { 
-  font-size: 12px; 
-  color: var(--color-success); 
-  margin-top: 4px; 
+.success-hint {
+  font-size: 12px;
+  color: var(--color-success);
+  margin-top: 4px;
 }
 </style>

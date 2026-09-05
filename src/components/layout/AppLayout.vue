@@ -47,7 +47,12 @@
 
     <main class="main-content">
       <header class="topbar">
-        <h1 class="page-title">{{ currentPageTitle }}</h1>
+        <div class="topbar-left">
+          <h1 class="page-title">{{ currentPageTitle }}</h1>
+          <nav class="breadcrumbs" v-if="route.path !== '/'">
+            <router-link to="/" class="breadcrumb-item">Dashboard</router-link>
+          </nav>
+        </div>
         <span class="topbar-date">{{ currentDate }}</span>
       </header>
 
@@ -390,11 +395,43 @@ function handleLogout() {
   box-shadow: var(--shadow-xs);
 }
 
+.topbar-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .page-title {
   font-size: 18px;
   font-weight: 700;
   color: var(--color-text);
   letter-spacing: -0.01em;
+}
+
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.breadcrumb-item {
+  color: var(--color-text-muted);
+  transition: color 0.2s ease;
+}
+
+.breadcrumb-item:hover:not(.current) {
+  color: var(--color-accent);
+}
+
+.breadcrumb-item.current {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.breadcrumb-separator {
+  color: var(--color-border);
+  user-select: none;
 }
 
 .topbar-date {

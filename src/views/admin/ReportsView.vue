@@ -2,7 +2,7 @@
   <div class="reports-view">
     <div class="page-header-row">
       <div>
-        <h2 class="page-title">Reportes</h2>
+        <!-- <h2 class="page-title">Reportes</h2> -->
         <p class="page-sub">Genera informes en PDF y Excel</p>
       </div>
     </div>

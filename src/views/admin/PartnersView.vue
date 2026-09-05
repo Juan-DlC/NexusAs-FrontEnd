@@ -1,10 +1,10 @@
 <template>
   <div class="partners-view">
     <div class="page-header-row">
-      <div>
+      <!-- <div>
         <h2 class="page-title">Socias Vendedoras</h2>
         <p class="page-sub">{{ partners.length }} socias registradas</p>
-      </div>
+      </div> -->
       <button class="btn btn-secondary" @click="openSelectPartnerForSale" style="margin-right: 8px;">
         🧾 Venta a socia
       </button>
@@ -23,41 +23,41 @@
         <div class="form-group">
           <label class="form-label">% comisión productos normales (AS)</label>
           <div style="display: flex; align-items: center; gap: 8px;">
-            <input 
-              v-model.number="commissionForm.commissionPercent" 
-              type="number" 
-              min="1" 
-              max="100" 
+            <input
+              v-model.number="commissionForm.commissionPercent"
+              type="number"
+              min="1"
+              max="100"
               class="form-input"
-              style="max-width: 80px;" 
+              style="max-width: 80px;"
             />
             <span>%</span>
           </div>
           <p class="hint-text">% de la ganancia de AS en productos normales que recibe esta socia.</p>
         </div>
-        
+
         <div class="form-group" style="margin-top: 12px;">
           <label class="form-label">% comisión por socio comercial (Alianza)</label>
-          
+
           <div v-if="businessPartners.length === 0" class="hint-text">
             No hay socios comerciales registrados. Créalos en "Socios Comerciales".
           </div>
-          
+
           <div v-for="bp in businessPartners" :key="bp.id" class="alliance-commission-row">
             <span class="alliance-name">🤝 {{ bp.name }}</span>
             <div style="display: flex; align-items: center; gap: 6px;">
-              <input 
-                v-model.number="commissionForm.allianceCommissionPercent" 
-                type="number" 
-                min="1" 
-                max="100" 
+              <input
+                v-model.number="commissionForm.allianceCommissionPercent"
+                type="number"
+                min="1"
+                max="100"
                 class="form-input"
-                style="max-width: 70px;" 
+                style="max-width: 70px;"
               />
               <span>%</span>
             </div>
           </div>
-          
+
           <p class="hint-text" v-if="businessPartners.length > 0">
             % de la ganancia que recibe esta socia al vender productos de alianza.
             (Actualmente aplica igual para todos los socios comerciales.)
@@ -193,7 +193,7 @@ async function loadPartners() {
 
 async function openCommissionModal(partner) {
   selectedPartner.value = partner
-  
+
   // Cargar socios comerciales
   try {
     const res = await api.get('/BusinessPartner', { params: { pageSize: 100 } })
@@ -201,7 +201,7 @@ async function openCommissionModal(partner) {
   } catch {
     businessPartners.value = []
   }
-  
+
   commissionForm.value = {
     commissionPercent: partner.commissionPercent,
     allianceCommissionPercent: partner.allianceCommissionPercent || 20
@@ -278,27 +278,27 @@ async function onPaymentSaved() {
   toast.show('Abono registrado correctamente', 'success')
   showLiquidationModal.value = false
   selectedInvoice.value = null
-  
+
   if (!selectedPartner.value) return
 
   // Recargar resumen, facturas y liquidaciones en paralelo
   try {
     const [summaryRes, invoicesRes, liqRes] = await Promise.all([
       api.get(`/Partner/${selectedPartner.value.id}/admin-summary`),
-      api.get(`/Partner/${selectedPartner.value.id}/invoices`, { 
-        params: { pageNumber: invoicesPageNumber.value, pageSize: 20 } 
+      api.get(`/Partner/${selectedPartner.value.id}/invoices`, {
+        params: { pageNumber: invoicesPageNumber.value, pageSize: 20 }
       }),
-      api.get(`/Partner/${selectedPartner.value.id}/liquidations/paged`, { 
-        params: { pageNumber: liquidationsPage.value, pageSize: 10 } 
+      api.get(`/Partner/${selectedPartner.value.id}/liquidations/paged`, {
+        params: { pageNumber: liquidationsPage.value, pageSize: 10 }
       })
     ])
-    
+
     partnerDetail.value = summaryRes.data.data
     partnerInvoices.value = invoicesRes.data.data?.data || []
     invoicesTotalPages.value = invoicesRes.data.data?.totalPages || 1
     liquidations.value = liqRes.data.data?.data || []
     liquidationsTotalPages.value = liqRes.data.data?.totalPages || 1
-    
+
     // Si hay un modal de factura abierto, recargar sus datos actualizados
     if (showInvoiceDetailModal.value && selectedInvoiceDetail.value) {
       const invoiceRes = await api.get(`/Sale/${selectedInvoiceDetail.value.id}`)

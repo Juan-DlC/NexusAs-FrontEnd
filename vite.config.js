@@ -16,7 +16,34 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5174,       // Fija el puerto en 5173
+    port: 5174,
     strictPort: true  
+  },
+  build: {
+    // Optimización del build
+    rollupOptions: {
+      output: {
+        // Code splitting manual para optimizar chunks
+        manualChunks: (id) => {
+          // Vendor principal (Vue ecosystem)
+          if (id.includes('node_modules/vue') || id.includes('node_modules/@vue') || 
+              id.includes('node_modules/pinia')) {
+            return 'vendor-vue'
+          }
+          
+          // Vendor secundario (axios)
+          if (id.includes('node_modules/axios')) {
+            return 'vendor-axios'
+          }
+          
+          // Componentes compartidos
+          if (id.includes('/components/shared/')) {
+            return 'components-shared'
+          }
+        }
+      }
+    },
+    // Aumentar límite de advertencia de chunk size
+    chunkSizeWarningLimit: 600
   }
 })

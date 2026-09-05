@@ -2,12 +2,12 @@
   <div class="sales-view">
     <div class="page-header-row">
       <div>
-        <h2 class="page-title">Ventas</h2>
+        <!-- <h2 class="page-title">Ventas</h2> -->
         <p class="page-sub">{{ totalRecords }} ventas registradas</p>
       </div>
-      <button 
+      <button
         v-if="auth.isAdmin || auth.isSeller"
-        class="btn btn-primary floating-action-btn" 
+        class="btn btn-primary floating-action-btn"
         @click="showFormModal = true"
       >
         + Nueva venta
@@ -15,13 +15,16 @@
     </div>
 
     <div class="search-bar">
-      <input
-        v-model="search"
-        type="text"
-        class="form-input search-input"
-        placeholder="Buscar por factura o cliente..."
-        @input="onSearchInput"
-      />
+      <div class="search-input-wrapper">
+        <input
+          v-model="search"
+          type="text"
+          class="form-input search-input"
+          placeholder="Buscar por factura o cliente..."
+          @input="onSearchInput"
+        />
+        <span v-if="searching" class="search-spinner" title="Buscando...">🔍</span>
+      </div>
     </div>
 
     <div class="card">
@@ -33,7 +36,7 @@
         <thead>
           <tr>
             <th>Factura</th>
-            <th>Cliente/Socia</th>
+            <th>Cliente</th>
             <th>Fecha</th>
             <th>Método</th>
             <th>Total</th>
@@ -116,6 +119,7 @@ const sales = ref([])
 const customers = ref([])
 const paymentMethods = ref([])
 const loading = ref(true)
+const searching = ref(false)
 const search = ref('')
 const selectedSale = ref(null)
 const showFormModal = ref(false)
@@ -219,11 +223,13 @@ async function onSaleCreated() {
 
 let searchTimeout = null
 function onSearchInput() {
+  searching.value = true
   clearTimeout(searchTimeout)
-  searchTimeout = setTimeout(() => {
+  searchTimeout = setTimeout(async () => {
     pageNumber.value = 1
-    loadSales()
-  }, 400)
+    await loadSales()
+    searching.value = false
+  }, 300)
 }
 
 function changePage(page) {
@@ -267,8 +273,30 @@ onMounted(() => {
   display: flex;
 }
 
+.search-input-wrapper {
+  position: relative;
+  max-width: 380px;
+  flex: 1;
+}
+
 .search-input {
-  max-width: 320px;
+  width: 100%;
+  padding-right: 36px;
+}
+
+.search-spinner {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  animation: spin 1s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes spin {
+  from { transform: translateY(-50%) rotate(0deg); }
+  to { transform: translateY(-50%) rotate(360deg); }
 }
 
 .state-text {

@@ -2,7 +2,7 @@
   <div class="categories-view">
     <div class="page-header-row">
       <div>
-        <h2 class="page-title">Categorías</h2>
+        <!-- <h2 class="page-title">Categorías</h2> -->
         <p class="page-sub">{{ totalRecords }} categorías registradas</p>
       </div>
      <button class="btn btn-primary floating-action-btn" @click="openCreateModal">
@@ -11,17 +11,21 @@
     </div>
 
     <div class="search-bar">
-      <input
-        v-model="search"
-        type="text"
-        class="form-input search-input"
-        placeholder="Buscar por nombre..."
-        @input="onSearchInput"
-      />
+      <div class="search-input-wrapper">
+        <input
+          v-model="search"
+          type="text"
+          class="form-input search-input"
+          placeholder="Buscar por nombre..."
+          @input="onSearchInput"
+        />
+        <span v-if="searching" class="search-spinner" title="Buscando...">🔍</span>
+      </div>
     </div>
 
     <div class="card">
-      <div v-if="loading" class="state-text">Cargando...</div>
+      <SkeletonLoader v-if="loading" type="table" :rows="6" :columns="3" />
+
       <div v-else-if="categories.length === 0" class="state-text">
         No hay categorías registradas.
       </div>
@@ -90,6 +94,7 @@ import api from '@/api/axios'
 import { useToastStore } from '@/stores/toast'
 import ModalBase from '@/components/shared/ModalBase.vue'
 import ConfirmDialog from '@/components/shared/ConfirmDialog.vue'
+import SkeletonLoader from '@/components/shared/SkeletonLoader.vue'
 import { toUpperCase } from '@/utils/textFormat'
 import { formatNumber, formatDate } from '@/utils/format'
 
@@ -98,6 +103,7 @@ const toast = useToastStore()
 const categories = ref([])
 const loading = ref(true)
 const saving = ref(false)
+const searching = ref(false)
 const search = ref('')
 const showModal = ref(false)
 const editingCategory = ref(null)
@@ -115,11 +121,13 @@ const hasPreviousPage = ref(false)
 
 let searchTimeout = null
 function onSearchInput() {
+  searching.value = true
   clearTimeout(searchTimeout)
-  searchTimeout = setTimeout(() => {
+  searchTimeout = setTimeout(async () => {
     pageNumber.value = 1
-    loadCategories()
-  }, 400)
+    await loadCategories()
+    searching.value = false
+  }, 300)
 }
 
 function changePage(page) {
@@ -215,7 +223,27 @@ onMounted(loadCategories)
 .page-title { font-size: 18px; font-weight: 700; color: var(--color-text); }
 .page-sub { font-size: 12px; color: var(--color-text-muted); margin-top: 2px; }
 .search-bar { display: flex; }
-.search-input { max-width: 320px; }
+.search-input-wrapper {
+  position: relative;
+  max-width: 320px;
+}
+.search-input {
+  width: 100%;
+  padding-right: 36px;
+}
+.search-spinner {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  animation: spin 1s linear infinite;
+  pointer-events: none;
+}
+@keyframes spin {
+  from { transform: translateY(-50%) rotate(0deg); }
+  to { transform: translateY(-50%) rotate(360deg); }
+}
 .state-text { text-align: center; padding: 40px 0; color: var(--color-text-muted); font-size: 13px; }
 .btn-icon { background: var(--color-bg); width: 30px; height: 30px; border-radius: 8px; margin-right: 6px; transition: var(--transition); }
 .btn-icon:hover { background: var(--color-accent-light); }

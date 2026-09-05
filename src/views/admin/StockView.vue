@@ -2,7 +2,7 @@
   <div class="stock-view">
     <div class="page-header-row">
       <div>
-        <h2 class="page-title">Control de Stock</h2>
+        <!-- <h2 class="page-title">Control de Stock</h2> -->
         <p class="page-sub">Kardex de movimientos por producto</p>
       </div>
       <div class="header-actions">
