@@ -208,7 +208,7 @@ async function loadUsers() {
     loading.value = true
     const res = await api.get('/User', { params: { includeInactive: showInactive.value } })
     users.value = res.data.data
-  } catch (err) {
+  } catch {
     toast.show('Error al cargar los usuarios', 'error')
   } finally {
     loading.value = false

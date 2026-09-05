@@ -3,7 +3,7 @@
     <!-- Botones de Acción -->
     <div class="action-buttons-grid">
       <div class="action-card" @click="openSaleModal">
-        <div class="action-icon">🧾</div>
+        <div class="action-icon">💰</div>
         <div class="action-info">
           <span class="action-title">Nueva venta</span>
           <span class="action-sub">Registrar venta al cliente</span>
@@ -12,7 +12,7 @@
       </div>
       
       <div class="action-card action-card-addi" @click="openAddiLink">
-        <div class="action-icon">💳</div>
+        <div class="action-icon">🏦</div>
         <div class="action-info">
           <span class="action-title">Venta con Addi</span>
           <span class="action-sub">Financiamiento externo</span>
@@ -600,9 +600,9 @@ onMounted(loadDashboard)
 .stat-card {
   position: relative;
   background: var(--color-white);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
-  padding: 24px 22px;
+  padding: 18px 16px;
   box-shadow: var(--shadow-sm);
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   overflow: hidden;
@@ -634,21 +634,21 @@ onMounted(loadDashboard)
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 14px;
+  margin-bottom: 10px;
 }
 
 .stat-label {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--color-text-muted);
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
 }
 
 .stat-icon {
-  font-size: 32px;
+  font-size: 24px;
   color: var(--color-accent);
-  opacity: 0.3;
+  opacity: 0.25;
   transition: all 0.3s ease;
 }
 
@@ -658,15 +658,15 @@ onMounted(loadDashboard)
 }
 
 .stat-value {
-  font-size: 32px;
-  font-weight: 800;
-  margin-bottom: 6px;
-  line-height: 1;
-  letter-spacing: -0.02em;
+  font-size: 26px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
 }
 
 .stat-sub {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--color-text-muted);
   font-weight: 500;
 }

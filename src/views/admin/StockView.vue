@@ -136,7 +136,7 @@ import { useToastStore } from '@/stores/toast'
 import ModalBase from '@/components/shared/ModalBase.vue'
 import ProductSearch from '@/components/shared/ProductSearch.vue'
 import { toUpperCase } from '@/utils/textFormat'
-import { formatNumber, formatDate } from '@/utils/format'
+import { formatDate } from '@/utils/format'
 
 const toast = useToastStore()
 
@@ -172,10 +172,6 @@ function onStockProductSelect(product) {
   selectedProductId.value = product.id
   selectedProductInfo.value = product
   loadMovements()
-}
-
-function onAdjustProductSelect() {
-  adjustmentForm.value.newStock = getCurrentStock(adjustmentForm.value.productId)
 }
 
 async function loadProducts() {

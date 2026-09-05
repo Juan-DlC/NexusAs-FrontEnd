@@ -1,10 +1,10 @@
 <template>
   <div class="partners-view">
     <div class="page-header-row">
-      <!-- <div>
+      <div>
         <h2 class="page-title">Socias Vendedoras</h2>
         <p class="page-sub">{{ partners.length }} socias registradas</p>
-      </div> -->
+      </div>
       <button class="btn btn-secondary" @click="openSelectPartnerForSale" style="margin-right: 8px;">
         🧾 Venta a socia
       </button>

@@ -151,7 +151,7 @@ import ModalBase from '@/components/shared/ModalBase.vue'
 import ProductSearch from '@/components/shared/ProductSearch.vue'
 import CurrencyInput from '@/components/shared/CurrencyInput.vue'
 import { toUpperCase } from '@/utils/textFormat'
-import { formatNumber, formatDate } from '@/utils/format'
+import { formatNumber } from '@/utils/format'
 
 const props = defineProps({
   modelValue: { type: Boolean, required: true },

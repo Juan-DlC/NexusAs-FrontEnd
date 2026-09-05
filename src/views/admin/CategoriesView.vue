@@ -96,7 +96,6 @@ import ModalBase from '@/components/shared/ModalBase.vue'
 import ConfirmDialog from '@/components/shared/ConfirmDialog.vue'
 import SkeletonLoader from '@/components/shared/SkeletonLoader.vue'
 import { toUpperCase } from '@/utils/textFormat'
-import { formatNumber, formatDate } from '@/utils/format'
 
 const toast = useToastStore()
 
@@ -147,7 +146,7 @@ async function loadCategories() {
     totalPages.value = data.totalPages
     hasNextPage.value = data.hasNextPage
     hasPreviousPage.value = data.hasPreviousPage
-  } catch (err) {
+  } catch {
     toast.show('Error al cargar las categorías', 'error')
   } finally {
     loading.value = false

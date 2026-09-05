@@ -50,12 +50,12 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '@/api/axios'
+import { useToastStore } from '@/stores/toast'
+import { formatNumber, formatDate } from '@/utils/format'
 
+const toast = useToastStore()
 const sales = ref([])
 const loading = ref(true)
-
-)
-}
 
 async function loadSales() {
   try {

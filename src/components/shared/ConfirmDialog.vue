@@ -15,7 +15,15 @@
 </template>
 
 <script setup>
-const props = defineProps({
+const { 
+  modelValue, 
+  title = '¿Confirmar acción?', 
+  message = '¿Estás seguro de que deseas continuar?', 
+  confirmText = 'Confirmar', 
+  cancelText = 'Cancelar', 
+  confirmClass = 'btn-danger', 
+  icon = '⚠️' 
+} = defineProps({
   modelValue: { type: Boolean, required: true },
   title: { type: String, default: '¿Confirmar acción?' },
   message: { type: String, default: '¿Estás seguro de que deseas continuar?' },

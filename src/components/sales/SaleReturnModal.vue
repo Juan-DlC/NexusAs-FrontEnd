@@ -1,6 +1,6 @@
 <template>
   <ModalBase 
-    v-model="props.modelValue" 
+    :model-value="props.modelValue" 
     @update:modelValue="emit('update:modelValue', $event)"
     title="Registrar devolución" 
     width="560px"
