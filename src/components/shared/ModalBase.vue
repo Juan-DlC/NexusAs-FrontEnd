@@ -145,8 +145,10 @@ function close() {
   background: linear-gradient(to top, rgba(200, 149, 108, 0.02), transparent);
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
+  gap: 10px;
   flex-shrink: 0;
+  flex-wrap: wrap;
+  align-items: center;
 }
 
 .modal-fade-enter-active, .modal-fade-leave-active {

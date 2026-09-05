@@ -3,7 +3,7 @@
     :model-value="modelValue" 
     @update:model-value="$emit('update:modelValue', $event)"
     title="Detalle de factura" 
-    width="600px" 
+    width="720px" 
     :z-index="1050"
   >
     <div v-if="invoice">
@@ -163,13 +163,14 @@ tbody td {
 }
 
 .btn {
-  padding: 8px 14px;
+  padding: 9px 12px;
   border-radius: var(--radius-sm);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: var(--transition);
   border: 1px solid var(--color-border);
+  white-space: nowrap;
 }
 
 .btn-secondary {

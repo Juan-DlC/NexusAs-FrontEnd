@@ -2,7 +2,7 @@
   <div class="products-view">
     <div class="page-header-row">
       <div>
-        <!-- <h2 class="page-title">Productos</h2> -->
+        <h2 class="page-title">Productos</h2>
         <p class="page-sub" v-if="!auth.isPartner">{{ totalRecords }} productos registrados</p>
         <p class="page-sub" v-else>Precios a los que AS te entrega cada producto</p>
       </div>
@@ -677,7 +677,8 @@ onMounted(() => {
 .hint-text {
   font-size: 12px;
   color: var(--color-accent);
-  margin: -10px 0 14px;
+  margin: 8px 0 0 0;
+  line-height: 1.4;
 }
 
 .checkbox-group { margin-bottom: 8px; }

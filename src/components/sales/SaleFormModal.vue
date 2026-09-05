@@ -26,20 +26,6 @@
         </select>
       </div>
 
-      <div class="form-group" v-if="isCredit">
-        <label class="form-label">Número de cuotas</label>
-        <select v-model.number="form.numberOfInstallments" class="form-input">
-          <option :value="1">1 cuota (pago único)</option>
-          <option :value="2">2 cuotas</option>
-          <option :value="3">3 cuotas</option>
-          <option :value="4">4 cuotas</option>
-          <option :value="6">6 cuotas</option>
-        </select>
-        <p class="hint-text" v-if="form.numberOfInstallments > 1">
-          Cada cuota: ${{ formatNumber(calculatedTotal / form.numberOfInstallments) }}
-        </p>
-      </div>
-
       <div class="form-group" v-if="!isCredit">
         <label class="form-label">Cliente (opcional)</label>
         <select v-model="form.customerId" class="form-input">
@@ -98,6 +84,20 @@
       <button type="button" class="btn btn-secondary btn-sm" @click="addDetail" style="margin-bottom: 16px;">
         + Agregar producto
       </button>
+
+      <div class="form-group" v-if="isCredit && form.details.some(d => d.productId)">
+        <label class="form-label">Número de cuotas</label>
+        <select v-model.number="form.numberOfInstallments" class="form-input">
+          <option :value="1">1 cuota (pago único)</option>
+          <option :value="2">2 cuotas</option>
+          <option :value="3">3 cuotas</option>
+          <option :value="4">4 cuotas</option>
+          <option :value="6">6 cuotas</option>
+        </select>
+        <p class="hint-text" v-if="form.numberOfInstallments > 1">
+          Cada cuota: ${{ formatNumber(calculatedTotal / form.numberOfInstallments) }}
+        </p>
+      </div>
 
       <div class="form-group">
         <label class="form-label">Descuento % (opcional)</label>

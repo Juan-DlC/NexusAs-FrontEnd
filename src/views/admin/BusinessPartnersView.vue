@@ -2,7 +2,7 @@
   <div class="business-partners-view">
     <div class="page-header-row">
       <div>
-        <!-- <h2 class="page-title">Socios Comerciales</h2> -->
+        <h2 class="page-title">Socios Comerciales</h2>
         <p class="page-sub">{{ partners.length }} socios registrados</p>
       </div>
       <button class="btn btn-primary floating-action-btn" @click="openCreateModal">
@@ -812,17 +812,22 @@ onMounted(loadPartners)
 
 .preview-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-  margin-bottom: 12px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 14px;
 }
 
 .preview-card {
   background: var(--color-white);
-  padding: 12px;
+  padding: 16px 18px;
   border-radius: var(--radius-sm);
   text-align: center;
   border: 1px solid var(--color-border);
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
 }
 
 .preview-card.success {
@@ -842,15 +847,18 @@ onMounted(loadPartners)
 
 .preview-label {
   display: block;
-  font-size: 10px;
+  font-size: 11px;
   color: var(--color-text-muted);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.03em;
 }
 
 .preview-card strong {
-  font-size: 14px;
+  font-size: 16px;
   color: var(--color-text);
+  font-weight: 700;
 }
 
 .clickable-row {

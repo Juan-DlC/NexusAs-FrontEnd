@@ -2,7 +2,7 @@
   <div class="categories-view">
     <div class="page-header-row">
       <div>
-        <!-- <h2 class="page-title">Categorías</h2> -->
+        <h2 class="page-title">Categorías</h2>
         <p class="page-sub">{{ totalRecords }} categorías registradas</p>
       </div>
      <button class="btn btn-primary floating-action-btn" @click="openCreateModal">

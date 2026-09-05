@@ -2,7 +2,7 @@
   <div class="sales-view">
     <div class="page-header-row">
       <div>
-        <!-- <h2 class="page-title">Ventas</h2> -->
+        <h2 class="page-title">Ventas</h2>
         <p class="page-sub">{{ totalRecords }} ventas registradas</p>
       </div>
       <button

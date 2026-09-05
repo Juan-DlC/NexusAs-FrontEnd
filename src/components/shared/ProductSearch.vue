@@ -58,8 +58,11 @@ let searchTimeout = null
 function onInput() {
   if (query.value.length < 2) {
     results.value = []
+    showResults.value = false
+    clearTimeout(searchTimeout)
     return
   }
+  showResults.value = true
   clearTimeout(searchTimeout)
   searchTimeout = setTimeout(async () => {
     try {

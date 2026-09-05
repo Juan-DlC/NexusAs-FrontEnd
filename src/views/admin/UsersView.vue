@@ -2,7 +2,7 @@
   <div class="users-view">
     <div class="page-header-row">
       <div>
-        <!-- <h2 class="page-title">Usuarios</h2> -->
+        <h2 class="page-title">Usuarios</h2>
         <p class="page-sub">{{ users.length }} usuarios registrados</p>
       </div>
       <div class="header-actions">

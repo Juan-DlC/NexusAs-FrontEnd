@@ -2,7 +2,7 @@
   <div class="credits-view">
     <div class="page-header-row">
       <div>
-        <!-- <h2 class="page-title">Créditos</h2> -->
+        <h2 class="page-title">Créditos</h2>
         <p class="page-sub">{{ totalRecords }} créditos registrados</p>
       </div>
       <select v-model="statusFilter" class="form-input filter-select" @change="onFilterChange">

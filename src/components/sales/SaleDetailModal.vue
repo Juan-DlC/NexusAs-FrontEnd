@@ -1,14 +1,14 @@
 <template>
-  <ModalBase 
-    v-model="props.modelValue" 
+  <ModalBase
+    v-model="props.modelValue"
     @update:modelValue="emit('update:modelValue', $event)"
-    title="Detalle de venta" 
+    title="Detalle de venta"
     width="560px"
   >
     <div v-if="props.sale">
       <div class="detail-summary">
         <p><strong>Factura:</strong> {{ props.sale.saleNumber }}</p>
-        <p><strong>Cliente/Socia:</strong> {{ props.sale.customerName || props.sale.sellerName || 'Sin cliente' }}</p>
+        <p><strong>Cliente:</strong> {{ props.sale.customerName || props.sale.sellerName || 'Sin cliente' }}</p>
         <p><strong>Fecha:</strong> {{ formatDate(props.sale.date) }}</p>
         <p><strong>Vendedor:</strong> {{ props.sale.processedByName || props.sale.sellerName }}</p>
         <p><strong>Método:</strong>
@@ -97,8 +97,8 @@
       <button class="btn btn-secondary" @click="emit('update:modelValue', false)">
         Cerrar
       </button>
-      <button 
-        class="btn btn-secondary" 
+      <button
+        class="btn btn-secondary"
         @click="showReturnModal = true"
         v-if="props.sale?.status !== 'FullReturn'"
       >
@@ -162,13 +162,13 @@ function onReturnSaved() {
   margin-bottom: 16px;
 }
 
-.detail-summary p { 
-  font-size: 13px; 
-  margin-bottom: 6px; 
+.detail-summary p {
+  font-size: 13px;
+  margin-bottom: 6px;
 }
 
-.detail-summary p:last-child { 
-  margin-bottom: 0; 
+.detail-summary p:last-child {
+  margin-bottom: 0;
 }
 
 .divider-label {
@@ -192,32 +192,32 @@ function onReturnSaved() {
   font-size: 15px;
 }
 
-.return-notice { 
-  background: #FFF3E0; 
-  border-left: 3px solid var(--color-warning); 
-  padding: 8px 12px; 
-  border-radius: var(--radius-sm); 
-  font-size: 13px; 
-  margin-top: 10px; 
+.return-notice {
+  background: #FFF3E0;
+  border-left: 3px solid var(--color-warning);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  margin-top: 10px;
 }
 
-.return-notice.warning { 
-  background: #FFF8E1; 
+.return-notice.warning {
+  background: #FFF8E1;
 }
 
-.return-item-detail { 
-  background: #FFF3E0; 
-  padding: 10px 14px; 
-  border-radius: 8px; 
-  margin-bottom: 8px; 
-  font-size: 13px; 
-  border-left: 3px solid var(--color-warning); 
+.return-item-detail {
+  background: #FFF3E0;
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  border-left: 3px solid var(--color-warning);
 }
 
-.credit-box { 
-  background: var(--color-accent-light); 
-  padding: 12px 16px; 
-  border-radius: var(--radius-sm); 
+.credit-box {
+  background: var(--color-accent-light);
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
 }
 
 .credit-box p {
@@ -225,18 +225,18 @@ function onReturnSaved() {
   margin-bottom: 6px;
 }
 
-.installments-title { 
-  font-size: 12px; 
-  font-weight: 600; 
-  margin-bottom: 6px; 
+.installments-title {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 6px;
 }
 
-.installment-item { 
-  display: flex; 
-  justify-content: space-between; 
-  align-items: center; 
-  padding: 4px 0; 
-  font-size: 12px; 
-  border-bottom: 1px solid var(--color-border); 
+.installment-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 12px;
+  border-bottom: 1px solid var(--color-border);
 }
 </style>
