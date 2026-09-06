@@ -344,7 +344,7 @@ import CurrencyInput from '@/components/shared/CurrencyInput.vue'
 import ConfirmDialog from '@/components/shared/ConfirmDialog.vue'
 import SkeletonLoader from '@/components/shared/SkeletonLoader.vue'
 import { toUpperCase } from '@/utils/textFormat'
-import { formatNumber, formatDate } from '@/utils/format'
+import { formatNumber } from '@/utils/format'
 
 const auth = useAuthStore()
 const toast = useToastStore()
@@ -439,7 +439,7 @@ async function loadProducts() {
       hasNextPage.value = data.hasNextPage
       hasPreviousPage.value = data.hasPreviousPage
     }
-  } catch (err) {
+  } catch {
     toast.show('Error al cargar los productos', 'error')
   } finally {
     loading.value = false
@@ -450,7 +450,7 @@ async function loadCategories() {
   try {
     const res = await api.get('/Category', { params: { pageSize: 100 } })
     categories.value = res.data.data.data
-  } catch (err) {
+  } catch {
     toast.show('Error al cargar las categorías', 'error')
   }
 }
@@ -459,7 +459,7 @@ async function loadSuppliers() {
   try {
     const res = await api.get('/Supplier', { params: { pageSize: 100 } })
     suppliers.value = res.data.data.data
-  } catch (err) {
+  } catch {
     toast.show('Error al cargar los proveedores', 'error')
   }
 }

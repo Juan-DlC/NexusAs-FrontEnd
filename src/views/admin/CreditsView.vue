@@ -236,7 +236,7 @@ async function openDetailModal(credit) {
     const res = await api.get(`/Credit/${credit.id}/details`)
     creditDetail.value = res.data.data
     showDetailModal.value = true
-  } catch (err) {
+  } catch {
     toast.show('Error al cargar el detalle del crédito', 'error')
   }
 }
@@ -288,7 +288,7 @@ async function loadCredits() {
     totalPages.value = data.totalPages
     hasNextPage.value = data.hasNextPage
     hasPreviousPage.value = data.hasPreviousPage
-  } catch (err) {
+  } catch {
     toast.show('Error al cargar los créditos', 'error')
   } finally {
     loading.value = false

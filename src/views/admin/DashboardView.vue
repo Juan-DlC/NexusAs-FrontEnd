@@ -239,7 +239,6 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
 import api from '@/api/axios'
 import ModalBase from '@/components/shared/ModalBase.vue'
 import CurrencyInput from '@/components/shared/CurrencyInput.vue'
@@ -248,7 +247,6 @@ import { useToastStore } from '@/stores/toast'
 import { toUpperCase } from '@/utils/textFormat'
 import { formatNumber } from '@/utils/format'
 
-const router = useRouter()
 const toast = useToastStore()
 const loading = ref(true)
 const summary = ref(null)
@@ -333,7 +331,7 @@ async function openSaleModal() {
     try {
       const res = await api.get('/PaymentMethod')
       paymentMethods.value = res.data.data
-    } catch (err) {
+    } catch {
       toast.show('Error cargando métodos de pago', 'error')
       return
     }
@@ -343,7 +341,7 @@ async function openSaleModal() {
     try {
       const res = await api.get('/Customer', { params: { pageSize: 100 } })
       customers.value = res.data.data.data
-    } catch (err) {
+    } catch {
       toast.show('Error cargando clientes', 'error')
       return
     }
@@ -456,7 +454,7 @@ async function loadSummary() {
   try {
     const res = await api.get('/Dashboard/summary')
     summary.value = res.data.data
-  } catch (err) {
+  } catch {
     // Fallback a endpoint anterior si el nuevo no existe
     try {
       const dashRes = await api.get('/Dashboard')
@@ -500,7 +498,7 @@ async function loadDashboard() {
     if (summary.value) {
       summary.value.lowStockCount = lowStock.value.length
     }
-  } catch (err) {
+  } catch {
     toast.show('Error al cargar el dashboard', 'error')
   } finally {
     loading.value = false

@@ -51,16 +51,16 @@
     <!-- Modal Crear/Editar -->
     <ModalBase v-model="showModal" :title="editingPartner ? 'Editar socio' : 'Nuevo socio comercial'">
       <div class="form-group">
-        <label class="form-label">Nombre del socio *</label>
+        <label class="form-label">Nombre Comercial *</label>
         <input v-model="form.name" type="text" class="form-input" required
           @input="form.name = toUpperCase(form.name)" />
       </div>
 
       <div class="form-group">
-        <label class="form-label">Documento (NIT, cédula) *</label>
+        <label class="form-label">Nombre Natural</label>
         <input v-model="form.documentNumber" type="text" class="form-input" required
-          placeholder="Ej: 900123456" />
-        <p class="hint-text">Número de identificación del socio comercial</p>
+          placeholder="Nombre completo del socio" />
+        <!-- <p class="hint-text">Número de identificación del socio comercial</p> -->
       </div>
 
       <div class="form-row">

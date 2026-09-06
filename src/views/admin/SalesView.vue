@@ -165,7 +165,7 @@ async function loadSales() {
     totalPages.value = data.totalPages
     hasNextPage.value = data.hasNextPage
     hasPreviousPage.value = data.hasPreviousPage
-  } catch (err) {
+  } catch {
     toast.show('Error cargando ventas', 'error')
   } finally {
     loading.value = false

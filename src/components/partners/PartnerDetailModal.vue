@@ -72,6 +72,7 @@ const props = defineProps({
   liquidationsTotalPages: { type: Number, default: 1 }
 })
 
+// eslint-disable-next-line no-unused-vars
 const emit = defineEmits([
   'update:modelValue',
   'invoice-clicked',

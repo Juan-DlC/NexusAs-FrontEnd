@@ -1,6 +1,6 @@
 <template>
   <ModalBase
-    v-model="props.modelValue"
+    :model-value="props.modelValue"
     @update:modelValue="emit('update:modelValue', $event)"
     title="Detalle de venta"
     width="560px"
@@ -80,15 +80,40 @@
       <div v-if="props.sale.returns?.length > 0" style="margin-top: 14px;">
         <div class="divider-label">Devoluciones ({{ props.sale.returns.length }})</div>
         <div class="return-item-detail" v-for="ret in props.sale.returns" :key="ret.id">
-          <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-            <span><strong>{{ formatDate(ret.date) }}</strong></span>
-            <span style="color: var(--color-warning)">-${{ formatNumber(ret.totalReturned) }}</span>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <div>
+              <strong>{{ formatDate(ret.date) }}</strong>
+              <span style="margin-left:8px; font-size:12px; color:var(--color-text-muted)">
+                por {{ ret.userName || 'Usuario' }}
+              </span>
+            </div>
+            <span style="color: var(--color-warning); font-weight:600;">
+              -${{ formatNumber(ret.totalAmount || ret.totalReturned) }}
+            </span>
           </div>
-          <ul style="font-size:12px; margin-top:4px; padding-left:16px;">
-            <li v-for="d in ret.details" :key="d.productId">
-              {{ d.productName }} — {{ d.quantity }} unidad(es)
-            </li>
-          </ul>
+          
+          <table style="margin-top:8px; font-size:12px;">
+            <thead>
+              <tr style="background:var(--color-bg);">
+                <th style="padding:6px 8px; text-align:left;">Producto</th>
+                <th style="padding:6px 8px; text-align:center;">Cantidad</th>
+                <th style="padding:6px 8px; text-align:right;">Precio Unit.</th>
+                <th style="padding:6px 8px; text-align:right;">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="d in ret.details" :key="d.productId" style="border-bottom:1px solid var(--color-border);">
+                <td style="padding:6px 8px;">{{ d.productName }}</td>
+                <td style="padding:6px 8px; text-align:center;">{{ d.quantity }}</td>
+                <td style="padding:6px 8px; text-align:right;">${{ formatNumber(d.unitPrice) }}</td>
+                <td style="padding:6px 8px; text-align:right;">${{ formatNumber(d.subtotal) }}</td>
+              </tr>
+            </tbody>
+          </table>
+          
+          <p v-if="ret.notes" style="font-size:12px; color:var(--color-text-muted); margin-top:6px;">
+            <strong>Notas:</strong> {{ ret.notes }}
+          </p>
         </div>
       </div>
     </div>

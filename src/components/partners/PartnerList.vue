@@ -47,12 +47,12 @@
 </template>
 
 <script setup>
-const props = defineProps({
+defineProps({
   partners: { type: Array, required: true, default: () => [] },
   loading: { type: Boolean, default: false }
 })
 
-const emit = defineEmits(['partner-clicked', 'edit-commission'])
+defineEmits(['partner-clicked', 'edit-commission'])
 </script>
 
 <style scoped>

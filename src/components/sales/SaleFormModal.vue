@@ -1,6 +1,6 @@
 <template>
   <ModalBase 
-    v-model="props.modelValue" 
+    :model-value="props.modelValue" 
     @update:modelValue="emit('update:modelValue', $event)"
     title="Nueva venta" 
     width="640px"
@@ -241,6 +241,12 @@ async function saveSale() {
   // ✅ VALIDACIÓN: Método de pago es obligatorio
   if (!form.value.paymentMethodId || form.value.paymentMethodId <= 0) {
     toast.show('Debe seleccionar un método de pago', 'warning')
+    return
+  }
+  
+  // ✅ VALIDACIÓN: Cliente obligatorio para crédito
+  if (isCredit.value && !form.value.customerId) {
+    toast.show('Debe seleccionar un cliente para ventas a crédito', 'warning')
     return
   }
   

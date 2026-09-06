@@ -47,7 +47,7 @@
             <span class="alliance-name">🤝 {{ bp.name }}</span>
             <div style="display: flex; align-items: center; gap: 6px;">
               <input
-                v-model.number="commissionForm.allianceCommissionPercent"
+                v-model.number="commissionForm.allianceCommissions[bp.id]"
                 type="number"
                 min="1"
                 max="100"
@@ -174,7 +174,10 @@ const liquidations = ref([])
 const liquidationsPage = ref(1)
 const liquidationsTotalPages = ref(1)
 const activeTab = ref('invoices')
-const commissionForm = ref({ commissionPercent: 0, allianceCommissionPercent: 0 })
+const commissionForm = ref({ 
+  commissionPercent: 0, 
+  allianceCommissions: {}  // Objeto para mapear cada socio a su comisión
+})
 const businessPartners = ref([])
 
 const partnerPaymentMethods = ref([])
@@ -184,7 +187,7 @@ async function loadPartners() {
     loading.value = true
     const res = await api.get('/Partner')
     partners.value = res.data.data
-  } catch (err) {
+  } catch {
     toast.show('Error al cargar las socias', 'error')
   } finally {
     loading.value = false
@@ -202,9 +205,16 @@ async function openCommissionModal(partner) {
     businessPartners.value = []
   }
 
+  // Inicializar comisiones individuales para cada socio comercial
+  const allianceCommissions = {}
+  businessPartners.value.forEach(bp => {
+    // Obtener la comisión específica del socio o usar 20% por defecto
+    allianceCommissions[bp.id] = partner.allianceCommissions?.[bp.id] || partner.allianceCommissionPercent || 20
+  })
+
   commissionForm.value = {
     commissionPercent: partner.commissionPercent,
-    allianceCommissionPercent: partner.allianceCommissionPercent || 20
+    allianceCommissions: allianceCommissions
   }
   showCommissionModal.value = true
 }
@@ -212,7 +222,14 @@ async function openCommissionModal(partner) {
 async function saveCommission() {
   try {
     saving.value = true
-    await api.patch(`/Partner/${selectedPartner.value.id}/commission`, commissionForm.value)
+    
+    // Preparar payload con comisiones individuales por socio comercial
+    const payload = {
+      commissionPercent: commissionForm.value.commissionPercent,
+      allianceCommissions: commissionForm.value.allianceCommissions
+    }
+    
+    await api.patch(`/Partner/${selectedPartner.value.id}/commission`, payload)
     toast.show('Comisión actualizada correctamente', 'success')
     showCommissionModal.value = false
     loadPartners()
@@ -241,7 +258,7 @@ async function openDetailModal(partner) {
     liquidationsTotalPages.value = liqRes.data.data?.totalPages || 1
 
     showDetailModal.value = true
-  } catch (err) {
+  } catch {
     toast.show('Error al cargar el detalle de la socia', 'error')
   }
 }
@@ -304,7 +321,7 @@ async function onPaymentSaved() {
       const invoiceRes = await api.get(`/Sale/${selectedInvoiceDetail.value.id}`)
       selectedInvoiceDetail.value = invoiceRes.data.data
     }
-  } catch (err) {
+  } catch {
     toast.show('Error al recargar los datos', 'error')
   }
 }
@@ -320,7 +337,7 @@ async function downloadStatement() {
     })
     const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
     window.open(url, '_blank')
-  } catch (err) {
+  } catch {
     toast.show('Error al descargar el estado de cuenta', 'error')
   }
 }

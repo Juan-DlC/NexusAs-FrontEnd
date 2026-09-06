@@ -74,7 +74,7 @@ const props = defineProps({
   invoice: { type: Object, default: null }
 })
 
-const emit = defineEmits(['update:modelValue', 'open-return', 'open-payment'])
+defineEmits(['update:modelValue', 'open-return', 'open-payment'])
 
 const toast = useToastStore()
 

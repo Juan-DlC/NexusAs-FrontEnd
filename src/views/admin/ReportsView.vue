@@ -126,6 +126,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '@/api/axios'
+import { useToastStore } from '@/stores/toast'
+
+const toast = useToastStore()
 
 const today = new Date().toISOString().split('T')[0]
 
@@ -154,7 +157,7 @@ async function loadAllianceReport() {
       }
     })
     allianceReport.value = res.data.data
-  } catch (err) {
+  } catch {
     toast.show('Error al cargar el reporte de alianza', 'error')
   } finally {
     loadingAlliance.value = false
@@ -190,7 +193,7 @@ async function downloadSalesPdf() {
       responseType: 'blob'
     })
     openPdfInNewTab(res.data)
-  } catch (err) {
+  } catch {
     toast.show('Error al generar el informe', 'error')
   } finally {
     loadingSalesPdf.value = false
@@ -212,7 +215,7 @@ async function downloadSalesExcel() {
       `Informe_Ventas_${salesFrom.value}_${salesTo.value}.xlsx`,
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
-  } catch (err) {
+  } catch {
     toast.show('Error al generar el Excel', 'error')
   } finally {
     loadingSalesExcel.value = false
@@ -227,7 +230,7 @@ async function downloadCatalogPdf() {
       responseType: 'blob'
     })
     openPdfInNewTab(res.data)
-  } catch (err) {
+  } catch {
     toast.show('Error al generar el catálogo', 'error')
   } finally {
     loadingCatalog.value = false

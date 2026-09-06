@@ -1,6 +1,6 @@
 <template>
   <div class="login-page">
-    <img src="/Login_Def.jpeg" class="bg-img" alt="AS Accesorios" />
+    <img src="/Login_Def.jpeg?v=2" class="bg-img" alt="AS Accesorios" />
     <div class="bg-overlay"></div>
 
     <div class="login-card">

@@ -62,7 +62,7 @@ async function loadSales() {
     loading.value = true
     const res = await api.get('/Partner/my/sales')
     sales.value = res.data.data
-  } catch (err) {
+  } catch {
     toast.show('Error al cargar las ventas', 'error')
   } finally {
     loading.value = false

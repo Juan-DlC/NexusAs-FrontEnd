@@ -105,7 +105,7 @@ import { useToastStore } from '@/stores/toast'
 import ModalBase from '@/components/shared/ModalBase.vue'
 import ProductSearch from '@/components/shared/ProductSearch.vue'
 import { toUpperCase } from '@/utils/textFormat'
-import { formatNumber, formatDate } from '@/utils/format'
+import { formatNumber } from '@/utils/format'
 
 const props = defineProps({
   modelValue: Boolean,

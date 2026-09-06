@@ -50,13 +50,14 @@
 <script setup>
 import { formatNumber, formatDate } from '@/utils/format'
 
+// eslint-disable-next-line no-unused-vars
 const props = defineProps({
   liquidations: { type: Array, required: true, default: () => [] },
   currentPage: { type: Number, default: 1 },
   totalPages: { type: Number, default: 1 }
 })
 
-const emit = defineEmits(['add-payment', 'page-changed'])
+defineEmits(['add-payment', 'page-changed'])
 </script>
 
 <style scoped>

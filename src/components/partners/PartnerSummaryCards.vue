@@ -18,7 +18,7 @@
 <script setup>
 import { formatNumber } from '@/utils/format'
 
-const props = defineProps({
+defineProps({
   summary: {
     type: Object,
     required: true,

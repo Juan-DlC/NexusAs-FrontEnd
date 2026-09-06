@@ -41,7 +41,7 @@
             <th>Cantidad</th>
             <th>Stock antes</th>
             <th>Stock después</th>
-            <th>Motivo</th>
+            <th>Factura</th>
             <th>Usuario</th>
           </tr>
         </thead>
@@ -185,7 +185,7 @@ async function loadMovements() {
     loading.value = true
     const res = await api.get(`/Stock/${selectedProductId.value}/movements`)
     movements.value = res.data.data
-  } catch (err) {
+  } catch {
     toast.show('Error al cargar los movimientos', 'error')
   } finally {
     loading.value = false
