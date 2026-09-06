@@ -18,56 +18,75 @@
     />
 
     <!-- Modal Editar comisión -->
-    <ModalBase v-model="showCommissionModal" title="Editar comisión" width="520px">
+    <ModalBase v-model="showCommissionModal" title="Editar comisiones" width="480px">
       <div v-if="selectedPartner">
-        <div class="form-group">
-          <label class="form-label">% comisión productos normales (AS)</label>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <input
-              v-model.number="commissionForm.commissionPercent"
-              type="number"
-              min="1"
-              max="100"
-              class="form-input"
-              style="max-width: 80px;"
-            />
-            <span>%</span>
-          </div>
-          <p class="hint-text">% de la ganancia de AS en productos normales que recibe esta socia.</p>
+        <!-- Info de la socia -->
+        <div style="background: var(--color-bg); padding: 12px 16px; border-radius: var(--radius-sm); margin-bottom: 20px;">
+          <p style="font-size: 14px; font-weight: 700;">{{ selectedPartner.partnerName }}</p>
+          <p style="font-size: 12px; color: var(--color-text-muted);">{{ selectedPartner.username }}</p>
         </div>
 
-        <div class="form-group" style="margin-top: 12px;">
-          <label class="form-label">% comisión por socio comercial (Alianza)</label>
+        <!-- % General productos AS -->
+        <div class="form-group">
+          <label class="form-label">% Comisión productos normales (AS)</label>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <input 
+              v-model.number="commissionForm.commissionPercent"
+              type="number" 
+              min="1" 
+              max="100"
+              class="form-input" 
+              style="max-width: 80px;" 
+            />
+            <span style="font-size: 13px; color: var(--color-text-muted);">%</span>
+          </div>
+          <p class="hint-text">% de la ganancia de AS en productos propios que recibe esta socia.</p>
+        </div>
 
-          <div v-if="businessPartners.length === 0" class="hint-text">
-            No hay socios comerciales registrados. Créalos en "Socios Comerciales".
+        <!-- % por Socio Comercial -->
+        <div class="form-group" style="margin-top: 4px;">
+          <label class="form-label">% Comisión por Socio Comercial (Alianza)</label>
+          
+          <div 
+            v-if="commissionForm.businessCommissions.length === 0"
+            style="padding: 16px; text-align: center; color: var(--color-text-muted); font-size: 13px; background: var(--color-bg); border-radius: var(--radius-sm);"
+          >
+            No hay socios comerciales registrados.<br>
+            <span style="font-size: 12px;">Créalos en "Socios Comerciales".</span>
           </div>
 
-          <div v-for="bp in businessPartners" :key="bp.id" class="alliance-commission-row">
-            <span class="alliance-name">🤝 {{ bp.name }}</span>
+          <div 
+            v-for="bc in commissionForm.businessCommissions" 
+            :key="bc.businessPartnerId"
+            class="alliance-commission-row"
+          >
+            <div>
+              <span class="alliance-name">🤝 {{ bc.businessPartnerName }}</span>
+              <span style="font-size: 11px; color: var(--color-text-muted); margin-left: 6px;">(Alianza)</span>
+            </div>
             <div style="display: flex; align-items: center; gap: 6px;">
-              <input
-                v-model.number="commissionForm.allianceCommissions[bp.id]"
-                type="number"
-                min="1"
+              <input 
+                v-model.number="bc.commissionPercent"
+                type="number" 
+                min="0" 
                 max="100"
                 class="form-input"
-                style="max-width: 70px;"
+                style="max-width: 70px; padding: 6px 10px;" 
               />
-              <span>%</span>
+              <span style="font-size: 13px; color: var(--color-text-muted);">%</span>
             </div>
           </div>
 
-          <p class="hint-text" v-if="businessPartners.length > 0">
-            % de la ganancia que recibe esta socia al vender productos de alianza.
-            (Actualmente aplica igual para todos los socios comerciales.)
+          <p class="hint-text" v-if="commissionForm.businessCommissions.length > 0">
+            % de la ganancia que recibe esta socia al vender productos de cada alianza.
+            Cada socio comercial puede tener un porcentaje diferente.
           </p>
         </div>
       </div>
       <template #footer>
         <button class="btn btn-secondary" @click="showCommissionModal = false">Cancelar</button>
         <button class="btn btn-primary" @click="saveCommission" :disabled="saving">
-          {{ saving ? 'Guardando...' : 'Actualizar' }}
+          {{ saving ? '⏳ Guardando...' : 'Guardar comisiones' }}
         </button>
       </template>
     </ModalBase>
@@ -174,9 +193,10 @@ const liquidations = ref([])
 const liquidationsPage = ref(1)
 const liquidationsTotalPages = ref(1)
 const activeTab = ref('invoices')
-const commissionForm = ref({ 
-  commissionPercent: 0, 
-  allianceCommissions: {}  // Objeto para mapear cada socio a su comisión
+const commissionForm = ref({
+  commissionPercent: 0,
+  allianceCommissionPercent: 20,
+  businessCommissions: []
 })
 const businessPartners = ref([])
 
@@ -197,7 +217,7 @@ async function loadPartners() {
 async function openCommissionModal(partner) {
   selectedPartner.value = partner
 
-  // Cargar socios comerciales
+  // Cargar socios comerciales activos
   try {
     const res = await api.get('/BusinessPartner', { params: { pageSize: 100 } })
     businessPartners.value = res.data.data?.data || res.data.data || []
@@ -205,16 +225,19 @@ async function openCommissionModal(partner) {
     businessPartners.value = []
   }
 
-  // Inicializar comisiones individuales para cada socio comercial
-  const allianceCommissions = {}
-  businessPartners.value.forEach(bp => {
-    // Obtener la comisión específica del socio o usar 20% por defecto
-    allianceCommissions[bp.id] = partner.allianceCommissions?.[bp.id] || partner.allianceCommissionPercent || 20
-  })
-
+  // Inicializar form con comisiones actuales
+  // partner.businessCommissions viene del backend como array de {businessPartnerId, businessPartnerName, commissionPercent}
   commissionForm.value = {
     commissionPercent: partner.commissionPercent,
-    allianceCommissions: allianceCommissions
+    allianceCommissionPercent: partner.allianceCommissionPercent || 20,
+    businessCommissions: businessPartners.value.map(bp => {
+      const existing = partner.businessCommissions?.find(bc => bc.businessPartnerId === bp.id)
+      return {
+        businessPartnerId: bp.id,
+        businessPartnerName: bp.name,
+        commissionPercent: existing?.commissionPercent ?? (partner.allianceCommissionPercent || 20)
+      }
+    })
   }
   showCommissionModal.value = true
 }
@@ -222,19 +245,12 @@ async function openCommissionModal(partner) {
 async function saveCommission() {
   try {
     saving.value = true
-    
-    // Preparar payload con comisiones individuales por socio comercial
-    const payload = {
-      commissionPercent: commissionForm.value.commissionPercent,
-      allianceCommissions: commissionForm.value.allianceCommissions
-    }
-    
-    await api.patch(`/Partner/${selectedPartner.value.id}/commission`, payload)
-    toast.show('Comisión actualizada correctamente', 'success')
+    await api.patch(`/Partner/${selectedPartner.value.id}/commission`, commissionForm.value)
+    toast.show('Comisiones actualizadas correctamente', 'success')
     showCommissionModal.value = false
-    loadPartners()
+    await loadPartners()
   } catch (err) {
-    toast.show(err.response?.data?.message || 'Error al actualizar la comisión', 'error')
+    toast.show(err.response?.data?.message || 'Error al actualizar comisiones', 'error')
   } finally {
     saving.value = false
   }

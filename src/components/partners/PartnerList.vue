@@ -25,7 +25,17 @@
           <td><strong>{{ p.partnerName }}</strong></td>
           <td>{{ p.username }}</td>
           <td>{{ p.commissionPercent }}%</td>
-          <td>{{ p.allianceCommissionPercent || 20 }}%</td>
+          <td>
+            <span 
+              v-if="p.businessCommissions?.length > 0" 
+              class="badge badge-info"
+              :title="p.businessCommissions.map(bc => `${bc.businessPartnerName}: ${bc.commissionPercent}%`).join('\n')"
+              style="cursor: help;"
+            >
+              Variable 🤝
+            </span>
+            <span v-else>{{ p.allianceCommissionPercent || 20 }}%</span>
+          </td>
           <td>
             <span :class="['badge', p.isActive ? 'badge-success' : 'badge-danger']">
               {{ p.isActive ? 'Activa' : 'Inactiva' }}
@@ -118,6 +128,12 @@ tbody td {
 .badge-danger {
   background: #FFEBEE;
   color: #D32F2F;
+}
+
+.badge-info {
+  background: #E3F2FD;
+  color: #1976D2;
+  font-weight: 600;
 }
 
 .btn-icon {
