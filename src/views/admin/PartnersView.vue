@@ -314,6 +314,9 @@ async function onPaymentSaved() {
 
   if (!selectedPartner.value) return
 
+  // Pequeño delay para asegurar que el backend actualizó los datos
+  await new Promise(resolve => setTimeout(resolve, 300))
+
   // Recargar resumen, facturas y liquidaciones en paralelo
   try {
     const [summaryRes, invoicesRes, liqRes] = await Promise.all([

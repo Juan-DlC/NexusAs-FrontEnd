@@ -228,7 +228,21 @@ async function saveUser() {
     showModal.value = false
     loadUsers()
   } catch (err) {
-    toast.show(err.response?.data?.message || 'Error al crear el usuario', 'error')
+    // Extraer mensaje de error personalizado del backend
+    let errorMessage = 'Error al crear el usuario'
+    
+    if (err.response?.data?.errors) {
+      // Si hay errores de validación, tomar el primero
+      const errors = err.response.data.errors
+      const firstErrorKey = Object.keys(errors)[0]
+      if (firstErrorKey && errors[firstErrorKey]?.length > 0) {
+        errorMessage = errors[firstErrorKey][0]
+      }
+    } else if (err.response?.data?.message) {
+      errorMessage = err.response.data.message
+    }
+    
+    toast.show(errorMessage, 'error')
   } finally {
     saving.value = false
   }
