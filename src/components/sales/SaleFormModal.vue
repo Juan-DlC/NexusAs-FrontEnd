@@ -3,118 +3,135 @@
     :model-value="props.modelValue" 
     @update:modelValue="emit('update:modelValue', $event)"
     title="Nueva venta" 
-    width="640px"
+    width="900px"
   >
     <form @submit.prevent="saveSale">
-      <div class="form-group">
-        <label class="form-label">Método de pago</label>
-        <select v-model.number="form.paymentMethodId" class="form-input" required>
-          <option :value="null" disabled>Selecciona método de pago</option>
-          <option v-if="props.paymentMethods.length === 0" value="Cash">Contado</option>
-          <option v-if="props.paymentMethods.length === 0" value="Credit">Crédito</option>
-          <option v-for="pm in props.paymentMethods" :key="pm.id" :value="pm.id">
-            {{ pm.name }}
-          </option>
-        </select>
-      </div>
+      <!-- Sección: Información básica -->
+      <div class="form-section">
+        <h3 class="section-title">📋 Información de la venta</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Método de pago</label>
+            <select v-model.number="form.paymentMethodId" class="form-input" required>
+              <option :value="null" disabled>Selecciona método de pago</option>
+              <option v-if="props.paymentMethods.length === 0" value="Cash">Contado</option>
+              <option v-if="props.paymentMethods.length === 0" value="Credit">Crédito</option>
+              <option v-for="pm in props.paymentMethods" :key="pm.id" :value="pm.id">
+                {{ pm.name }}
+              </option>
+            </select>
+          </div>
 
-      <div class="form-group" v-if="isCredit">
-        <label class="form-label">Cliente (obligatorio para crédito)</label>
-        <select v-model="form.customerId" class="form-input" required>
-          <option value="" disabled>Selecciona un cliente</option>
-          <option v-for="c in props.customers" :key="c.id" :value="c.id">{{ c.name }}</option>
-        </select>
-      </div>
+          <div class="form-group" v-if="isCredit">
+            <label class="form-label">Cliente (obligatorio para crédito)</label>
+            <select v-model="form.customerId" class="form-input" required>
+              <option value="" disabled>Selecciona un cliente</option>
+              <option v-for="c in props.customers" :key="c.id" :value="c.id">{{ c.name }}</option>
+            </select>
+          </div>
 
-      <div class="form-group" v-if="!isCredit">
-        <label class="form-label">Cliente (opcional)</label>
-        <select v-model="form.customerId" class="form-input">
-          <option value="">Sin cliente</option>
-          <option v-for="c in props.customers" :key="c.id" :value="c.id">{{ c.name }}</option>
-        </select>
-      </div>
+          <div class="form-group" v-if="!isCredit">
+            <label class="form-label">Cliente (opcional)</label>
+            <select v-model="form.customerId" class="form-input">
+              <option value="">Sin cliente</option>
+              <option v-for="c in props.customers" :key="c.id" :value="c.id">{{ c.name }}</option>
+            </select>
+          </div>
 
-      <div class="divider-label">Productos</div>
-
-      <div v-for="(detail, index) in form.details" :key="index" class="sale-product-row">
-        <div class="sale-product-search">
-          <ProductSearch @select="(p) => onProductSelect(detail, p)" placeholder="Buscar producto..." />
+          <div class="form-group" v-if="isCredit && form.details.some(d => d.productId)">
+            <label class="form-label">Número de cuotas</label>
+            <select v-model.number="form.numberOfInstallments" class="form-input">
+              <option :value="1">1 cuota (pago único)</option>
+              <option :value="2">2 cuotas</option>
+              <option :value="3">3 cuotas</option>
+              <option :value="4">4 cuotas</option>
+              <option :value="6">6 cuotas</option>
+            </select>
+            <p class="hint-text" v-if="form.numberOfInstallments > 1">
+              Cada cuota: ${{ formatNumber(calculatedTotal / form.numberOfInstallments) }}
+            </p>
+          </div>
         </div>
-        
-        <div class="sale-product-controls" v-if="detail.productId">
-          <div class="control-group">
-            <label class="control-label">Cantidad</label>
-            <input 
-              v-model.number="detail.quantity" 
-              type="number" 
-              min="1"
-              class="form-input qty-input"
-              :class="{ 'input-error': isStockExceeded(detail) }" 
-            />
-          </div>
-          <div class="control-group">
-            <label class="control-label">Precio unit.</label>
-            <CurrencyInput v-model="detail.unitPrice" class="price-input" />
-          </div>
-          <div class="control-group subtotal-group">
-            <label class="control-label">Subtotal</label>
-            <span class="subtotal-value">${{ formatNumber(detail.quantity * detail.unitPrice) }}</span>
-          </div>
-          <button 
-            type="button" 
-            class="btn-icon btn-icon-danger"
-            @click="removeDetail(index)"
-            v-if="form.details.length > 1"
-            title="🗑️ Quitar producto"
-          >
-            ✕
+      </div>
+
+      <!-- Sección: Productos -->
+      <div class="form-section">
+        <div class="section-header">
+          <h3 class="section-title">🛍️ Productos</h3>
+          <button type="button" class="btn btn-secondary btn-sm" @click="addDetail">
+            + Agregar producto
           </button>
         </div>
-        
-        <div class="stock-badge" v-if="detail.productId">
-          <span :class="['badge', isStockExceeded(detail) ? 'badge-danger' : 'badge-success']">
-            {{ isStockExceeded(detail) 
-              ? `⚠️ Stock insuficiente (${getProductStock(detail)} disp.)` 
-              : `✓ Stock: ${getProductStock(detail)}` 
-            }}
-          </span>
+
+        <div v-for="(detail, index) in form.details" :key="index" class="sale-product-row">
+          <div class="sale-product-search">
+            <ProductSearch @select="(p) => onProductSelect(detail, p)" placeholder="🔍 Buscar producto..." />
+          </div>
+          
+          <div class="sale-product-controls" v-if="detail.productId">
+            <div class="control-group">
+              <label class="control-label">Cantidad</label>
+              <input 
+                v-model.number="detail.quantity" 
+                type="number" 
+                min="1"
+                class="form-input qty-input"
+                :class="{ 'input-error': isStockExceeded(detail) }" 
+              />
+            </div>
+            <div class="control-group">
+              <label class="control-label">Precio unit.</label>
+              <CurrencyInput v-model="detail.unitPrice" class="price-input" />
+            </div>
+            <div class="control-group subtotal-group">
+              <label class="control-label">Subtotal</label>
+              <span class="subtotal-value">${{ formatNumber(detail.quantity * detail.unitPrice) }}</span>
+            </div>
+            <button 
+              type="button" 
+              class="btn-icon btn-icon-danger"
+              @click="removeDetail(index)"
+              v-if="form.details.length > 1"
+              title="Quitar producto"
+            >
+              ✕
+            </button>
+          </div>
+          
+          <div class="stock-badge" v-if="detail.productId">
+            <span :class="['badge', isStockExceeded(detail) ? 'badge-danger' : 'badge-success']">
+              {{ isStockExceeded(detail) 
+                ? `⚠️ Stock insuficiente (${getProductStock(detail)} disp.)` 
+                : `✓ Stock: ${getProductStock(detail)}` 
+              }}
+            </span>
+          </div>
         </div>
       </div>
 
-      <button type="button" class="btn btn-secondary btn-sm" @click="addDetail" style="margin-bottom: 16px;">
-        + Agregar producto
-      </button>
+      <!-- Sección: Detalles adicionales -->
+      <div class="form-section">
+        <h3 class="section-title">💰 Descuento y notas</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Descuento % (opcional)</label>
+            <div class="discount-input-wrapper">
+              <input v-model.number="form.discountPercent" type="number" min="0" max="100" class="form-input discount-input" placeholder="0" />
+              <span class="discount-symbol">%</span>
+              <span v-if="form.discountPercent > 0" class="discount-amount">
+                = -${{ formatNumber(discountAmount) }}
+              </span>
+            </div>
+          </div>
 
-      <div class="form-group" v-if="isCredit && form.details.some(d => d.productId)">
-        <label class="form-label">Número de cuotas</label>
-        <select v-model.number="form.numberOfInstallments" class="form-input">
-          <option :value="1">1 cuota (pago único)</option>
-          <option :value="2">2 cuotas</option>
-          <option :value="3">3 cuotas</option>
-          <option :value="4">4 cuotas</option>
-          <option :value="6">6 cuotas</option>
-        </select>
-        <p class="hint-text" v-if="form.numberOfInstallments > 1">
-          Cada cuota: ${{ formatNumber(calculatedTotal / form.numberOfInstallments) }}
-        </p>
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">Descuento % (opcional)</label>
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <input v-model.number="form.discountPercent" type="number" min="0" max="100" class="form-input" style="max-width: 100px;" placeholder="0" />
-          <span style="font-size: 13px; color: var(--color-text-muted);">%</span>
-          <span v-if="form.discountPercent > 0" style="font-size: 13px; color: var(--color-accent);">
-            = -${{ formatNumber(discountAmount) }}
-          </span>
+          <div class="form-group">
+            <label class="form-label">Notas (opcional)</label>
+            <input v-model="form.notes" type="text" class="form-input" @input="form.notes = toUpperCase(form.notes)" placeholder="Agregar notas..." />
+          </div>
         </div>
       </div>
 
-      <div class="form-group">
-        <label class="form-label">Notas (opcional)</label>
-        <input v-model="form.notes" type="text" class="form-input" @input="form.notes = toUpperCase(form.notes)" />
-      </div>
-
+      <!-- Caja de total -->
       <div class="sale-total-box">
         <div class="total-line" v-if="form.discountPercent > 0">
           <span>Subtotal</span>
@@ -122,13 +139,14 @@
         </div>
         <div class="total-line discount" v-if="form.discountPercent > 0">
           <span>Descuento ({{ form.discountPercent }}%)</span>
-          <span style="color: var(--color-success)">-${{ formatNumber(discountAmount) }}</span>
+          <span class="discount-text">-${{ formatNumber(discountAmount) }}</span>
         </div>
         <div class="total-line total-final">
           <span><strong>Total</strong></span>
-          <strong style="font-size: 18px; color: var(--color-accent)">${{ formatNumber(calculatedTotal) }}</strong>
+          <strong class="total-amount">${{ formatNumber(calculatedTotal) }}</strong>
         </div>
       </div>
+      
       <p class="stock-error-msg" v-if="hasStockErrors">
         ⚠️ Corrige las cantidades en rojo antes de continuar.
       </p>
@@ -301,35 +319,58 @@ async function saveSale() {
 </script>
 
 <style scoped>
+.form-section {
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.form-section:last-of-type {
+  border-bottom: none;
+  padding-bottom: 12px;
+}
+
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 10px 0;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+}
+
 .form-group {
-  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
 }
 
 .form-label {
   display: block;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-text);
-  margin-bottom: 6px;
-}
-
-.divider-label {
   font-size: 12px;
   font-weight: 600;
-  color: var(--color-accent);
+  color: var(--color-text);
+  margin-bottom: 5px;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin: 16px 0 10px;
-  padding-top: 12px;
-  border-top: 1px solid var(--color-border);
+  letter-spacing: 0.3px;
 }
 
 .sale-product-row {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  padding: 12px;
-  margin-bottom: 10px;
-  background: var(--color-bg);
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 8px;
+  background: #fefefe;
 }
 
 .sale-product-search {
@@ -338,8 +379,8 @@ async function saveSale() {
 
 .sale-product-controls {
   display: grid;
-  grid-template-columns: 80px 1fr 1fr auto;
-  gap: 8px;
+  grid-template-columns: 90px 1fr 1fr auto;
+  gap: 10px;
   align-items: end;
 }
 
@@ -350,9 +391,11 @@ async function saveSale() {
 }
 
 .control-label {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--color-text-muted);
-  font-weight: 500;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
 }
 
 .subtotal-group {
@@ -362,7 +405,7 @@ async function saveSale() {
 .subtotal-value {
   font-size: 14px;
   font-weight: 700;
-  color: var(--color-text);
+  color: var(--color-accent);
   padding: 8px 0;
 }
 
@@ -370,35 +413,68 @@ async function saveSale() {
   margin-top: 6px;
 }
 
+.discount-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.discount-input {
+  max-width: 100px;
+}
+
+.discount-symbol {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.discount-amount {
+  font-size: 13px;
+  color: var(--color-success);
+  font-weight: 600;
+}
+
 .sale-total-box {
-  background: var(--color-accent-light);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  background: transparent;
+  border: 1px solid #c0c0c0;
+  border-radius: 8px;
   padding: 14px 16px;
-  margin-top: 16px;
+  margin-top: 12px;
 }
 
 .total-line {
   display: flex;
   justify-content: space-between;
-  font-size: 13px;
-  padding: 4px 0;
+  font-size: 14px;
+  padding: 3px 0;
+  color: var(--color-text);
+}
+
+.total-line.discount .discount-text {
+  color: var(--color-success);
 }
 
 .total-line.total-final {
-  border-top: 1px solid var(--color-border);
-  padding-top: 10px;
+  padding-top: 8px;
   margin-top: 6px;
+  font-size: 15px;
+}
+
+.total-amount {
+  font-size: 18px;
+  color: var(--color-accent);
 }
 
 .qty-input, .price-input { 
-  padding: 10px 8px; 
+  padding: 9px 8px; 
 }
 
 .hint-text {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--color-accent);
-  margin-top: 4px;
+  margin-top: 3px;
+  font-weight: 500;
 }
 
 .stock-error-msg {
@@ -406,10 +482,15 @@ async function saveSale() {
   color: var(--color-danger);
   text-align: center;
   margin-top: 10px;
+  font-weight: 600;
+  padding: 6px;
+  background: #ffebee;
+  border-radius: 4px;
 }
 
 .input-error { 
   border-color: var(--color-danger) !important; 
+  background: #fff5f5;
 }
 
 .btn:disabled {
@@ -418,18 +499,29 @@ async function saveSale() {
 }
 
 .btn-icon-danger {
-  background: var(--color-bg);
+  background: white;
   width: 32px;
   height: 32px;
-  border-radius: 8px;
-  transition: var(--transition);
+  border-radius: 6px;
+  transition: all 0.2s ease;
   cursor: pointer;
-  border: none;
-  font-size: 16px;
+  border: 1px solid #d0d0d0;
+  font-size: 15px;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-icon-danger:hover { 
   background: #FFEBEE; 
   color: var(--color-danger); 
+  border-color: var(--color-danger);
+}
+
+.btn-sm {
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 600;
 }
 </style>
