@@ -12,7 +12,7 @@ export const useAuthStore = defineStore('auth', () => {
   const isPartner = computed(() => user.value?.role === 'Partner')
 
   async function login(username, password) {
-    const response = await api.post('/api/Auth/login', { username, password })
+    const response = await api.post('/Auth/login', { username, password })
     const data = response.data.data
 
     token.value = data.token
