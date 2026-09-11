@@ -10,7 +10,7 @@
         </div>
         <span class="action-arrow">→</span>
       </div>
-      
+
       <div class="action-card action-card-addi" @click="openAddiLink">
         <div class="action-icon">🏦</div>
         <div class="action-info">
@@ -125,7 +125,7 @@ const paymentMethods = ref([])
 const customers = ref([])
 
 function openAddiLink() {
-  const addiUrl = 'https://addi.com' // TODO: configurar URL real
+  const addiUrl = 'https://aliados.addi.com/' 
   window.open(addiUrl, '_blank')
 }
 
@@ -215,24 +215,24 @@ async function loadDashboard() {
   try {
     loading.value = true
     await loadSummary()
-    
+
     // ✅ Cargar customers primero
     await loadCustomersMap()
-    
+
     const [salesRes, stockRes] = await Promise.all([
       api.get('/Sale', { params: { pageSize: 5 } }),
       api.get('/Product/low-stock')
     ])
-    
+
     // ✅ Enriquecer ventas con customerName
     const rawSales = (salesRes.data.data?.data || []).slice(0, 5)
     recentSales.value = rawSales.map(sale => ({
       ...sale,
       customerName: sale.customerName || (sale.customerId ? customersMap.value[sale.customerId] : null)
     }))
-    
+
     lowStock.value = stockRes.data.data || []
-    
+
     // Actualizar lowStockCount si no vino del summary
     if (summary.value) {
       summary.value.lowStockCount = lowStock.value.length
