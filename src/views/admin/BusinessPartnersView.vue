@@ -58,15 +58,16 @@
 
       <div class="form-group">
         <label class="form-label">Nombre Natural</label>
-        <input v-model="form.documentNumber" type="text" class="form-input" required
-          placeholder="Nombre completo del socio" />
-        <!-- <p class="hint-text">Número de identificación del socio comercial</p> -->
+        <input v-model="form.nameNatural" type="text" class="form-input" required
+          placeholder="Nombre completo del socio"
+          @input="form.nameNatural = toUpperCase(form.nameNatural)" />
       </div>
 
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Teléfono (opcional)</label>
-          <input v-model="form.phone" type="text" class="form-input" />
+          <input v-model="form.phone" type="text" class="form-input"
+            @input="form.phone = toUpperCase(form.phone)" />
         </div>
         <div class="form-group">
           <label class="form-label">Email (opcional)</label>
@@ -352,7 +353,7 @@ const showDetailModal = ref(false)
 
 const form = ref({
   name: '',
-  documentNumber: '',
+  nameNatural: '',
   phone: '',
   email: '',
   address: '',
@@ -373,7 +374,7 @@ function openCreateModal() {
   editingPartner.value = null
   form.value = {
     name: '',
-    documentNumber: '',
+    nameNatural: '',
     phone: '',
     email: '',
     address: '',
@@ -386,7 +387,7 @@ function openEditModal(partner) {
   editingPartner.value = partner
   form.value = {
     name: partner.name,
-    documentNumber: partner.documentNumber || '',
+    nameNatural: partner.nameNatural || '',
     phone: partner.phone || '',
     email: partner.email || '',
     address: partner.address || '',
@@ -401,8 +402,8 @@ async function savePartner() {
     return
   }
 
-  if (!form.value.documentNumber.trim()) {
-    toast.show('El documento es obligatorio', 'warning')
+  if (!form.value.nameNatural.trim()) {
+    toast.show('El nombre natural es obligatorio', 'warning')
     return
   }
 
@@ -412,7 +413,7 @@ async function savePartner() {
     // Construir payload según especificación del backend
     const payload = {
       name: form.value.name,
-      documentNumber: form.value.documentNumber,
+      nameNatural: form.value.nameNatural,
       email: form.value.email || null,
       phone: form.value.phone || null,
       address: form.value.address || null,

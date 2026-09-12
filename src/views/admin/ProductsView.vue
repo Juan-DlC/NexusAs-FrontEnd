@@ -166,6 +166,11 @@
         </div>
 
         <div class="form-group">
+          <label class="form-label">Descripción (opcional)</label>
+          <input v-model="form.description" type="text" class="form-input" @input="form.description = toUpperCase(form.description)" placeholder="Descripción del producto" />
+        </div>
+
+        <div class="form-group">
           <label class="form-label">Categoría</label>
           <select v-model="form.categoryId" class="form-input" required>
             <option value="" disabled>Selecciona una categoría</option>
@@ -376,7 +381,7 @@ const hasNextPage = ref(false)
 const hasPreviousPage = ref(false)
 
 const form = ref({
-  code: '', name: '', categoryId: '', supplierId: '', cost: 0,
+  code: '', name: '', description: '', categoryId: '', supplierId: '', cost: 0,
   salePrice: 0, stock: 0, minStock: 0, isPartnership: false, businessPartnerId: null
 })
 
@@ -480,7 +485,7 @@ function changePage(page) {
 
 function openCreateModal() {
   editingProduct.value = null
-  form.value = { code: '', name: '', categoryId: '', supplierId: '', cost: 0, salePrice: 0, stock: 0, minStock: 0, isPartnership: false, businessPartnerId: null }
+  form.value = { code: '', name: '', description: '', categoryId: '', supplierId: '', cost: 0, salePrice: 0, stock: 0, minStock: 0, isPartnership: false, businessPartnerId: null }
   suggestedPrice.value = 0
   showModal.value = true
 }
@@ -490,6 +495,7 @@ function openEditModal(product) {
   form.value = {
     code: product.code,
     name: product.name,
+    description: product.description || '',
     categoryId: product.categoryId,
     cost: product.cost || 0,
     salePrice: product.salePrice,
@@ -509,6 +515,7 @@ async function saveProduct() {
       ...form.value,
       supplierId: form.value.supplierId || null
     }
+    
     if (editingProduct.value) {
       await api.put(`/Product/${editingProduct.value.id}`, payload)
       toast.show('Producto actualizado correctamente', 'success')
