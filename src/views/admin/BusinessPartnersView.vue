@@ -30,7 +30,7 @@
         <tbody>
           <tr v-for="p in partners" :key="p.id" class="clickable-row" @click="openDetailModal(p)">
             <td><strong>{{ p.name }}</strong></td>
-            <td>{{ p.documentNumber || '-' }}</td>
+            <td>{{ p.nameNatural || '-' }}</td>
             <td>{{ p.phone || '-' }}</td>
             <td>{{ p.commissionPercent }}%</td>
             <td>{{ p.productCount }} productos</td>
