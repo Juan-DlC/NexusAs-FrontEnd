@@ -154,87 +154,103 @@
     </div>
 
     <!-- Modal Crear/Editar (solo Admin) -->
-    <ModalBase v-model="showModal" :title="editingProduct ? 'Editar producto' : 'Nuevo producto'">
+    <ModalBase v-model="showModal" :title="editingProduct ? 'Editar producto' : 'Nuevo producto'" width="800px">
       <form @submit.prevent="saveProduct">
-        <div class="form-group">
-          <label class="form-label">Código</label>
-          <input v-model="form.code" type="text" class="form-input" required @input="form.code = toUpperCase(form.code)" />
-        </div>
+        <!-- Sección: Información básica -->
+        <div class="product-form-section">
+          <h3 class="section-title">📦 Información básica</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Código</label>
+              <input v-model="form.code" type="text" class="form-input" required @input="form.code = toUpperCase(form.code)" />
+            </div>
 
-        <div class="form-group">
-          <label class="form-label">Nombre</label>
-          <input v-model="form.name" type="text" class="form-input" required @input="form.name = toUpperCase(form.name)" />
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Descripción (opcional)</label>
-          <input v-model="form.description" type="text" class="form-input" @input="form.description = toUpperCase(form.description)" placeholder="Descripción del producto" />
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Categoría</label>
-          <select v-model="form.categoryId" class="form-input" required>
-            <option value="" disabled>Selecciona una categoría</option>
-            <option v-for="cat in categories" :key="cat.id" :value="cat.id">
-              {{ cat.name }}
-            </option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Proveedor (opcional)</label>
-          <select v-model="form.supplierId" class="form-input">
-            <option value="">Sin proveedor</option>
-            <option v-for="sup in suppliers" :key="sup.id" :value="sup.id">
-              {{ sup.name }}
-            </option>
-          </select>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Costo (privado)</label>
-            <CurrencyInput v-model="form.cost" @update:modelValue="suggestPrice" />
+            <div class="form-group">
+              <label class="form-label">Categoría</label>
+              <select v-model="form.categoryId" class="form-input" required>
+                <option value="" disabled>Selecciona una categoría</option>
+                <option v-for="cat in categories" :key="cat.id" :value="cat.id">
+                  {{ cat.name }}
+                </option>
+              </select>
+            </div>
           </div>
-          <div class="form-group">
-            <label class="form-label">Precio de venta</label>
-            <CurrencyInput v-model="form.salePrice" />
-          </div>
-        </div>
-        <p class="hint-text" v-if="suggestedPrice">
-          Sugerido (+70%): ${{ formatNumber(suggestedPrice) }}
-        </p>
 
-        <div class="form-row">
           <div class="form-group">
-            <label class="form-label">Stock {{ editingProduct ? '' : 'inicial' }}</label>
-            <input
-              v-model.number="form.stock"
-              type="number"
-              class="form-input"
-              min="0"
-              required
-            />
-            <p class="hint-text" v-if="editingProduct">
-              ⚠️ Modificar stock aquí no registra movimiento en el kardex. Para trazabilidad completa usa la vista de Stock.
-            </p>
+            <label class="form-label">Nombre</label>
+            <input v-model="form.name" type="text" class="form-input" required @input="form.name = toUpperCase(form.name)" />
           </div>
+
           <div class="form-group">
-            <label class="form-label">Stock mínimo</label>
-            <input v-model.number="form.minStock" type="number" class="form-input" required />
+            <label class="form-label">Descripción (opcional)</label>
+            <input v-model="form.description" type="text" class="form-input" @input="form.description = toUpperCase(form.description)" placeholder="Descripción del producto" />
           </div>
         </div>
 
-        <div class="form-group">
-          <label class="form-label">Socio comercial (opcional)</label>
-          <select v-model="form.businessPartnerId" class="form-input">
-            <option :value="null">Sin socio — producto propio de AS</option>
-            <option v-for="bp in businessPartners" :key="bp.id" :value="bp.id">
-              {{ bp.name }}
-            </option>
-          </select>
+        <!-- Sección: Precios y Stock -->
+        <div class="product-form-section">
+          <h3 class="section-title">💰 Precios y stock</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Costo (privado)</label>
+              <CurrencyInput v-model="form.cost" @update:modelValue="suggestPrice" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Precio de venta</label>
+              <CurrencyInput v-model="form.salePrice" />
+              <p class="hint-text" v-if="suggestedPrice">
+                Sugerido (+70%): ${{ formatNumber(suggestedPrice) }}
+              </p>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Stock {{ editingProduct ? '' : 'inicial' }}</label>
+              <input
+                v-model.number="form.stock"
+                type="number"
+                class="form-input"
+                min="0"
+                required
+              />
+              <p class="hint-text" v-if="editingProduct">
+                ⚠️ Modificar stock aquí no registra movimiento en el kardex.
+              </p>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Stock mínimo</label>
+              <input v-model.number="form.minStock" type="number" class="form-input" required />
+            </div>
+          </div>
+        </div>
+
+        <!-- Sección: Proveedor y Sociedad -->
+        <div class="product-form-section">
+          <h3 class="section-title">🤝 Proveedor y sociedad</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Proveedor (opcional)</label>
+              <select v-model="form.supplierId" class="form-input">
+                <option value="">Sin proveedor</option>
+                <option v-for="sup in suppliers" :key="sup.id" :value="sup.id">
+                  {{ sup.name }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Socio comercial (opcional)</label>
+              <select v-model="form.businessPartnerId" class="form-input">
+                <option :value="null">Sin socio — producto propio de AS</option>
+                <option v-for="bp in businessPartners" :key="bp.id" :value="bp.id">
+                  {{ bp.name }}
+                </option>
+              </select>
+            </div>
+          </div>
           <p class="hint-text" v-if="form.businessPartnerId">
-            Este producto pertenece a la sociedad con {{ businessPartners.find(bp => bp.id === form.businessPartnerId)?.name }}.
+            💡 Este producto pertenece a la sociedad con {{ businessPartners.find(bp => bp.id === form.businessPartnerId)?.name }}.
             La ganancia se dividirá en la liquidación.
           </p>
         </div>
@@ -701,6 +717,24 @@ onMounted(() => {
 .page-info { font-size: 12px; color: var(--color-text-muted); }
 
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+.product-form-section {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.product-form-section:last-of-type {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 12px 0;
+}
 
 .hint-text {
   font-size: 12px;
