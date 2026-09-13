@@ -61,6 +61,7 @@
             <td>{{ p.code }}</td>
             <td>
               <strong>{{ p.name }}</strong>
+              <span v-if="p.description" class="product-description">{{ p.description }}</span>
               <span v-if="p.businessPartnerName" class="badge badge-pink" style="margin-left: 6px;">
                 🤝 {{ p.businessPartnerName }}
               </span>
@@ -258,6 +259,10 @@
         <div class="detail-row-info">
           <span>Nombre:</span>
           <strong>{{ selectedProduct.name }}</strong>
+        </div>
+        <div class="detail-row-info" v-if="selectedProduct.description">
+          <span>Descripción:</span>
+          <strong>{{ selectedProduct.description }}</strong>
         </div>
         <div class="detail-row-info">
           <span>Categoría:</span>
@@ -724,5 +729,14 @@ onMounted(() => {
 
 .detail-row-info span:first-child {
   color: var(--color-text-muted);
+}
+
+.product-description {
+  display: block;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  font-weight: 400;
+  margin-top: 2px;
+  font-style: italic;
 }
 </style>
