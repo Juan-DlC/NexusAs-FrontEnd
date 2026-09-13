@@ -2,7 +2,6 @@
   <div class="partner-sales-view">
     <div class="page-header-row">
       <div>
-        <h2 class="page-title">Mis Ventas</h2>
         <p class="page-sub">Historial de tus ventas y comisiones</p>
       </div>
     </div>

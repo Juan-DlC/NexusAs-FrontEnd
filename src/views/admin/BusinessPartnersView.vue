@@ -2,7 +2,6 @@
   <div class="business-partners-view">
     <div class="page-header-row">
       <div>
-        <h2 class="page-title">Socios Comerciales</h2>
         <p class="page-sub">{{ partners.length }} socios registrados</p>
       </div>
       <button class="btn btn-primary floating-action-btn" @click="openCreateModal">
