@@ -313,7 +313,7 @@
           </div>
           <div class="detail-row-info" v-if="auth.isAdmin">
             <span>Socio comercial:</span>
-            <strong>{{ selectedProduct.businessPartnerName || 'Producto propio de AS' }}</strong>
+            <strong>{{ getBusinessPartnerName(selectedProduct) }}</strong>
           </div>
           <div class="detail-row-info">
             <span>Estado:</span>
@@ -587,11 +587,24 @@ async function toggleProductStatus(product) {
 }
 
 function openProductDetail(product) {
-  console.log('🔍 Producto seleccionado:', product)
-  console.log('📦 businessPartnerName:', product.businessPartnerName)
-  console.log('🔢 businessPartnerId:', product.businessPartnerId)
   selectedProduct.value = product
   showProductDetailModal.value = true
+}
+
+function getBusinessPartnerName(product) {
+  // Si ya tiene el nombre, usarlo
+  if (product.businessPartnerName) {
+    return product.businessPartnerName
+  }
+  
+  // Si tiene ID pero no nombre, buscarlo en la lista cargada
+  if (product.businessPartnerId) {
+    const partner = businessPartners.value.find(bp => bp.id === product.businessPartnerId)
+    return partner ? partner.name : 'Socio desconocido'
+  }
+  
+  // Si no tiene ID ni nombre, es producto propio
+  return 'Producto propio de AS'
 }
 
 onMounted(() => {
