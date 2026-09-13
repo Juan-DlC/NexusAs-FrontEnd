@@ -2,7 +2,7 @@
   <div class="products-view">
     <div class="page-header-row">
       <div>
-        <h2 class="page-title">Productos</h2>
+        <!-- Título oculto, se muestra en breadcrumb del AppLayout -->
         <p class="page-sub" v-if="!auth.isPartner">{{ totalRecords }} productos registrados</p>
         <p class="page-sub" v-else>Precios a los que AS te entrega cada producto</p>
       </div>
@@ -719,8 +719,8 @@ onMounted(() => {
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 
 .product-form-section {
-  margin-bottom: 20px;
-  padding-bottom: 16px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -729,11 +729,19 @@ onMounted(() => {
   margin-bottom: 0;
 }
 
+.product-form-section .form-group {
+  margin-bottom: 10px;
+}
+
+.product-form-section .form-row {
+  gap: 10px;
+}
+
 .section-title {
   font-size: 13px;
   font-weight: 600;
   color: var(--color-text);
-  margin: 0 0 12px 0;
+  margin: 0 0 8px 0;
 }
 
 .hint-text {

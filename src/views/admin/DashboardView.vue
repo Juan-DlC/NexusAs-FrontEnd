@@ -280,7 +280,7 @@ onMounted(loadDashboard)
   background: var(--color-white);
   border: 2px solid var(--color-border);
   border-radius: var(--radius-md);
-  padding: 20px;
+  padding: 14px 16px;
   cursor: pointer;
   transition: var(--transition);
 }
@@ -339,7 +339,7 @@ onMounted(loadDashboard)
   background: var(--color-white);
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
-  padding: 18px 16px;
+  padding: 14px 12px;
   box-shadow: var(--shadow-sm);
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   overflow: hidden;
