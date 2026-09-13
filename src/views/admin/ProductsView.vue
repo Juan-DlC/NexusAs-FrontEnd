@@ -587,6 +587,9 @@ async function toggleProductStatus(product) {
 }
 
 function openProductDetail(product) {
+  console.log('🔍 Producto seleccionado:', product)
+  console.log('📦 businessPartnerName:', product.businessPartnerName)
+  console.log('🔢 businessPartnerId:', product.businessPartnerId)
   selectedProduct.value = product
   showProductDetailModal.value = true
 }
