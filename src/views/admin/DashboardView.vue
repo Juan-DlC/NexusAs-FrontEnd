@@ -12,7 +12,7 @@
       </div>
 
       <div class="action-card action-card-addi" @click="openAddiLink">
-        <div class="action-icon">🏦</div>
+        <img src="/logo_Addi.png" alt="Addi" class="action-icon-img" />
         <div class="action-info">
           <span class="action-title">Venta con Addi</span>
           <span class="action-sub">Financiamiento externo</span>
@@ -303,6 +303,12 @@ onMounted(loadDashboard)
 
 .action-icon {
   font-size: 28px;
+}
+
+.action-icon-img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
 }
 
 .action-info {
