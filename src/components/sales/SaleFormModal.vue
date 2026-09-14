@@ -70,7 +70,7 @@
           
           <div class="sale-product-line" v-if="detail.productId">
             <div class="product-info">
-              <ProductSearch @select="(p) => onProductSelect(detail, p)" placeholder="🔍 Buscar producto..." />
+              <div class="product-name-display">{{ getProductName(detail) }}</div>
             </div>
             
             <div class="control-group">
