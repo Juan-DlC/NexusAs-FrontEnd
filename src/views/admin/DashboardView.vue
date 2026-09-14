@@ -339,7 +339,7 @@ onMounted(loadDashboard)
   background: var(--color-white);
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
-  padding: 14px 12px;
+  padding: 10px 12px;
   box-shadow: var(--shadow-sm);
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   overflow: hidden;
@@ -371,7 +371,7 @@ onMounted(loadDashboard)
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .stat-label {
@@ -383,7 +383,7 @@ onMounted(loadDashboard)
 }
 
 .stat-icon {
-  font-size: 24px;
+  font-size: 22px;
   color: var(--color-accent);
   opacity: 0.25;
   transition: all 0.3s ease;
@@ -395,9 +395,9 @@ onMounted(loadDashboard)
 }
 
 .stat-value {
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 700;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
   line-height: 1.1;
   letter-spacing: -0.01em;
 }
