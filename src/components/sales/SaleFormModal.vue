@@ -70,9 +70,19 @@
           
           <div class="sale-product-line" v-if="detail.productId">
             <div class="product-info">
-              <div class="product-name-display" @click="clearProduct(detail)" title="Click para cambiar producto">
-                {{ getProductName(detail) }}
-                <span class="edit-icon">✏️</span>
+              <div class="product-name-display">
+                <div class="product-text">
+                  <span class="product-name">{{ getProductName(detail) }}</span>
+                  <span v-if="detail.productDescription" class="product-desc-inline"> - {{ detail.productDescription }}</span>
+                </div>
+                <button 
+                  type="button" 
+                  class="btn-edit-product" 
+                  @click="clearProduct(detail)"
+                  title="Cambiar producto"
+                >
+                  ✏️
+                </button>
               </div>
             </div>
             
@@ -238,6 +248,7 @@ const hasStockErrors = computed(() =>
 function onProductSelect(detail, product) {
   detail.productId = product.id
   detail.productName = product.name
+  detail.productDescription = product.description || ''
   detail.unitPrice = product.salePrice
   detail.stock = product.stock
 }
@@ -245,6 +256,7 @@ function onProductSelect(detail, product) {
 function clearProduct(detail) {
   detail.productId = ''
   detail.productName = ''
+  detail.productDescription = ''
   detail.unitPrice = 0
   detail.stock = 0
 }
@@ -412,30 +424,51 @@ async function saveSale() {
   padding: 8px 10px;
   background: var(--color-bg);
   border-radius: 4px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  cursor: pointer;
-  transition: var(--transition);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
 }
 
-.product-name-display:hover {
-  background: #e0e0e0;
-  border: 1px solid var(--color-border);
+.product-text {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
 }
 
-.edit-icon {
-  font-size: 12px;
-  opacity: 0.5;
-  margin-left: 6px;
+.product-name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.product-desc-inline {
+  font-size: 11px;
+  font-style: italic;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.btn-edit-product {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: var(--transition);
+  opacity: 0.6;
   flex-shrink: 0;
 }
 
-.product-name-display:hover .edit-icon {
+.btn-edit-product:hover {
   opacity: 1;
+  background: #e0e0e0;
 }
 
 .control-group {
