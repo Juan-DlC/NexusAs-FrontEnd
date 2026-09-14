@@ -6,7 +6,7 @@
         type="text"
         class="form-input"
         :placeholder="placeholder"
-        @input="onInput"
+        @input="handleInput"
         @focus="showResults = true"
         @blur="onBlur"
         autocomplete="off"
@@ -24,6 +24,9 @@
           <strong>{{ p.name }}</strong>
           <span class="result-code">{{ p.code }}</span>
           <span v-if="p.isPartnership" class="badge badge-pink" style="margin-left: 4px;">Alianza</span>
+        </div>
+        <div v-if="p.description" class="result-description">
+          {{ p.description }}
         </div>
         <div class="result-meta">
           <span>Stock: {{ p.stock }}</span>
@@ -54,6 +57,19 @@ const results = ref([])
 const showResults = ref(false)
 const loading = ref(false)
 let searchTimeout = null
+
+function handleInput(e) {
+  // Convertir a mayúscula
+  const cursorPos = e.target.selectionStart
+  query.value = e.target.value.toUpperCase()
+  
+  // Restaurar posición del cursor
+  setTimeout(() => {
+    e.target.setSelectionRange(cursorPos, cursorPos)
+  }, 0)
+  
+  onInput()
+}
 
 function onInput() {
   if (query.value.length < 2) {
@@ -161,6 +177,14 @@ defineExpose({ clear })
   background: var(--color-bg);
   padding: 1px 6px;
   border-radius: 4px;
+}
+
+.result-description {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  font-style: italic;
+  margin-top: 3px;
+  line-height: 1.3;
 }
 
 .result-meta {
