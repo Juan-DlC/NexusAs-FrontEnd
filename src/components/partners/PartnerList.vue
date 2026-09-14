@@ -7,7 +7,7 @@
     <table v-else>
       <thead>
         <tr>
-          <th>Socia</th>
+          <th>Mayorista</th>
           <th>Usuario</th>
           <th>% Normal</th>
           <th>% Alianza</th>
@@ -16,18 +16,18 @@
         </tr>
       </thead>
       <tbody>
-        <tr 
-          v-for="p in partners" 
-          :key="p.id" 
-          class="clickable-row" 
+        <tr
+          v-for="p in partners"
+          :key="p.id"
+          class="clickable-row"
           @click="$emit('partner-clicked', p)"
         >
           <td><strong>{{ p.partnerName }}</strong></td>
           <td>{{ p.username }}</td>
           <td>{{ p.commissionPercent }}%</td>
           <td>
-            <span 
-              v-if="p.businessCommissions?.length > 0" 
+            <span
+              v-if="p.businessCommissions?.length > 0"
               class="badge badge-info"
               :title="p.businessCommissions.map(bc => `${bc.businessPartnerName}: ${bc.commissionPercent}%`).join('\n')"
               style="cursor: help;"
@@ -42,9 +42,9 @@
             </span>
           </td>
           <td>
-            <button 
-              class="btn-icon" 
-              @click.stop="$emit('edit-commission', p)" 
+            <button
+              class="btn-icon"
+              @click.stop="$emit('edit-commission', p)"
               :title="`✏️ Editar comisión de ${p.partnerName}`"
             >
               ✏️

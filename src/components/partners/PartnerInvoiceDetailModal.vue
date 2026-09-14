@@ -1,9 +1,9 @@
 <template>
-  <ModalBase 
-    :model-value="modelValue" 
+  <ModalBase
+    :model-value="modelValue"
     @update:model-value="$emit('update:modelValue', $event)"
-    title="Detalle de factura" 
-    width="720px" 
+    title="Detalle de factura"
+    width="720px"
     :z-index="1050"
   >
     <div v-if="invoice">
@@ -50,7 +50,7 @@
     <template #footer>
       <button class="btn btn-secondary" @click="$emit('update:modelValue', false)">Cerrar</button>
       <button class="btn btn-secondary" @click="downloadPdf">📄 Ver factura PDF</button>
-      <button class="btn btn-secondary" @click="downloadPartnerInvoicePdf">📄 Factura para socia</button>
+      <button class="btn btn-secondary" @click="downloadPartnerInvoicePdf">📄 Factura para mayorista</button>
       <button class="btn btn-warning" @click="$emit('open-return')">↩ Registrar devolución</button>
       <button
         v-if="invoice?.creditInfo?.pendingAmount > 0"
@@ -90,16 +90,16 @@ async function downloadPdf() {
 
 async function downloadPartnerInvoicePdf() {
   if (!props.invoice?.id) return
-  
+
   try {
-    const res = await api.get(`/Sale/${props.invoice.id}/partner-receipt`, { 
-      responseType: 'blob' 
+    const res = await api.get(`/Sale/${props.invoice.id}/partner-receipt`, {
+      responseType: 'blob'
     })
     const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
     window.open(url, '_blank')
     toast.show('PDF generado correctamente', 'success')
   } catch {
-    toast.show('Error al generar el PDF de socia', 'error')
+    toast.show('Error al generar el PDF de mayorista', 'error')
   }
 }
 </script>

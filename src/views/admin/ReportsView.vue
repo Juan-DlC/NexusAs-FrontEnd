@@ -111,7 +111,7 @@
               <td>${{ formatNumber(s.total) }}</td>
               <td>
                 {{ s.sellerName }}
-                <span v-if="s.soldByPartner" class="badge badge-pink" style="margin-left: 4px;">Socia</span>
+                <span v-if="s.soldByPartner" class="badge badge-pink" style="margin-left: 4px;">Mayorista</span>
               </td>
             </tr>
           </tbody>

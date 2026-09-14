@@ -456,7 +456,7 @@ async function saveCommission() {
 }
 
 async function openDetailModal(partner) {
-  console.log('🔍 ABRIENDO DETALLE DE SOCIA:', partner.name)
+  console.log('🔍 ABRIENDO DETALLE DE MAYORISTA:', partner.name)
 
   selectedPartner.value = partner
   liquidationPreview.value = null

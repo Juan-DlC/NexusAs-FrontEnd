@@ -5,7 +5,7 @@
         <p class="page-sub">{{ partners.length }} mayoristas registrados</p>
       </div>
       <button class="btn btn-secondary" @click="openSelectPartnerForSale" style="margin-right: 8px;">
-        🧾 Venta a socia
+        🧾 Venta a Mayorista
       </button>
     </div>
 
@@ -29,24 +29,24 @@
         <div class="form-group">
           <label class="form-label">% Comisión productos normales (AS)</label>
           <div style="display: flex; align-items: center; gap: 8px;">
-            <input 
+            <input
               v-model.number="commissionForm.commissionPercent"
-              type="number" 
-              min="1" 
+              type="number"
+              min="1"
               max="100"
-              class="form-input" 
-              style="max-width: 80px;" 
+              class="form-input"
+              style="max-width: 80px;"
             />
             <span style="font-size: 13px; color: var(--color-text-muted);">%</span>
           </div>
-          <p class="hint-text">% de la ganancia de AS en productos propios que recibe esta socia.</p>
+          <p class="hint-text">% de la ganancia de AS en productos propios que recibe mayorista.</p>
         </div>
 
         <!-- % por Socio Comercial -->
         <div class="form-group" style="margin-top: 4px;">
           <label class="form-label">% Comisión por Socio Comercial (Alianza)</label>
-          
-          <div 
+
+          <div
             v-if="commissionForm.businessCommissions.length === 0"
             style="padding: 16px; text-align: center; color: var(--color-text-muted); font-size: 13px; background: var(--color-bg); border-radius: var(--radius-sm);"
           >
@@ -54,8 +54,8 @@
             <span style="font-size: 12px;">Créalos en "Socios Comerciales".</span>
           </div>
 
-          <div 
-            v-for="bc in commissionForm.businessCommissions" 
+          <div
+            v-for="bc in commissionForm.businessCommissions"
             :key="bc.businessPartnerId"
             class="alliance-commission-row"
           >
@@ -64,20 +64,20 @@
               <span style="font-size: 11px; color: var(--color-text-muted); margin-left: 6px;">(Alianza)</span>
             </div>
             <div style="display: flex; align-items: center; gap: 6px;">
-              <input 
+              <input
                 v-model.number="bc.commissionPercent"
-                type="number" 
-                min="0" 
+                type="number"
+                min="0"
                 max="100"
                 class="form-input"
-                style="max-width: 70px; padding: 6px 10px;" 
+                style="max-width: 70px; padding: 6px 10px;"
               />
               <span style="font-size: 13px; color: var(--color-text-muted);">%</span>
             </div>
           </div>
 
           <p class="hint-text" v-if="commissionForm.businessCommissions.length > 0">
-            % de la ganancia que recibe esta socia al vender productos de cada alianza.
+            % de la ganancia que recibe mayorista al vender productos de cada alianza.
             Cada socio comercial puede tener un porcentaje diferente.
           </p>
         </div>
@@ -128,7 +128,7 @@
     />
 
     <!-- Modal Selección de Socia -->
-    <ModalBase v-model="showSelectPartnerModal" title="Seleccionar socia" width="400px">
+    <ModalBase v-model="showSelectPartnerModal" title="Seleccionar mayorista" width="400px">
       <div v-for="p in partners" :key="p.id" class="partner-select-item" @click="selectPartnerForSale(p)">
         <strong>{{ p.partnerName }}</strong>
         <span style="font-size:12px; color: var(--color-text-muted)">{{ p.username }}</span>
@@ -274,7 +274,7 @@ async function openDetailModal(partner) {
 
     showDetailModal.value = true
   } catch {
-    toast.show('Error al cargar el detalle de la socia', 'error')
+    toast.show('Error al cargar el detalle de mayorista', 'error')
   }
 }
 

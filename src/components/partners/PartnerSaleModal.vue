@@ -15,7 +15,7 @@
     </div>
 
     <div v-if="form.paymentMethodId" :class="['payment-info', isCredit ? 'payment-info-credit' : 'payment-info-cash']">
-      {{ isCredit ? '⚠️ Esta venta generará deuda para la socia' : '✅ Venta de contado, no genera deuda' }}
+      {{ isCredit ? '⚠️ Esta venta generará deuda para mayorista' : '✅ Venta de contado, no genera deuda' }}
     </div>
 
     <div class="divider-label">Productos</div>
@@ -31,7 +31,7 @@
           :class="{ 'input-error': detail.productId && detail.quantity > detail.stock }"
         />
         <div class="price-info" v-if="detail.productId">
-          <span class="partner-price">A socia: ${{ formatNumber(detail.partnerPrice) }}</span>
+          <span class="partner-price">A mayorista: ${{ formatNumber(detail.partnerPrice) }}</span>
           <span class="suggested-price">Sugerido: ${{ formatNumber(detail.suggestedPrice) }}</span>
         </div>
         <button
@@ -46,7 +46,7 @@
 
       <div class="partner-sale-detail" v-if="detail.productId && detail.partnerPrice > 0">
         <div class="price-row">
-          <span>💰 Lo que paga la socia ({{ detail.commissionPercent }}% ganancia):</span>
+          <span>💰 Lo que paga mayorista ({{ detail.commissionPercent }}% ganancia):</span>
           <strong style="color: var(--color-accent); font-size: 15px;">${{ formatNumber(detail.partnerPrice) }}</strong>
         </div>
         <div class="price-row">
@@ -58,7 +58,7 @@
           <strong>${{ formatNumber(detail.partnerPrice * (detail.quantity || 1)) }}</strong>
         </div>
         <div class="price-row" style="color: var(--color-text-muted); font-size: 11px;">
-          <span>{{ detail.isPartnership ? '🤝 Producto de alianza' : '🏪 Producto tienda' }} — Ganancia socia: ${{ formatNumber(detail.partnerEarning) }} por unidad</span>
+          <span>{{ detail.isPartnership ? '🤝 Producto de alianza' : '🏪 Producto tienda' }} — Ganancia mayorista: ${{ formatNumber(detail.partnerEarning) }} por unidad</span>
         </div>
       </div>
 
@@ -82,7 +82,7 @@
     </div>
 
     <div class="total-preview">
-      <span>Total a cobrar a la socia:</span>
+      <span>Total a cobrar a mayorista:</span>
       <strong>${{ formatNumber(calculatedTotal) }}</strong>
     </div>
     <p style="font-size: 11px; color: var(--color-text-muted); text-align: right; margin-top: 4px;">

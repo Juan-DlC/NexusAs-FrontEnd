@@ -46,7 +46,7 @@
         <tbody>
           <tr v-for="s in enrichedSales" :key="s.id" class="clickable-row" @click="openDetail(s)">
             <td><strong>{{ s.saleNumber }}</strong></td>
-            <td>{{ s.partnerUserId ? 'Venta a socia' : (s.customerId ? (s.customerName || 'Cargando...') : 'Sin cliente') }}</td>
+            <td>{{ s.partnerUserId ? 'Venta a mayorista' : (s.customerId ? (s.customerName || 'Cargando...') : 'Sin cliente') }}</td>
             <td>{{ formatDate(s.date) }}</td>
             <td>
               <span :class="['badge', s.paymentMethodName === 'Contado' ? 'badge-success' : 'badge-warning']">

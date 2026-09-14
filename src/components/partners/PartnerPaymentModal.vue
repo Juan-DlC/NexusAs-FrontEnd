@@ -1,8 +1,8 @@
 <template>
-  <ModalBase 
-    :model-value="modelValue" 
+  <ModalBase
+    :model-value="modelValue"
     @update:model-value="$emit('update:modelValue', $event)"
-    title="Registrar abono de la socia" 
+    title="Registrar abono de mayorista"
     :z-index="1100"
   >
     <form @submit.prevent="showConfirmationDialog">
@@ -10,12 +10,12 @@
         Abonando a factura: <strong>{{ invoice.saleNumber }}</strong>
         (Pendiente: <span style="color: var(--color-danger); font-weight: 600;">${{ formatNumber(invoice.pendingAmount) }}</span>)
       </div>
-      
+
       <div class="credit-summary" v-if="pendingDebt > 0">
         <p><strong>Deuda pendiente:</strong> <span style="color: var(--color-danger); font-weight: 700;">${{ formatNumber(pendingDebt) }}</span></p>
         <p style="font-size: 11px; color: var(--color-text-muted);">El abono no puede superar la deuda pendiente</p>
       </div>
-      
+
       <div class="form-group" v-if="invoice">
         <label class="form-label">Factura</label>
         <input
@@ -26,12 +26,12 @@
           style="background: var(--color-bg); cursor: not-allowed;"
         />
       </div>
-      
+
       <div class="form-group">
         <label class="form-label">Monto abonado</label>
         <CurrencyInput v-model="liquidationForm.amount" />
       </div>
-      
+
       <div class="form-group">
         <label class="form-label">Notas (opcional)</label>
         <input
@@ -42,7 +42,7 @@
         />
       </div>
     </form>
-    
+
     <template #footer>
       <button class="btn btn-secondary" @click="$emit('update:modelValue', false)">Cancelar</button>
       <button class="btn btn-primary" @click="showConfirmationDialog" :disabled="saving">
@@ -57,10 +57,10 @@
       <div class="confirm-dialog-custom">
         <div class="confirm-icon-custom">💰</div>
         <h3 class="confirm-title-custom">¿Confirmar registro de abono?</h3>
-        
+
         <div class="confirm-details">
           <div class="detail-row">
-            <span class="detail-label">Socia:</span>
+            <span class="detail-label">Mayorista:</span>
             <span class="detail-value">{{ partner?.partnerName || 'N/A' }}</span>
           </div>
           <div class="detail-row">
@@ -86,12 +86,12 @@
         </div>
 
         <p class="confirm-message-custom">
-          {{ invoice 
-            ? 'Se registrará el abono a la factura seleccionada.' 
-            : 'Se registrará un abono general que se aplicará a la deuda total de la socia.' 
+          {{ invoice
+            ? 'Se registrará el abono a la factura seleccionada.'
+            : 'Se registrará un abono general que se aplicará a la deuda total de mayorista.'
           }}
         </p>
-        
+
         <div class="confirm-actions-custom">
           <button class="btn btn-secondary" @click="showConfirmDialog = false">
             Cancelar
@@ -141,12 +141,12 @@ function showConfirmationDialog() {
     toast.show('El monto debe ser mayor a 0', 'warning')
     return
   }
-  
+
   if (props.pendingDebt > 0 && liquidationForm.value.amount > props.pendingDebt) {
     toast.show(`El abono supera la deuda pendiente ($${formatNumber(props.pendingDebt)})`, 'error')
     return
   }
-  
+
   // Mostrar diálogo de confirmación
   showConfirmDialog.value = true
 }
@@ -155,7 +155,7 @@ async function confirmAndSave() {
   try {
     saving.value = true
     showConfirmDialog.value = false
-    
+
     const now = new Date()
     const payload = {
       amount: liquidationForm.value.amount,
@@ -165,7 +165,7 @@ async function confirmAndSave() {
       periodFrom: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
       periodTo: now.toISOString()
     }
-    
+
     await api.post(`/Partner/${props.partner.id}/liquidations`, payload)
     emit('payment-saved')
     emit('update:modelValue', false)
@@ -204,23 +204,23 @@ async function confirmAndSave() {
   margin-bottom: 0;
 }
 
-.form-group { 
-  margin-bottom: 16px; 
+.form-group {
+  margin-bottom: 16px;
 }
 
-.form-label { 
-  display: block; 
-  font-size: 12px; 
-  font-weight: 600; 
-  color: var(--color-text); 
-  margin-bottom: 6px; 
+.form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 6px;
 }
 
-.form-input { 
-  width: 100%; 
-  padding: 10px 12px; 
-  border: 1px solid var(--color-border); 
-  border-radius: var(--radius-sm); 
+.form-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
 }
 
 /* Estilos del modal de confirmación personalizado */
@@ -248,18 +248,18 @@ async function confirmAndSave() {
 }
 
 @keyframes dialogSlideIn {
-  from { 
-    transform: translateY(-30px) scale(0.9); 
-    opacity: 0; 
+  from {
+    transform: translateY(-30px) scale(0.9);
+    opacity: 0;
   }
-  to { 
-    transform: translateY(0) scale(1); 
-    opacity: 1; 
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
   }
 }
 
-.confirm-icon-custom { 
-  font-size: 56px; 
+.confirm-icon-custom {
+  font-size: 56px;
   margin-bottom: 16px;
   animation: iconPulse 0.5s ease-in-out;
 }
@@ -269,10 +269,10 @@ async function confirmAndSave() {
   50% { transform: scale(1.1); }
 }
 
-.confirm-title-custom { 
-  font-size: 20px; 
-  font-weight: 700; 
-  color: var(--color-text); 
+.confirm-title-custom {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-text);
   margin-bottom: 20px;
   letter-spacing: -0.3px;
 }
@@ -326,18 +326,18 @@ async function confirmAndSave() {
   font-weight: 700;
 }
 
-.confirm-message-custom { 
-  font-size: 13px; 
-  color: var(--color-text-muted); 
-  margin-bottom: 24px; 
+.confirm-message-custom {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin-bottom: 24px;
   line-height: 1.6;
   padding: 0 10px;
 }
 
-.confirm-actions-custom { 
-  display: flex; 
-  gap: 12px; 
-  justify-content: center; 
+.confirm-actions-custom {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
 }
 
 .btn {
