@@ -163,7 +163,7 @@
               <strong>${{ formatNumber(liquidationPreview.grossProfit) }}</strong>
             </div>
             <div class="preview-card warning">
-              <span class="preview-label">Descuento socias vendedoras</span>
+              <span class="preview-label">Descuento mayoristas</span>
               <strong>-${{ formatNumber(liquidationPreview.partnerSalesDiscount) }}</strong>
             </div>
             <div class="preview-card">

@@ -2,7 +2,7 @@
   <div class="card">
     <div v-if="loading" class="state-text">Cargando...</div>
     <div v-else-if="partners.length === 0" class="state-text">
-      No hay socias registradas. Crea un usuario con rol "Partner" en Usuarios y aparecerá aquí automáticamente.
+      No hay mayoristas registrados. Crea un usuario con rol "Partner" en Usuarios y aparecerá aquí automáticamente.
     </div>
     <table v-else>
       <thead>

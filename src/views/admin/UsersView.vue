@@ -91,7 +91,7 @@
             <option value="Partner">Socia-vendedora</option>
           </select>
           <p class="hint-text" v-if="form.role === 'Partner'">
-            Después de crear este usuario, configura su comisión en la sección "Socias".
+            Después de crear este usuario, configura su comisión en la sección "Mayoristas".
           </p>
         </div>
       </form>

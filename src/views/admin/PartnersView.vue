@@ -2,7 +2,7 @@
   <div class="partners-view">
     <div class="page-header-row">
       <div>
-        <p class="page-sub">{{ partners.length }} socias registradas</p>
+        <p class="page-sub">{{ partners.length }} mayoristas registrados</p>
       </div>
       <button class="btn btn-secondary" @click="openSelectPartnerForSale" style="margin-right: 8px;">
         🧾 Venta a socia
@@ -207,7 +207,7 @@ async function loadPartners() {
     const res = await api.get('/Partner')
     partners.value = res.data.data
   } catch {
-    toast.show('Error al cargar las socias', 'error')
+    toast.show('Error al cargar los mayoristas', 'error')
   } finally {
     loading.value = false
   }
