@@ -70,7 +70,10 @@
           
           <div class="sale-product-line" v-if="detail.productId">
             <div class="product-info">
-              <div class="product-name-display">{{ getProductName(detail) }}</div>
+              <div class="product-name-display" @click="clearProduct(detail)" title="Click para cambiar producto">
+                {{ getProductName(detail) }}
+                <span class="edit-icon">✏️</span>
+              </div>
             </div>
             
             <div class="control-group">
@@ -239,6 +242,13 @@ function onProductSelect(detail, product) {
   detail.stock = product.stock
 }
 
+function clearProduct(detail) {
+  detail.productId = ''
+  detail.productName = ''
+  detail.unitPrice = 0
+  detail.stock = 0
+}
+
 function getProductName(detail) {
   return detail.productName || 'Producto seleccionado'
 }
@@ -405,6 +415,27 @@ async function saveSale() {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.product-name-display:hover {
+  background: #e0e0e0;
+  border: 1px solid var(--color-border);
+}
+
+.edit-icon {
+  font-size: 12px;
+  opacity: 0.5;
+  margin-left: 6px;
+  flex-shrink: 0;
+}
+
+.product-name-display:hover .edit-icon {
+  opacity: 1;
 }
 
 .control-group {
