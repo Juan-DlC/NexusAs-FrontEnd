@@ -64,11 +64,15 @@
         </div>
 
         <div v-for="(detail, index) in form.details" :key="index" class="sale-product-row">
-          <div class="sale-product-search">
+          <div v-if="!detail.productId" class="sale-product-search">
             <ProductSearch @select="(p) => onProductSelect(detail, p)" placeholder="🔍 Buscar producto..." />
           </div>
           
-          <div class="sale-product-controls" v-if="detail.productId">
+          <div class="sale-product-line" v-if="detail.productId">
+            <div class="product-info">
+              <ProductSearch @select="(p) => onProductSelect(detail, p)" placeholder="🔍 Buscar producto..." />
+            </div>
+            
             <div class="control-group">
               <label class="control-label">Cantidad</label>
               <input 
@@ -79,14 +83,12 @@
                 :class="{ 'input-error': isStockExceeded(detail) }" 
               />
             </div>
+            
             <div class="control-group">
               <label class="control-label">Precio unit.</label>
               <CurrencyInput v-model="detail.unitPrice" class="price-input" />
             </div>
-            <div class="control-group subtotal-group">
-              <label class="control-label">Subtotal</label>
-              <span class="subtotal-value">${{ formatNumber(detail.quantity * detail.unitPrice) }}</span>
-            </div>
+            
             <button 
               type="button" 
               class="btn-icon btn-icon-danger"
@@ -320,28 +322,28 @@ async function saveSale() {
 
 <style scoped>
 .form-section {
-  margin-bottom: 20px;
-  padding-bottom: 20px;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
   border-bottom: 1px solid #e0e0e0;
 }
 
 .form-section:last-of-type {
   border-bottom: none;
-  padding-bottom: 12px;
+  padding-bottom: 8px;
 }
 
 .section-title {
   font-size: 13px;
   font-weight: 600;
   color: var(--color-text);
-  margin: 0 0 10px 0;
+  margin: 0 0 8px 0;
 }
 
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .form-row {
@@ -368,20 +370,24 @@ async function saveSale() {
 .sale-product-row {
   border: 1px solid #d0d0d0;
   border-radius: 6px;
-  padding: 10px;
-  margin-bottom: 8px;
+  padding: 8px;
+  margin-bottom: 6px;
   background: #fefefe;
 }
 
 .sale-product-search {
-  margin-bottom: 8px;
+  width: 100%;
 }
 
-.sale-product-controls {
+.sale-product-line {
   display: grid;
-  grid-template-columns: 90px 1fr 1fr auto;
+  grid-template-columns: 1fr 100px 140px auto;
   gap: 10px;
   align-items: end;
+}
+
+.product-info {
+  min-width: 0;
 }
 
 .control-group {
@@ -398,19 +404,8 @@ async function saveSale() {
   letter-spacing: 0.4px;
 }
 
-.subtotal-group {
-  text-align: right;
-}
-
-.subtotal-value {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--color-accent);
-  padding: 8px 0;
-}
-
 .stock-badge {
-  margin-top: 6px;
+  margin-top: 4px;
 }
 
 .discount-input-wrapper {
