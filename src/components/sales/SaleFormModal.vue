@@ -234,8 +234,13 @@ const hasStockErrors = computed(() =>
 
 function onProductSelect(detail, product) {
   detail.productId = product.id
+  detail.productName = product.name
   detail.unitPrice = product.salePrice
   detail.stock = product.stock
+}
+
+function getProductName(detail) {
+  return detail.productName || 'Producto seleccionado'
 }
 
 function getProductStock(detail) {
@@ -322,34 +327,34 @@ async function saveSale() {
 
 <style scoped>
 .form-section {
-  margin-bottom: 14px;
-  padding-bottom: 14px;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
   border-bottom: 1px solid #e0e0e0;
 }
 
 .form-section:last-of-type {
   border-bottom: none;
-  padding-bottom: 8px;
+  padding-bottom: 6px;
 }
 
 .section-title {
   font-size: 13px;
   font-weight: 600;
   color: var(--color-text);
-  margin: 0 0 8px 0;
+  margin: 0 0 6px 0;
 }
 
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .form-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 14px;
+  gap: 10px;
 }
 
 .form-group {
@@ -362,7 +367,7 @@ async function saveSale() {
   font-size: 12px;
   font-weight: 600;
   color: var(--color-text);
-  margin-bottom: 5px;
+  margin-bottom: 4px;
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }
@@ -370,8 +375,8 @@ async function saveSale() {
 .sale-product-row {
   border: 1px solid #d0d0d0;
   border-radius: 6px;
-  padding: 8px;
-  margin-bottom: 6px;
+  padding: 6px;
+  margin-bottom: 5px;
   background: #fefefe;
 }
 
@@ -382,7 +387,7 @@ async function saveSale() {
 .sale-product-line {
   display: grid;
   grid-template-columns: 1fr 100px 140px auto;
-  gap: 10px;
+  gap: 8px;
   align-items: end;
 }
 
@@ -390,10 +395,22 @@ async function saveSale() {
   min-width: 0;
 }
 
+.product-name-display {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  padding: 8px 10px;
+  background: var(--color-bg);
+  border-radius: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .control-group {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .control-label {
@@ -405,7 +422,7 @@ async function saveSale() {
 }
 
 .stock-badge {
-  margin-top: 4px;
+  margin-top: 3px;
 }
 
 .discount-input-wrapper {
@@ -434,15 +451,15 @@ async function saveSale() {
   background: transparent;
   border: 1px solid #c0c0c0;
   border-radius: 8px;
-  padding: 14px 16px;
-  margin-top: 12px;
+  padding: 10px 12px;
+  margin-top: 8px;
 }
 
 .total-line {
   display: flex;
   justify-content: space-between;
   font-size: 14px;
-  padding: 3px 0;
+  padding: 2px 0;
   color: var(--color-text);
 }
 
@@ -451,8 +468,8 @@ async function saveSale() {
 }
 
 .total-line.total-final {
-  padding-top: 8px;
-  margin-top: 6px;
+  padding-top: 6px;
+  margin-top: 4px;
   font-size: 15px;
 }
 
@@ -462,13 +479,13 @@ async function saveSale() {
 }
 
 .qty-input, .price-input { 
-  padding: 9px 8px; 
+  padding: 7px 6px; 
 }
 
 .hint-text {
   font-size: 11px;
   color: var(--color-accent);
-  margin-top: 3px;
+  margin-top: 2px;
   font-weight: 500;
 }
 
@@ -476,9 +493,9 @@ async function saveSale() {
   font-size: 12px;
   color: var(--color-danger);
   text-align: center;
-  margin-top: 10px;
+  margin-top: 6px;
   font-weight: 600;
-  padding: 6px;
+  padding: 5px;
   background: #ffebee;
   border-radius: 4px;
 }
