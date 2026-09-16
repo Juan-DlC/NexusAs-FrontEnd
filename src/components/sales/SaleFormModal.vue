@@ -69,7 +69,11 @@
 
         <div v-for="(detail, index) in form.details" :key="index" class="sale-product-row">
           <div v-if="!detail.productId" class="sale-product-search">
-            <ProductSearch @select="(p) => onProductSelect(detail, p)" placeholder="🔍 Buscar producto..." />
+            <ProductSearch 
+              @select="(p) => onProductSelect(detail, p)" 
+              placeholder="🔍 Buscar producto..." 
+              :excludeProducts="getExcludedProducts()"
+            />
           </div>
           
           <div class="sale-product-line" v-if="detail.productId">
@@ -120,7 +124,7 @@
           <div class="stock-badge" v-if="detail.productId">
             <span :class="['badge', isStockExceeded(detail) ? 'badge-danger' : 'badge-success']">
               {{ isStockExceeded(detail) 
-                ? `⚠️ Stock insuficiente (${getProductStock(detail)} disp.)` 
+                ? `⚠️ Stock insuficiente (${getTotalQuantityForProduct(detail.productId)}/${getProductStock(detail)})` 
                 : `✓ Stock: ${getProductStock(detail)}` 
               }}
             </span>
@@ -273,9 +277,40 @@ function getProductStock(detail) {
   return detail.stock || 0
 }
 
+function getTotalQuantityForProduct(productId) {
+  return form.value.details
+    .filter(d => d.productId === productId)
+    .reduce((sum, d) => sum + (d.quantity || 0), 0)
+}
+
+function getExcludedProducts() {
+  // Generar array con productos ya agregados y su cantidad total usada
+  const productMap = {}
+  
+  form.value.details.forEach(detail => {
+    if (detail.productId) {
+      if (!productMap[detail.productId]) {
+        productMap[detail.productId] = {
+          productId: detail.productId,
+          quantityUsed: 0
+        }
+      }
+      productMap[detail.productId].quantityUsed += detail.quantity || 0
+    }
+  })
+  
+  return Object.values(productMap)
+}
+
 function isStockExceeded(detail) {
   if (!detail.productId) return false
-  return detail.quantity > getProductStock(detail)
+  
+  // Sumar todas las cantidades del mismo producto en el carrito
+  const totalQuantity = form.value.details
+    .filter(d => d.productId === detail.productId)
+    .reduce((sum, d) => sum + (d.quantity || 0), 0)
+  
+  return totalQuantity > getProductStock(detail)
 }
 
 function addDetail() {
@@ -306,6 +341,22 @@ async function saveSale() {
   if (validDetails.length === 0) {
     toast.show('Debe agregar al menos un producto a la venta', 'warning')
     return
+  }
+  
+  // ✅ VALIDACIÓN: Verificar stock disponible sumando cantidades del mismo producto
+  const productQuantities = {}
+  for (const detail of validDetails) {
+    if (!productQuantities[detail.productId]) {
+      productQuantities[detail.productId] = { total: 0, stock: detail.stock, name: detail.productName }
+    }
+    productQuantities[detail.productId].total += detail.quantity || 0
+  }
+  
+  for (const [productId, data] of Object.entries(productQuantities)) {
+    if (data.total > data.stock) {
+      toast.show(`Stock insuficiente para "${data.name}". Disponible: ${data.stock}, solicitado: ${data.total}`, 'warning')
+      return
+    }
   }
   
   try {

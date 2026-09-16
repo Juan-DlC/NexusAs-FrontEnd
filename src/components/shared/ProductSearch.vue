@@ -47,7 +47,8 @@ import { formatNumber } from '@/utils/format'
 
 const props = defineProps({
   placeholder: { type: String, default: 'Buscar por nombre, código o marca...' },
-  filterInStock: { type: Boolean, default: true }
+  filterInStock: { type: Boolean, default: true },
+  excludeProducts: { type: Array, default: () => [] } // Array de { productId, quantityUsed }
 })
 
 const emit = defineEmits(['select'])
@@ -90,7 +91,18 @@ function onInput() {
           pageSize: 8 
         }
       })
-      results.value = res.data.data.data
+      
+      // Filtrar productos que ya no tienen stock disponible en el carrito
+      const availableProducts = res.data.data.data.filter(product => {
+        const excluded = props.excludeProducts.find(ex => ex.productId === product.id)
+        if (!excluded) return true // No está en el carrito, mostrar
+        
+        // Calcular stock disponible = stock total - cantidad ya usada en carrito
+        const availableStock = product.stock - excluded.quantityUsed
+        return availableStock > 0 // Solo mostrar si queda stock disponible
+      })
+      
+      results.value = availableProducts
     } catch {
       results.value = []
     } finally {
