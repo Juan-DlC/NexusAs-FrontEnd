@@ -52,21 +52,21 @@
       <div class="form-group">
         <label class="form-label">Nombre Comercial *</label>
         <input v-model="form.name" type="text" class="form-input" required
-          @input="form.name = toUpperCase(form.name)" />
+          @input="(e) => handleUpperCase(e, (val) => form.name = val)" />
       </div>
 
       <div class="form-group">
         <label class="form-label">Nombre Natural</label>
         <input v-model="form.nameNatural" type="text" class="form-input" required
           placeholder="Nombre completo del socio"
-          @input="form.nameNatural = toUpperCase(form.nameNatural)" />
+          @input="(e) => handleUpperCase(e, (val) => form.nameNatural = val)" />
       </div>
 
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Teléfono (opcional)</label>
           <input v-model="form.phone" type="text" class="form-input"
-            @input="form.phone = toUpperCase(form.phone)" />
+            @input="(e) => handleUpperCase(e, (val) => form.phone = val)" />
         </div>
         <div class="form-group">
           <label class="form-label">Email (opcional)</label>
@@ -77,7 +77,7 @@
       <div class="form-group">
         <label class="form-label">Dirección (opcional)</label>
         <input v-model="form.address" type="text" class="form-input"
-          @input="form.address = toUpperCase(form.address)" />
+          @input="(e) => handleUpperCase(e, (val) => form.address = val)" />
       </div>
 
       <div class="form-group">
@@ -234,7 +234,7 @@
             <div class="form-group" style="margin-top: 12px;">
               <label class="form-label">Notas de liquidación (opcional)</label>
               <input v-model="liquidationNotes" type="text" class="form-input"
-                @input="liquidationNotes = toUpperCase(liquidationNotes)"
+                @input="(e) => handleUpperCase(e, (val) => liquidationNotes = val)"
                 placeholder="Ej: LIQUIDACIÓN AGOSTO 2026" />
             </div>
 
@@ -323,7 +323,7 @@ import { ref, onMounted } from 'vue'
 import api from '@/api/axios'
 import { useToastStore } from '@/stores/toast'
 import ModalBase from '@/components/shared/ModalBase.vue'
-import { toUpperCase } from '@/utils/textFormat'
+import { toUpperCase, handleUpperCase } from '@/utils/textFormat'
 import { formatNumber as utilFormatNumber, formatDate as utilFormatDate } from '@/utils/format'
 
 // ✅ Re-exportar las funciones para asegurar que estén disponibles en el template

@@ -26,7 +26,9 @@
             <label class="form-label">Cliente (obligatorio para crédito)</label>
             <select v-model="form.customerId" class="form-input" required>
               <option value="" disabled>Selecciona un cliente</option>
-              <option v-for="c in props.customers" :key="c.id" :value="c.id">{{ c.name }}</option>
+              <option v-for="c in props.customers" :key="c.id" :value="c.id">
+                {{ c.name }}{{ c.notes ? ` - ${c.notes}` : '' }}
+              </option>
             </select>
           </div>
 
@@ -34,7 +36,9 @@
             <label class="form-label">Cliente (opcional)</label>
             <select v-model="form.customerId" class="form-input">
               <option value="">Sin cliente</option>
-              <option v-for="c in props.customers" :key="c.id" :value="c.id">{{ c.name }}</option>
+              <option v-for="c in props.customers" :key="c.id" :value="c.id">
+                {{ c.name }}{{ c.notes ? ` - ${c.notes}` : '' }}
+              </option>
             </select>
           </div>
 

@@ -165,6 +165,12 @@ function openEditModal(cat) {
 }
 
 async function saveCategory() {
+  // Validaciones personalizadas
+  if (!form.value.name?.trim()) {
+    toast.show('El nombre de la categoría es obligatorio', 'warning')
+    return
+  }
+  
   try {
     saving.value = true
     if (editingCategory.value) {

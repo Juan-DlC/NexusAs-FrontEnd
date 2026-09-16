@@ -162,7 +162,7 @@
           <div class="form-row">
             <div class="form-group">
               <label class="form-label">Código</label>
-              <input v-model="form.code" type="text" class="form-input" required @input="form.code = toUpperCase(form.code)" />
+              <input v-model="form.code" type="text" class="form-input" required @input="(e) => handleUpperCase(e, (val) => form.code = val)" />
             </div>
 
             <div class="form-group">
@@ -178,12 +178,12 @@
 
           <div class="form-group">
             <label class="form-label">Nombre</label>
-            <input v-model="form.name" type="text" class="form-input" required @input="form.name = toUpperCase(form.name)" />
+            <input v-model="form.name" type="text" class="form-input" required @input="(e) => handleUpperCase(e, (val) => form.name = val)" />
           </div>
 
           <div class="form-group">
             <label class="form-label">Descripción (opcional)</label>
-            <input v-model="form.description" type="text" class="form-input" @input="form.description = toUpperCase(form.description)" placeholder="Descripción del producto" />
+            <input v-model="form.description" type="text" class="form-input" @input="(e) => handleUpperCase(e, (val) => form.description = val)" placeholder="Descripción del producto" />
           </div>
         </div>
 
@@ -369,7 +369,7 @@ import ModalBase from '@/components/shared/ModalBase.vue'
 import CurrencyInput from '@/components/shared/CurrencyInput.vue'
 import ConfirmDialog from '@/components/shared/ConfirmDialog.vue'
 import SkeletonLoader from '@/components/shared/SkeletonLoader.vue'
-import { toUpperCase } from '@/utils/textFormat'
+import { toUpperCase, handleUpperCase } from '@/utils/textFormat'
 import { formatNumber } from '@/utils/format'
 
 const auth = useAuthStore()
@@ -530,6 +530,28 @@ function openEditModal(product) {
 }
 
 async function saveProduct() {
+  // Validaciones personalizadas
+  if (!form.value.code?.trim()) {
+    toast.show('El código del producto es obligatorio', 'warning')
+    return
+  }
+  if (!form.value.categoryId) {
+    toast.show('Debes seleccionar una categoría', 'warning')
+    return
+  }
+  if (!form.value.name?.trim()) {
+    toast.show('El nombre del producto es obligatorio', 'warning')
+    return
+  }
+  if (!form.value.cost || form.value.cost <= 0) {
+    toast.show('El costo debe ser mayor a 0', 'warning')
+    return
+  }
+  if (!form.value.salePrice || form.value.salePrice <= 0) {
+    toast.show('El precio de venta debe ser mayor a 0', 'warning')
+    return
+  }
+  
   try {
     saving.value = true
     const payload = {

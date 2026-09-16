@@ -194,6 +194,12 @@ function openEditModal(customer) {
 }
 
 async function saveCustomer() {
+  // Validaciones personalizadas
+  if (!form.value.name?.trim()) {
+    toast.show('El nombre del cliente es obligatorio', 'warning')
+    return
+  }
+  
   try {
     saving.value = true
     const payload = {

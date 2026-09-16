@@ -225,6 +225,27 @@ tbody tr:hover td {
   box-shadow: 0 0 0 3px rgba(200,149,108,0.15);
 }
 
+/* Prevenir cambio de valor con scroll en inputs numéricos */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"]:focus {
+  /* Desactivar el cambio de valor al hacer scroll */
+  pointer-events: auto;
+}
+
+input[type="number"]:hover:not(:focus) {
+  /* Permitir scroll en la página cuando no está enfocado */
+  pointer-events: none;
+}
+
 .form-input::placeholder {
   color: var(--color-text-muted);
   opacity: 0.7;
