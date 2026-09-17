@@ -24,22 +24,22 @@
 
           <div class="form-group" v-if="isCredit">
             <label class="form-label">Cliente (obligatorio para crédito)</label>
-            <select v-model="form.customerId" class="form-input" required>
-              <option value="" disabled>Selecciona un cliente</option>
-              <option v-for="c in props.customers" :key="c.id" :value="c.id">
-                {{ c.name }}{{ c.notes ? ` - ${c.notes}` : '' }}
-              </option>
-            </select>
+            <CustomerSearch 
+              v-model="form.customerId"
+              :customers="props.customers"
+              placeholder="🔍 Buscar por nombre, nota o teléfono..."
+              @select="onCustomerSelect"
+            />
           </div>
 
           <div class="form-group" v-if="!isCredit">
             <label class="form-label">Cliente (opcional)</label>
-            <select v-model="form.customerId" class="form-input">
-              <option value="">Sin cliente</option>
-              <option v-for="c in props.customers" :key="c.id" :value="c.id">
-                {{ c.name }}{{ c.notes ? ` - ${c.notes}` : '' }}
-              </option>
-            </select>
+            <CustomerSearch 
+              v-model="form.customerId"
+              :customers="props.customers"
+              placeholder="🔍 Buscar por nombre, nota o teléfono... (opcional)"
+              @select="onCustomerSelect"
+            />
           </div>
 
           <div class="form-group" v-if="isCredit && form.details.some(d => d.productId)">
@@ -190,6 +190,7 @@ import api from '@/api/axios'
 import { useToastStore } from '@/stores/toast'
 import ModalBase from '@/components/shared/ModalBase.vue'
 import ProductSearch from '@/components/shared/ProductSearch.vue'
+import CustomerSearch from '@/components/shared/CustomerSearch.vue'
 import CurrencyInput from '@/components/shared/CurrencyInput.vue'
 import { toUpperCase } from '@/utils/textFormat'
 import { formatNumber } from '@/utils/format'
@@ -259,6 +260,10 @@ function onProductSelect(detail, product) {
   detail.productDescription = product.description || ''
   detail.unitPrice = product.salePrice
   detail.stock = product.stock
+}
+
+function onCustomerSelect(customer) {
+  form.value.customerId = customer.id
 }
 
 function clearProduct(detail) {

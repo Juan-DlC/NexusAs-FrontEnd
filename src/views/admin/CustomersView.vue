@@ -15,7 +15,7 @@
           v-model="search"
           type="text"
           class="form-input search-input"
-          placeholder="Buscar por nombre o documento..."
+          placeholder="Buscar por nombre, nota o teléfono..."
           @input="onSearchInput"
         />
         <span v-if="searching" class="search-spinner" title="Buscando...">🔍</span>
@@ -155,10 +155,21 @@ async function loadCustomers() {
   try {
     loading.value = true
     const res = await api.get('/Customer', {
-      params: { pageNumber: pageNumber.value, pageSize: pageSize.value, search: search.value }
+      params: { 
+        pageNumber: pageNumber.value, 
+        pageSize: pageSize.value, 
+        search: search.value 
+      }
     })
     const data = res.data.data
-    customers.value = data.data
+    
+    // Ordenar alfabéticamente por nombre
+    customers.value = data.data.sort((a, b) => {
+      const nameA = (a.name || '').toUpperCase()
+      const nameB = (b.name || '').toUpperCase()
+      return nameA.localeCompare(nameB)
+    })
+    
     totalRecords.value = data.totalRecords
     totalPages.value = data.totalPages
     hasNextPage.value = data.hasNextPage
