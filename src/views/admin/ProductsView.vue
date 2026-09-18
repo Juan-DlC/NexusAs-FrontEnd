@@ -480,14 +480,14 @@ async function loadProducts() {
           return nameA.localeCompare(nameB)
         })
       } else if (sortBy.value === 'createdAt-desc') {
-        // Más recientes primero
+        // Más recientes primero (por ID descendente como aproximación)
         sortedProducts = [...data.data].sort((a, b) => {
-          return new Date(b.createdAt) - new Date(a.createdAt)
+          return b.id - a.id
         })
       } else if (sortBy.value === 'createdAt-asc') {
-        // Más antiguos primero
+        // Más antiguos primero (por ID ascendente como aproximación)
         sortedProducts = [...data.data].sort((a, b) => {
-          return new Date(a.createdAt) - new Date(b.createdAt)
+          return a.id - b.id
         })
       }
       
