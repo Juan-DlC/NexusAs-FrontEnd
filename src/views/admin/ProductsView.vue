@@ -33,11 +33,6 @@
         <option value="inactive">Solo inactivos</option>
         <option value="all">Todos</option>
       </select>
-      <select v-model="sortBy" class="form-input filter-select" @change="onSortChange">
-        <option value="name">Orden alfabético (A-Z)</option>
-        <option value="createdAt-desc">Más recientes primero</option>
-        <option value="createdAt-asc">Más antiguos primero</option>
-      </select>
     </div>
 
     <div class="card">
@@ -390,7 +385,6 @@ const searching = ref(false)
 const search = ref('')
 const filterCategory = ref('')
 const filterStatus = ref('')
-const sortBy = ref('name') // Por defecto: orden alfabético
 const showModal = ref(false)
 const showProductDetailModal = ref(false)
 const editingProduct = ref(null)
@@ -433,10 +427,6 @@ function onFilterChange() {
   loadProducts()
 }
 
-function onSortChange() {
-  loadProducts()
-}
-
 async function loadProducts() {
   try {
     loading.value = true
@@ -469,29 +459,7 @@ async function loadProducts() {
 
       const res = await api.get('/Product', { params })
       const data = res.data.data
-      
-      // Aplicar ordenamiento en frontend
-      let sortedProducts = data.data
-      if (sortBy.value === 'name') {
-        // Orden alfabético A-Z
-        sortedProducts = [...data.data].sort((a, b) => {
-          const nameA = (a.name || '').toUpperCase()
-          const nameB = (b.name || '').toUpperCase()
-          return nameA.localeCompare(nameB)
-        })
-      } else if (sortBy.value === 'createdAt-desc') {
-        // Más recientes primero (por ID descendente como aproximación)
-        sortedProducts = [...data.data].sort((a, b) => {
-          return b.id - a.id
-        })
-      } else if (sortBy.value === 'createdAt-asc') {
-        // Más antiguos primero (por ID ascendente como aproximación)
-        sortedProducts = [...data.data].sort((a, b) => {
-          return a.id - b.id
-        })
-      }
-      
-      products.value = sortedProducts
+      products.value = data.data
       totalRecords.value = data.totalRecords
       totalPages.value = data.totalPages
       hasNextPage.value = data.hasNextPage
