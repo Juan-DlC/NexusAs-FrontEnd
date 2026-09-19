@@ -1,7 +1,7 @@
 <template>
   <Teleport to="body">
     <transition name="modal-fade">
-      <div v-if="modelValue" class="modal-overlay" :style="{ zIndex: zIndex }" @click.self="close">
+      <div v-if="modelValue" class="modal-overlay" :style="{ zIndex: zIndex }">
         <transition name="modal-slide">
           <div v-if="modelValue" class="modal-box" :style="{ maxWidth: width }">
             <div class="modal-header">

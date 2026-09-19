@@ -84,46 +84,60 @@
       </div>
     </div>
 
-    <div class="divider-label">Stock disponible</div>
-        <table v-if="allianceReport.stock.length > 0">
-          <thead><tr><th>Código</th><th>Producto</th><th>Stock actual</th></tr></thead>
-          <tbody>
-            <tr v-for="(s, i) in allianceReport.stock" :key="i">
-              <td>{{ s.code }}</td>
-              <td>{{ s.productName }}</td>
-              <td>{{ s.currentStock }}</td>
-            </tr>
-          </tbody>
-        </table>
-        <p v-else class="state-text">No hay productos de alianza marcados.</p>
-
-        <div class="divider-label">Ventas en el período</div>
-        <table v-if="allianceReport.sold.length > 0">
-          <thead>
-            <tr><th>Fecha</th><th>Factura</th><th>Producto</th><th>Cant.</th><th>Total</th><th>Vendido por</th></tr>
-          </thead>
-          <tbody>
-            <tr v-for="(s, i) in allianceReport.sold" :key="i">
-              <td>{{ formatDate(s.date) }}</td>
-              <td>{{ s.saleNumber }}</td>
-              <td>{{ s.productName }}</td>
-              <td>{{ s.quantity }}</td>
-              <td>${{ formatNumber(s.total) }}</td>
-              <td>
-                {{ s.sellerName }}
-                <span v-if="s.soldByPartner" class="badge badge-pink" style="margin-left: 4px;">Mayorista</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+    <div class="divider-label">Ventas en el período</div>
+        <div v-if="allianceReport.sold.length > 0">
+          <table>
+            <thead>
+              <tr><th>Fecha</th><th>Factura</th><th>Producto</th><th>Cant.</th><th>Total</th><th>Vendido por</th></tr>
+            </thead>
+            <tbody>
+              <tr v-for="(s, i) in paginatedSoldItems" :key="i">
+                <td>{{ formatDate(s.date) }}</td>
+                <td>{{ s.saleNumber }}</td>
+                <td>{{ s.productName }}</td>
+                <td>{{ s.quantity }}</td>
+                <td>${{ formatNumber(s.total) }}</td>
+                <td>
+                  {{ s.sellerName }}
+                  <span v-if="s.soldByPartner" class="badge badge-pink" style="margin-left: 4px;">Mayorista</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="mini-pagination" v-if="totalSoldPages > 1">
+            <button class="btn-mini" :disabled="soldPage === 1" @click="soldPage--">←</button>
+            <span class="page-text">{{ soldPage }}/{{ totalSoldPages }}</span>
+            <button class="btn-mini" :disabled="soldPage === totalSoldPages" @click="soldPage++">→</button>
+          </div>
+        </div>
         <p v-else class="state-text">Sin ventas en este período.</p>
+
+    <div class="divider-label">Stock disponible</div>
+        <div v-if="allianceReport.stock.length > 0">
+          <table>
+            <thead><tr><th>Código</th><th>Producto</th><th>Stock actual</th></tr></thead>
+            <tbody>
+              <tr v-for="(s, i) in paginatedStockItems" :key="i">
+                <td>{{ s.code }}</td>
+                <td>{{ s.productName }}</td>
+                <td>{{ s.currentStock }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="mini-pagination" v-if="totalStockItemsPages > 1">
+            <button class="btn-mini" :disabled="stockItemsPage === 1" @click="stockItemsPage--">←</button>
+            <span class="page-text">{{ stockItemsPage }}/{{ totalStockItemsPages }}</span>
+            <button class="btn-mini" :disabled="stockItemsPage === totalStockItemsPages" @click="stockItemsPage++">→</button>
+          </div>
+        </div>
+        <p v-else class="state-text">No hay productos de alianza marcados.</p>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import api from '@/api/axios'
 import { useToastStore } from '@/stores/toast'
 import { formatNumber, formatDate } from '@/utils/format'
@@ -136,6 +150,35 @@ const allianceFrom = ref(today)
 const allianceTo = ref(today)
 const allianceReport = ref(null)
 const loadingAlliance = ref(false)
+
+// Paginación reportes
+const soldPage = ref(1)
+const stockItemsPage = ref(1)
+const reportPageSize = 10
+
+const paginatedSoldItems = computed(() => {
+  if (!allianceReport.value?.sold) return []
+  const start = (soldPage.value - 1) * reportPageSize
+  const end = start + reportPageSize
+  return allianceReport.value.sold.slice(start, end)
+})
+
+const paginatedStockItems = computed(() => {
+  if (!allianceReport.value?.stock) return []
+  const start = (stockItemsPage.value - 1) * reportPageSize
+  const end = start + reportPageSize
+  return allianceReport.value.stock.slice(start, end)
+})
+
+const totalSoldPages = computed(() => {
+  if (!allianceReport.value?.sold) return 0
+  return Math.ceil(allianceReport.value.sold.length / reportPageSize)
+})
+
+const totalStockItemsPages = computed(() => {
+  if (!allianceReport.value?.stock) return 0
+  return Math.ceil(allianceReport.value.stock.length / reportPageSize)
+})
 
 const categories = ref([])
 const catalogCategoryId = ref('')
@@ -256,3 +299,40 @@ onMounted(loadCategories)
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; max-width: 400px; }
 .actions-row { display: flex; gap: 10px; margin-top: 12px; }
 </style>
+
+.mini-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px 0 4px;
+  border-top: 1px solid var(--color-border);
+  margin-top: 8px;
+}
+
+.btn-mini {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 14px;
+  transition: var(--transition);
+}
+
+.btn-mini:hover:not(:disabled) {
+  background: var(--color-accent-light);
+  border-color: var(--color-accent);
+}
+
+.btn-mini:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.page-text {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  min-width: 40px;
+  text-align: center;
+}

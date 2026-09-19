@@ -46,28 +46,35 @@
         <div v-else-if="recentSales.length === 0" class="empty-text">
           No hay ventas registradas hoy.
         </div>
-        <table v-else>
-          <thead>
-            <tr>
-              <th>Factura</th>
-              <th>Cliente</th>
-              <th>Total</th>
-              <th>Método</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="sale in recentSales" :key="sale.id">
-              <td>{{ sale.saleNumber }}</td>
-              <td>{{ sale.customerId ? (sale.customerName || 'Sin cliente') : 'Sin cliente' }}</td>
-              <td>${{ formatNumber(sale.total) }}</td>
-              <td>
-                <span class="badge" :class="sale.paymentMethodName === 'Contado' || sale.paymentMethodName === 'CONTADO' ? 'badge-success' : 'badge-warning'">
-                  {{ sale.paymentMethodName || 'N/A' }}
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div v-else>
+          <table>
+            <thead>
+              <tr>
+                <th>Factura</th>
+                <th>Cliente</th>
+                <th>Total</th>
+                <th>Método</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="sale in paginatedRecentSales" :key="sale.id">
+                <td>{{ sale.saleNumber }}</td>
+                <td>{{ sale.customerId ? (sale.customerName || 'Sin cliente') : 'Sin cliente' }}</td>
+                <td>${{ formatNumber(sale.total) }}</td>
+                <td>
+                  <span class="badge" :class="sale.paymentMethodName === 'Contado' || sale.paymentMethodName === 'CONTADO' ? 'badge-success' : 'badge-warning'">
+                    {{ sale.paymentMethodName || 'N/A' }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="mini-pagination" v-if="totalSalesPages > 1">
+            <button class="btn-mini" :disabled="salesPage === 1" @click="salesPage--">←</button>
+            <span class="page-text">{{ salesPage }}/{{ totalSalesPages }}</span>
+            <button class="btn-mini" :disabled="salesPage === totalSalesPages" @click="salesPage++">→</button>
+          </div>
+        </div>
       </div>
 
       <!-- Stock bajo -->
@@ -77,24 +84,31 @@
         <div v-else-if="lowStock.length === 0" class="empty-text success-text">
           ✓ Todos los productos tienen stock suficiente.
         </div>
-        <table v-else>
-          <thead>
-            <tr>
-              <th>Producto</th>
-              <th>Stock</th>
-              <th>Mínimo</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="product in lowStock" :key="product.id">
-              <td>{{ product.name }}</td>
-              <td style="color: var(--color-danger); font-weight: 600;">
-                {{ product.stock }}
-              </td>
-              <td>{{ product.minStock }}</td>
-            </tr>
-          </tbody>
-        </table>
+        <div v-else>
+          <table>
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Stock</th>
+                <th>Mínimo</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="product in paginatedLowStock" :key="product.id">
+                <td>{{ product.name }}</td>
+                <td style="color: var(--color-danger); font-weight: 600;">
+                  {{ product.stock }}
+                </td>
+                <td>{{ product.minStock }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="mini-pagination" v-if="totalStockPages > 1">
+            <button class="btn-mini" :disabled="stockPage === 1" @click="stockPage--">←</button>
+            <span class="page-text">{{ stockPage }}/{{ totalStockPages }}</span>
+            <button class="btn-mini" :disabled="stockPage === totalStockPages" @click="stockPage++">→</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -123,6 +137,31 @@ const lowStock = ref([])
 const showSaleModal = ref(false)
 const paymentMethods = ref([])
 const customers = ref([])
+
+// Paginación
+const salesPage = ref(1)
+const stockPage = ref(1)
+const pageSize = 5
+
+const paginatedRecentSales = computed(() => {
+  const start = (salesPage.value - 1) * pageSize
+  const end = start + pageSize
+  return recentSales.value.slice(start, end)
+})
+
+const paginatedLowStock = computed(() => {
+  const start = (stockPage.value - 1) * pageSize
+  const end = start + pageSize
+  return lowStock.value.slice(start, end)
+})
+
+const totalSalesPages = computed(() => {
+  return Math.ceil(recentSales.value.length / pageSize)
+})
+
+const totalStockPages = computed(() => {
+  return Math.ceil(lowStock.value.length / pageSize)
+})
 
 function openAddiLink() {
   const addiUrl = 'https://aliados.addi.com/' 
@@ -443,3 +482,40 @@ onMounted(loadDashboard)
 
 .success-text { color: var(--color-success); }
 </style>
+
+.mini-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px 0 4px;
+  border-top: 1px solid var(--color-border);
+  margin-top: 8px;
+}
+
+.btn-mini {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 14px;
+  transition: var(--transition);
+}
+
+.btn-mini:hover:not(:disabled) {
+  background: var(--color-accent-light);
+  border-color: var(--color-accent);
+}
+
+.btn-mini:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.page-text {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  min-width: 40px;
+  text-align: center;
+}
