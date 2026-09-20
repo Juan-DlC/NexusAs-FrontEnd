@@ -20,58 +20,75 @@
 
     <div class="divider-label">Productos</div>
 
-    <div v-for="(detail, index) in form.details" :key="index">
-      <div class="detail-row-partner">
-        <ProductSearch @select="(p) => onProductSelect(detail, p)" />
-        <input
-          v-model.number="detail.quantity"
-          type="number"
-          min="1"
-          class="form-input qty-input"
-          :class="{ 'input-error': detail.productId && detail.quantity > detail.stock }"
-        />
-        <div class="price-info" v-if="detail.productId">
-          <span class="partner-price">A mayorista: ${{ formatNumber(detail.partnerPrice) }}</span>
-          <span class="suggested-price">Sugerido: ${{ formatNumber(detail.suggestedPrice) }}</span>
-        </div>
-        <button
-          type="button"
-          class="btn-icon btn-icon-danger"
-          @click="removeDetail(index)"
-          v-if="form.details.length > 1"
-        >
-          ✕
-        </button>
+    <div v-for="(detail, index) in form.details" :key="index" style="margin-bottom: 12px;">
+      <div v-if="!detail.productId" class="detail-row-partner">
+        <ProductSearch @select="(p) => onProductSelect(detail, p)" placeholder="🔍 Buscar producto..." />
       </div>
+      
+      <div v-if="detail.productId" class="partner-product-card">
+        <div class="product-header-row">
+          <div class="product-info-inline">
+            <div class="product-text">
+              <span class="product-name">{{ detail.productName }}</span>
+              <span v-if="detail.productDescription" class="product-desc-inline"> - {{ detail.productDescription }}</span>
+            </div>
+            <button 
+              type="button" 
+              class="btn-edit-product" 
+              @click="detail.productId = ''; detail.productName = ''; detail.productDescription = ''"
+              title="Cambiar producto"
+            >
+              ✏️
+            </button>
+          </div>
+          <input
+            v-model.number="detail.quantity"
+            type="number"
+            min="1"
+            class="form-input qty-input-compact"
+            :class="{ 'input-error': detail.quantity > detail.stock }"
+            placeholder="Cant."
+          />
+          <button
+            type="button"
+            class="btn-icon btn-icon-danger"
+            @click="removeDetail(index)"
+            v-if="form.details.length > 1"
+            title="Quitar producto"
+          >
+            ✕
+          </button>
+        </div>
 
-      <div class="partner-sale-detail" v-if="detail.productId && detail.partnerPrice > 0">
-        <div class="price-row">
-          <span>💰 Lo que paga mayorista ({{ detail.commissionPercent }}% ganancia):</span>
-          <strong style="color: var(--color-accent); font-size: 15px;">${{ formatNumber(detail.partnerPrice) }}</strong>
+        <div class="partner-sale-detail">
+          <div class="price-row">
+            <span>💰 Lo que paga mayorista ({{ detail.commissionPercent }}% ganancia):</span>
+            <strong style="color: var(--color-accent); font-size: 15px;">${{ formatNumber(detail.partnerPrice) }}</strong>
+          </div>
+          <div class="price-row">
+            <span>🏷️ Precio sugerido de venta al público:</span>
+            <span style="color: var(--color-text-muted)">${{ formatNumber(detail.suggestedPrice) }}</span>
+          </div>
+          <div class="price-row">
+            <span>📦 Subtotal ({{ detail.quantity }} × ${{ formatNumber(detail.partnerPrice) }}):</span>
+            <strong>${{ formatNumber(detail.partnerPrice * (detail.quantity || 1)) }}</strong>
+          </div>
+          <div class="price-row" style="color: var(--color-text-muted); font-size: 11px;">
+            <span>{{ detail.isPartnership ? '🤝 Producto de alianza' : '🏪 Producto tienda' }} — Ganancia mayorista: ${{ formatNumber(detail.partnerEarning) }} por unidad</span>
+          </div>
         </div>
-        <div class="price-row">
-          <span>🏷️ Precio sugerido de venta al público:</span>
-          <span style="color: var(--color-text-muted)">${{ formatNumber(detail.suggestedPrice) }}</span>
-        </div>
-        <div class="price-row">
-          <span>📦 Subtotal ({{ detail.quantity }} × ${{ formatNumber(detail.partnerPrice) }}):</span>
-          <strong>${{ formatNumber(detail.partnerPrice * (detail.quantity || 1)) }}</strong>
-        </div>
-        <div class="price-row" style="color: var(--color-text-muted); font-size: 11px;">
-          <span>{{ detail.isPartnership ? '🤝 Producto de alianza' : '🏪 Producto tienda' }} — Ganancia mayorista: ${{ formatNumber(detail.partnerEarning) }} por unidad</span>
-        </div>
+
+        <p class="stock-warning" v-if="detail.quantity > detail.stock">
+          ⚠️ Stock insuficiente — disponible: {{ detail.stock }}
+        </p>
       </div>
-
-      <p class="stock-warning" v-if="detail.productId && detail.quantity > detail.stock">
-        ⚠️ Stock insuficiente — disponible: {{ detail.stock }}
-      </p>
     </div>
 
-    <button type="button" class="btn btn-secondary btn-sm" @click="addDetail" style="margin-bottom: 16px;">
+    <button type="button" class="btn btn-secondary btn-sm" @click="addDetail" style="margin-bottom: 10px;">
       + Agregar producto
     </button>
 
-    <div class="form-group">
+    <div class="form-group" style="margin-bottom: 10px;">
       <label class="form-label">Notas (opcional)</label>
       <input
         v-model="form.notes"
@@ -153,6 +170,7 @@ function removeDetail(index) {
 function onProductSelect(detail, product) {
   detail.productId = product.id
   detail.productName = product.name
+  detail.productDescription = product.description || ''
   detail.stock = product.stock
   detail.suggestedPrice = product.salePrice || 0
   detail.isPartnership = product.isPartnership || false
@@ -239,22 +257,23 @@ watch(() => props.modelValue, (newVal) => {
 <style scoped>
 .invoice-ref {
   background: var(--color-accent-light);
-  padding: 12px 14px;
+  padding: 10px 12px;
   border-radius: var(--radius-sm);
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   font-size: 13px;
   border-left: 3px solid var(--color-accent);
 }
 
-.form-group { margin-bottom: 16px; }
+.form-group { margin-bottom: 12px; }
 .form-label { display: block; font-size: 12px; font-weight: 600; color: var(--color-text); margin-bottom: 6px; }
-.form-input { width: 100%; padding: 10px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); }
+.form-input { width: 100%; padding: 8px 10px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); font-size: 13px; }
 
 .payment-info {
-  padding: 8px 12px;
+  padding: 8px 10px;
   border-radius: var(--radius-sm);
   font-size: 12px;
   margin-top: 6px;
+  margin-bottom: 10px;
 }
 
 .payment-info-credit {
@@ -273,43 +292,90 @@ watch(() => props.modelValue, (newVal) => {
   color: var(--color-accent);
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  margin: 16px 0 10px;
-  padding-top: 12px;
+  margin: 12px 0 8px;
+  padding-top: 10px;
   border-top: 1px solid var(--color-border);
 }
 
 .detail-row-partner {
-  display: grid;
-  grid-template-columns: 2fr 70px 1fr auto;
-  gap: 8px;
-  margin-bottom: 8px;
-  align-items: start;
-}
-
-.qty-input { max-width: 80px; }
-.input-error { border-color: var(--color-danger) !important; }
-
-.price-info {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  gap: 8px;
+  align-items: start;
+  width: 100%;
 }
 
-.partner-price {
-  font-size: 12px;
+.partner-product-card {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 10px;
+}
+
+.product-header-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.product-info-inline {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.product-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.product-name {
   font-weight: 600;
-  color: var(--color-accent);
+  font-size: 13px;
+  color: var(--color-text);
 }
 
-.suggested-price {
+.product-desc-inline {
   font-size: 11px;
   color: var(--color-text-muted);
+  font-style: italic;
 }
+
+.btn-edit-product {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 13px;
+  transition: var(--transition);
+  flex-shrink: 0;
+}
+
+.btn-edit-product:hover {
+  background: var(--color-accent-light);
+  border-color: var(--color-accent);
+}
+
+.qty-input-compact { 
+  max-width: 70px; 
+  padding: 6px 8px;
+  text-align: center;
+  font-size: 13px;
+}
+
+.input-error { border-color: var(--color-danger) !important; }
 
 .partner-sale-detail {
   background: var(--color-accent-light);
   border: 1px solid var(--color-border);
-  padding: 10px 14px;
+  padding: 8px 10px;
   border-radius: var(--radius-sm);
   margin: -4px 0 12px 0;
 }
@@ -354,7 +420,7 @@ watch(() => props.modelValue, (newVal) => {
   justify-content: space-between;
   align-items: center;
   background: var(--color-accent-light);
-  padding: 12px 16px;
+  padding: 10px 12px;
   border-radius: var(--radius-sm);
   font-size: 15px;
   color: var(--color-text);
