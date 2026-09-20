@@ -1,114 +1,154 @@
 <template>
-  <ModalBase :model-value="modelValue" @update:model-value="$emit('update:modelValue', $event)" :title="`Nueva venta — ${partner?.partnerName || ''}`" width="640px">
-    <div class="invoice-ref">
-      Registrando venta a nombre de: <strong>{{ partner?.partnerName }}</strong>
-    </div>
-
-    <div class="form-group">
-      <label class="form-label">Método de pago <span style="color: var(--color-danger)">*</span></label>
-      <select v-model.number="form.paymentMethodId" class="form-input" required>
-        <option :value="null" disabled>Selecciona método de pago</option>
-        <option v-for="pm in paymentMethods" :key="pm.id" :value="pm.id">
-          {{ pm.name }}
-        </option>
-      </select>
-    </div>
-
-    <div v-if="form.paymentMethodId" :class="['payment-info', isCredit ? 'payment-info-credit' : 'payment-info-cash']">
-      {{ isCredit ? '⚠️ Esta venta generará deuda para mayorista' : '✅ Venta de contado, no genera deuda' }}
-    </div>
-
-    <div class="divider-label">Productos</div>
-
-    <div v-for="(detail, index) in form.details" :key="index" style="margin-bottom: 12px;">
-      <div v-if="!detail.productId" class="detail-row-partner">
-        <ProductSearch @select="(p) => onProductSelect(detail, p)" placeholder="🔍 Buscar producto..." />
-      </div>
-      
-      <div v-if="detail.productId" class="partner-product-card">
-        <div class="product-header-row">
-          <div class="product-info-inline">
-            <div class="product-text">
-              <span class="product-name">{{ detail.productName }}</span>
-              <span v-if="detail.productDescription" class="product-desc-inline"> - {{ detail.productDescription }}</span>
-            </div>
-            <button 
-              type="button" 
-              class="btn-edit-product" 
-              @click="detail.productId = ''; detail.productName = ''; detail.productDescription = ''"
-              title="Cambiar producto"
-            >
-              ✏️
-            </button>
+  <ModalBase 
+    :model-value="props.modelValue" 
+    @update:modelValue="emit('update:modelValue', $event)"
+    :title="`Nueva venta — ${props.partner?.partnerName || ''}`" 
+    width="900px"
+  >
+    <form @submit.prevent="saveSale">
+      <!-- Sección: Información básica -->
+      <div class="form-section">
+        <h3 class="section-title">📋 Información de la venta</h3>
+        
+        <div class="invoice-ref">
+          Registrando venta a nombre de: <strong>{{ props.partner?.partnerName }}</strong>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Método de pago</label>
+            <select v-model.number="form.paymentMethodId" class="form-input" required>
+              <option :value="null" disabled>Selecciona método de pago</option>
+              <option v-for="pm in props.paymentMethods" :key="pm.id" :value="pm.id">
+                {{ pm.name }}
+              </option>
+            </select>
           </div>
-          <input
-            v-model.number="detail.quantity"
-            type="number"
-            min="1"
-            class="form-input qty-input-compact"
-            :class="{ 'input-error': detail.quantity > detail.stock }"
-            placeholder="Cant."
-          />
-          <button
-            type="button"
-            class="btn-icon btn-icon-danger"
-            @click="removeDetail(index)"
-            v-if="form.details.length > 1"
-            title="Quitar producto"
-          >
-            ✕
+        </div>
+        
+        <div v-if="form.paymentMethodId" :class="['payment-info', isCredit ? 'payment-info-credit' : 'payment-info-cash']">
+          {{ isCredit ? '⚠️ Esta venta generará deuda para mayorista' : '✅ Venta de contado, no genera deuda' }}
+        </div>
+      </div>
+
+      <!-- Sección: Productos -->
+      <div class="form-section">
+        <div class="section-header">
+          <h3 class="section-title">🛍️ Productos</h3>
+          <button type="button" class="btn btn-secondary btn-sm" @click="addDetail">
+            + Agregar producto
           </button>
         </div>
 
-        <div class="partner-sale-detail">
-          <div class="price-row">
-            <span>💰 Lo que paga mayorista ({{ detail.commissionPercent }}% ganancia):</span>
-            <strong style="color: var(--color-accent); font-size: 15px;">${{ formatNumber(detail.partnerPrice) }}</strong>
+        <div v-for="(detail, index) in form.details" :key="index" class="sale-product-row">
+          <div v-if="!detail.productId" class="sale-product-search">
+            <ProductSearch 
+              @select="(p) => onProductSelect(detail, p)" 
+              placeholder="🔍 Buscar producto..." 
+            />
           </div>
-          <div class="price-row">
-            <span>🏷️ Precio sugerido de venta al público:</span>
-            <span style="color: var(--color-text-muted)">${{ formatNumber(detail.suggestedPrice) }}</span>
+          
+          <div class="sale-product-line" v-if="detail.productId">
+            <div class="product-info">
+              <div class="product-name-display">
+                <div class="product-text">
+                  <span class="product-name">{{ detail.productName }}</span>
+                  <span v-if="detail.productDescription" class="product-desc-inline"> - {{ detail.productDescription }}</span>
+                </div>
+                <button 
+                  type="button" 
+                  class="btn-edit-product" 
+                  @click="clearProduct(detail)"
+                  title="Cambiar producto"
+                >
+                  ✏️
+                </button>
+              </div>
+            </div>
+            
+            <div class="control-group">
+              <label class="control-label">Cantidad</label>
+              <input 
+                v-model.number="detail.quantity" 
+                type="number" 
+                min="1"
+                class="form-input qty-input"
+                :class="{ 'input-error': detail.quantity > detail.stock }" 
+              />
+            </div>
+            
+            <button 
+              type="button" 
+              class="btn-icon btn-icon-danger"
+              @click="removeDetail(index)"
+              v-if="form.details.length > 1"
+              title="Quitar producto"
+            >
+              ✕
+            </button>
           </div>
-          <div class="price-row">
-            <span>📦 Subtotal ({{ detail.quantity }} × ${{ formatNumber(detail.partnerPrice) }}):</span>
-            <strong>${{ formatNumber(detail.partnerPrice * (detail.quantity || 1)) }}</strong>
+          
+          <div v-if="detail.productId" class="stock-badge">
+            <span :class="['badge', detail.quantity > detail.stock ? 'badge-danger' : 'badge-success']">
+              {{ detail.quantity > detail.stock 
+                ? `⚠️ Stock insuficiente (${detail.quantity}/${detail.stock})` 
+                : `✓ Stock: ${detail.stock}` 
+              }}
+            </span>
           </div>
-          <div class="price-row" style="color: var(--color-text-muted); font-size: 11px;">
-            <span>{{ detail.isPartnership ? '🤝 Producto de alianza' : '🏪 Producto tienda' }} — Ganancia mayorista: ${{ formatNumber(detail.partnerEarning) }} por unidad</span>
+          
+          <!-- DETALLES ESPECÍFICOS DE MAYORISTA -->
+          <div v-if="detail.productId" class="partner-sale-detail">
+            <div class="price-row">
+              <span>💰 Lo que paga mayorista ({{ detail.commissionPercent }}% ganancia):</span>
+              <strong style="color: var(--color-accent); font-size: 15px;">${{ formatNumber(detail.partnerPrice) }}</strong>
+            </div>
+            <div class="price-row">
+              <span>🏷️ Precio sugerido de venta al público:</span>
+              <span style="color: var(--color-text-muted)">${{ formatNumber(detail.suggestedPrice) }}</span>
+            </div>
+            <div class="price-row">
+              <span>📦 Subtotal ({{ detail.quantity }} × ${{ formatNumber(detail.partnerPrice) }}):</span>
+              <strong>${{ formatNumber(detail.partnerPrice * (detail.quantity || 1)) }}</strong>
+            </div>
+            <div class="price-row" style="color: var(--color-text-muted); font-size: 11px;">
+              <span>{{ detail.isPartnership ? '🤝 Producto de alianza' : '🏪 Producto tienda' }} — Ganancia mayorista: ${{ formatNumber(detail.partnerEarning) }} por unidad</span>
+            </div>
           </div>
         </div>
-
-        <p class="stock-warning" v-if="detail.quantity > detail.stock">
-          ⚠️ Stock insuficiente — disponible: {{ detail.stock }}
-        </p>
       </div>
-    </div>
 
-    <button type="button" class="btn btn-secondary btn-sm" @click="addDetail" style="margin-bottom: 10px;">
-      + Agregar producto
-    </button>
+      <!-- Sección: Detalles adicionales -->
+      <div class="form-section">
+        <h3 class="section-title">📝 Notas adicionales</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Notas (opcional)</label>
+            <input v-model="form.notes" type="text" class="form-input" @input="form.notes = toUpperCase(form.notes)" placeholder="Agregar notas..." />
+          </div>
+        </div>
+      </div>
 
-    <div class="form-group" style="margin-bottom: 10px;">
-      <label class="form-label">Notas (opcional)</label>
-      <input
-        v-model="form.notes"
-        type="text"
-        class="form-input"
-        @input="form.notes = toUpperCase(form.notes)"
-      />
-    </div>
-
-    <div class="total-preview">
-      <span>Total a cobrar a mayorista:</span>
-      <strong>${{ formatNumber(calculatedTotal) }}</strong>
-    </div>
-    <p style="font-size: 11px; color: var(--color-text-muted); text-align: right; margin-top: 4px;">
-      Precio sugerido total de venta: ${{ formatNumber(form.details.reduce((s, d) => s + ((d.suggestedPrice || 0) * (d.quantity || 0)), 0)) }}
-    </p>
+      <!-- Caja de total -->
+      <div class="sale-total-box">
+        <div class="total-line total-final">
+          <span><strong>Total a cobrar a mayorista</strong></span>
+          <strong class="total-amount">${{ formatNumber(calculatedTotal) }}</strong>
+        </div>
+        <div class="total-line" style="font-size: 11px; color: var(--color-text-muted); padding-top: 2px;">
+          <span>Precio sugerido total de venta al público:</span>
+          <span>${{ formatNumber(form.details.reduce((s, d) => s + ((d.suggestedPrice || 0) * (d.quantity || 0)), 0)) }}</span>
+        </div>
+      </div>
+      
+      <p class="stock-error-msg" v-if="hasStockErrors">
+        ⚠️ Corrige las cantidades en rojo antes de continuar.
+      </p>
+    </form>
 
     <template #footer>
-      <button class="btn btn-secondary" @click="$emit('update:modelValue', false)">Cancelar</button>
-      <button class="btn btn-primary" @click="saveSale" :disabled="saving">
+      <button class="btn btn-secondary" @click="emit('update:modelValue', false)">Cancelar</button>
+      <button class="btn btn-primary" @click="saveSale" :disabled="saving || hasStockErrors">
         {{ saving ? 'Registrando...' : 'Registrar venta' }}
       </button>
     </template>
@@ -125,21 +165,34 @@ import { toUpperCase } from '@/utils/textFormat'
 import { formatNumber } from '@/utils/format'
 
 const props = defineProps({
-  modelValue: Boolean,
-  partner: Object,
-  paymentMethods: Array
+  modelValue: { type: Boolean, required: true },
+  partner: { type: Object, required: true },
+  paymentMethods: { type: Array, default: () => [] }
 })
 
 const emit = defineEmits(['update:modelValue', 'sale-created'])
 
 const toast = useToastStore()
+
 const saving = ref(false)
 
 const form = ref({
   paymentMethodId: null,
   notes: '',
   requestId: '',
-  details: [{ productId: '', quantity: 1, unitPrice: 0, partnerPrice: 0, suggestedPrice: 0, stock: 0 }]
+  details: [{ 
+    productId: '', 
+    productName: '',
+    productDescription: '',
+    quantity: 1, 
+    unitPrice: 0, 
+    partnerPrice: 0, 
+    suggestedPrice: 0, 
+    stock: 0,
+    commissionPercent: 0,
+    partnerEarning: 0,
+    isPartnership: false
+  }]
 })
 
 const generateRequestId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
@@ -157,15 +210,9 @@ const calculatedTotal = computed(() => {
   }, 0)
 })
 
-function addDetail() {
-  form.value.details.push({ productId: '', quantity: 1, unitPrice: 0, partnerPrice: 0, suggestedPrice: 0, stock: 0 })
-}
-
-function removeDetail(index) {
-  if (form.value.details.length > 1) {
-    form.value.details.splice(index, 1)
-  }
-}
+const hasStockErrors = computed(() =>
+  form.value.details.some(d => d.productId && d.quantity > d.stock)
+)
 
 function onProductSelect(detail, product) {
   detail.productId = product.id
@@ -189,19 +236,57 @@ function onProductSelect(detail, product) {
   detail.unitPrice = detail.partnerPrice
 }
 
+function clearProduct(detail) {
+  detail.productId = ''
+  detail.productName = ''
+  detail.productDescription = ''
+  detail.unitPrice = 0
+  detail.partnerPrice = 0
+  detail.suggestedPrice = 0
+  detail.stock = 0
+  detail.commissionPercent = 0
+  detail.partnerEarning = 0
+  detail.isPartnership = false
+}
+
+function addDetail() {
+  form.value.details.push({ 
+    productId: '', 
+    productName: '',
+    productDescription: '',
+    quantity: 1, 
+    unitPrice: 0, 
+    partnerPrice: 0, 
+    suggestedPrice: 0, 
+    stock: 0,
+    commissionPercent: 0,
+    partnerEarning: 0,
+    isPartnership: false
+  })
+}
+
+function removeDetail(index) {
+  if (form.value.details.length > 1) {
+    form.value.details.splice(index, 1)
+  }
+}
+
 async function saveSale() {
+  // Validaciones
   if (!form.value.paymentMethodId) {
     toast.show('Selecciona un método de pago', 'warning')
     return
   }
 
-  if (form.value.details.some(d => !d.productId)) {
-    toast.show('Selecciona un producto en cada fila', 'warning')
+  const validDetails = form.value.details.filter(d => d.productId && d.partnerPrice > 0)
+  
+  if (validDetails.length === 0) {
+    toast.show('Debe agregar al menos un producto a la venta', 'warning')
     return
   }
 
-  if (form.value.details.some(d => !d.partnerPrice || d.partnerPrice <= 0)) {
-    toast.show('Hay productos sin precio calculado', 'error')
+  if (validDetails.some(d => d.quantity > d.stock)) {
+    toast.show('Hay productos con cantidad superior al stock disponible', 'warning')
     return
   }
 
@@ -215,26 +300,43 @@ async function saveSale() {
       numberOfInstallments: 1,
       discount: 0,
       notes: form.value.notes || null,
-      details: form.value.details
-        .filter(d => d.productId && d.partnerPrice > 0)
-        .map(d => ({
-          productId: d.productId,
-          quantity: Number(d.quantity) || 1,
-          unitPrice: Number(d.partnerPrice)
-        }))
-    }
-
-    if (payload.details.length === 0) {
-      toast.show('Agrega al menos un producto válido', 'warning')
-      return
+      details: validDetails.map(d => ({
+        productId: d.productId,
+        quantity: Number(d.quantity) || 1,
+        unitPrice: Number(d.partnerPrice)
+      }))
     }
 
     await api.post('/Sale', payload)
     toast.show('Venta registrada correctamente', 'success')
+    
+    // Regenerar requestId y resetear formulario
+    const defaultMethod = props.paymentMethods.find(pm => pm.code === 'CASH')
+    form.value = {
+      paymentMethodId: defaultMethod?.id || null,
+      notes: '',
+      requestId: generateRequestId(),
+      details: [{ 
+        productId: '', 
+        productName: '',
+        productDescription: '',
+        quantity: 1, 
+        unitPrice: 0, 
+        partnerPrice: 0, 
+        suggestedPrice: 0, 
+        stock: 0,
+        commissionPercent: 0,
+        partnerEarning: 0,
+        isPartnership: false
+      }]
+    }
+    
     emit('sale-created')
     emit('update:modelValue', false)
   } catch (err) {
-    toast.show(err.response?.data?.message || 'Error al registrar venta', 'error')
+    const errorMsg = err.response?.data?.message || 
+      (err.response?.data?.errors ? JSON.stringify(err.response.data.errors) : 'Error al registrar la venta')
+    toast.show(errorMsg, 'error')
   } finally {
     saving.value = false
   }
@@ -248,13 +350,257 @@ watch(() => props.modelValue, (newVal) => {
       paymentMethodId: defaultMethod?.id || null,
       notes: '',
       requestId: generateRequestId(),
-      details: [{ productId: '', quantity: 1, unitPrice: 0, partnerPrice: 0, suggestedPrice: 0, stock: 0 }]
+      details: [{ 
+        productId: '', 
+        productName: '',
+        productDescription: '',
+        quantity: 1, 
+        unitPrice: 0, 
+        partnerPrice: 0, 
+        suggestedPrice: 0, 
+        stock: 0,
+        commissionPercent: 0,
+        partnerEarning: 0,
+        isPartnership: false
+      }]
     }
   }
 })
 </script>
 
 <style scoped>
+/* === ESTRUCTURA COPIADA DE SaleFormModal === */
+
+.form-section {
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.form-section:last-of-type {
+  border-bottom: none;
+  padding-bottom: 6px;
+}
+
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 6px 0;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+}
+
+.sale-product-row {
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  padding: 6px;
+  margin-bottom: 5px;
+  background: #fefefe;
+}
+
+.sale-product-search {
+  width: 100%;
+}
+
+.sale-product-line {
+  display: grid;
+  grid-template-columns: 1fr 100px auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.product-info {
+  min-width: 0;
+}
+
+.product-name-display {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  padding: 8px 10px;
+  background: var(--color-bg);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.product-text {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.product-name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.product-desc-inline {
+  font-size: 11px;
+  font-style: italic;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.btn-edit-product {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: var(--transition);
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+.btn-edit-product:hover {
+  opacity: 1;
+  background: #e0e0e0;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.control-label {
+  font-size: 10px;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.stock-badge {
+  margin-top: 3px;
+}
+
+.sale-total-box {
+  background: transparent;
+  border: 1px solid #c0c0c0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-top: 8px;
+}
+
+.total-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  padding: 2px 0;
+  color: var(--color-text);
+}
+
+.total-line.total-final {
+  padding-top: 6px;
+  margin-top: 4px;
+  font-size: 15px;
+}
+
+.total-amount {
+  font-size: 18px;
+  color: var(--color-accent);
+}
+
+.qty-input { 
+  padding: 7px 6px; 
+}
+
+.stock-error-msg {
+  font-size: 12px;
+  color: var(--color-danger);
+  text-align: center;
+  margin-top: 6px;
+  font-weight: 600;
+  padding: 5px;
+  background: #ffebee;
+  border-radius: 4px;
+}
+
+.input-error { 
+  border-color: var(--color-danger) !important; 
+  background: #fff5f5;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-icon-danger {
+  background: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: 1px solid #d0d0d0;
+  font-size: 15px;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-icon-danger:hover { 
+  background: #FFEBEE; 
+  color: var(--color-danger); 
+  border-color: var(--color-danger);
+}
+
+.btn-sm {
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* === ESTILOS ESPECÍFICOS DE MAYORISTA === */
+
 .invoice-ref {
   background: var(--color-accent-light);
   padding: 10px 12px;
@@ -263,10 +609,6 @@ watch(() => props.modelValue, (newVal) => {
   font-size: 13px;
   border-left: 3px solid var(--color-accent);
 }
-
-.form-group { margin-bottom: 12px; }
-.form-label { display: block; font-size: 12px; font-weight: 600; color: var(--color-text); margin-bottom: 6px; }
-.form-input { width: 100%; padding: 8px 10px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); font-size: 13px; }
 
 .payment-info {
   padding: 8px 10px;
@@ -286,98 +628,12 @@ watch(() => props.modelValue, (newVal) => {
   color: var(--color-success);
 }
 
-.divider-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--color-accent);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin: 12px 0 8px;
-  padding-top: 10px;
-  border-top: 1px solid var(--color-border);
-}
-
-.detail-row-partner {
-  display: flex;
-  gap: 8px;
-  align-items: start;
-  width: 100%;
-}
-
-.partner-product-card {
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: 10px;
-}
-
-.product-header-row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.product-info-inline {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.product-text {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 4px;
-}
-
-.product-name {
-  font-weight: 600;
-  font-size: 13px;
-  color: var(--color-text);
-}
-
-.product-desc-inline {
-  font-size: 11px;
-  color: var(--color-text-muted);
-  font-style: italic;
-}
-
-.btn-edit-product {
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  padding: 4px 8px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  font-size: 13px;
-  transition: var(--transition);
-  flex-shrink: 0;
-}
-
-.btn-edit-product:hover {
-  background: var(--color-accent-light);
-  border-color: var(--color-accent);
-}
-
-.qty-input-compact { 
-  max-width: 70px; 
-  padding: 6px 8px;
-  text-align: center;
-  font-size: 13px;
-}
-
-.input-error { border-color: var(--color-danger) !important; }
-
 .partner-sale-detail {
   background: var(--color-accent-light);
   border: 1px solid var(--color-border);
   padding: 8px 10px;
   border-radius: var(--radius-sm);
-  margin: -4px 0 12px 0;
+  margin-top: 6px;
 }
 
 .price-row {
@@ -392,40 +648,4 @@ watch(() => props.modelValue, (newVal) => {
 .price-row:last-child {
   border-bottom: none;
 }
-
-.stock-warning {
-  font-size: 11px;
-  color: var(--color-danger);
-  margin-top: -4px;
-  margin-bottom: 8px;
-}
-
-.btn-icon {
-  background: var(--color-bg);
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
-  transition: var(--transition);
-  border: 1px solid var(--color-border);
-  cursor: pointer;
-}
-
-.btn-icon-danger:hover {
-  background: #FFEBEE;
-  color: var(--color-danger);
-}
-
-.total-preview {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: var(--color-accent-light);
-  padding: 10px 12px;
-  border-radius: var(--radius-sm);
-  font-size: 15px;
-  color: var(--color-text);
-  margin-top: 8px;
-}
-
-.total-preview strong { color: var(--color-accent); font-size: 17px; }
 </style>
