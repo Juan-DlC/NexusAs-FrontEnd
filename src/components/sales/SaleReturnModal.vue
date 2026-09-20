@@ -1,8 +1,8 @@
 <template>
-  <ModalBase 
-    :model-value="props.modelValue" 
+  <ModalBase
+    :model-value="props.modelValue"
     @update:modelValue="emit('update:modelValue', $event)"
-    title="Registrar devolución" 
+    title="Registrar devolución"
     width="560px"
   >
     <div v-if="props.sale">
@@ -12,22 +12,22 @@
       <div v-for="(d, i) in returnForm.details" :key="i" class="return-item">
         <input type="checkbox" v-model="d.selected" />
         <span>{{ d.productName }} (llevó {{ d.originalQuantity }})</span>
-        <input 
-          v-if="d.selected" 
+        <input
+          v-if="d.selected"
           v-model.number="d.returnQuantity"
-          type="number" 
-          :max="d.originalQuantity" 
+          type="number" q
+          :max="d.originalQuantity"
           min="1"
-          class="form-input return-qty" 
+          class="form-input return-qty"
         />
       </div>
       <div class="form-group" style="margin-top: 16px;">
         <label class="form-label">Notas (opcional)</label>
-        <input 
-          v-model="returnForm.notes" 
-          type="text" 
+        <input
+          v-model="returnForm.notes"
+          type="text"
           class="form-input"
-          @input="returnForm.notes = toUpperCase(returnForm.notes)" 
+          @input="returnForm.notes = toUpperCase(returnForm.notes)"
         />
       </div>
     </div>
@@ -106,19 +106,19 @@ async function saveReturn() {
 </script>
 
 <style scoped>
-.return-item { 
-  display: grid; 
-  grid-template-columns: auto 1fr auto; 
-  gap: 12px; 
-  align-items: center; 
-  padding: 8px 0; 
-  border-bottom: 1px solid var(--color-border); 
-  font-size: 13px; 
+.return-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 13px;
 }
 
-.return-qty { 
-  width: 70px; 
-  padding: 6px 8px; 
+.return-qty {
+  width: 70px;
+  padding: 6px 8px;
 }
 
 .hint-text {

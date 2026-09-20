@@ -45,6 +45,7 @@
             <ProductSearch 
               @select="(p) => onProductSelect(detail, p)" 
               placeholder="🔍 Buscar producto..." 
+              :excludeProducts="getExcludedProducts()"
             />
           </div>
           
@@ -101,17 +102,17 @@
           <div v-if="detail.productId" class="partner-sale-detail">
             <div class="price-row">
               <span>💰 Lo que paga mayorista ({{ detail.commissionPercent }}% ganancia):</span>
-              <strong style="color: var(--color-accent); font-size: 15px;">${{ formatNumber(detail.partnerPrice) }}</strong>
+              <strong style="color: var(--color-accent); font-size: 13px;">${{ formatNumber(detail.partnerPrice) }}</strong>
             </div>
             <div class="price-row">
               <span>🏷️ Precio sugerido de venta al público:</span>
-              <span style="color: var(--color-text-muted)">${{ formatNumber(detail.suggestedPrice) }}</span>
+              <span style="color: var(--color-text-muted); font-size: 11px;">${{ formatNumber(detail.suggestedPrice) }}</span>
             </div>
             <div class="price-row">
               <span>📦 Subtotal ({{ detail.quantity }} × ${{ formatNumber(detail.partnerPrice) }}):</span>
-              <strong>${{ formatNumber(detail.partnerPrice * (detail.quantity || 1)) }}</strong>
+              <strong style="font-size: 12px;">${{ formatNumber(detail.partnerPrice * (detail.quantity || 1)) }}</strong>
             </div>
-            <div class="price-row" style="color: var(--color-text-muted); font-size: 11px;">
+            <div class="price-row" style="color: var(--color-text-muted); font-size: 10px;">
               <span>{{ detail.isPartnership ? '🤝 Producto de alianza' : '🏪 Producto tienda' }} — Ganancia mayorista: ${{ formatNumber(detail.partnerEarning) }} por unidad</span>
             </div>
           </div>
@@ -271,6 +272,26 @@ function removeDetail(index) {
   }
 }
 
+function getExcludedProducts() {
+  // Generar array con productos ya agregados y su cantidad total usada
+  const productMap = {}
+  
+  form.value.details.forEach(detail => {
+    if (detail.productId) {
+      if (!productMap[detail.productId]) {
+        productMap[detail.productId] = {
+          productId: detail.productId,
+          quantityUsed: 0,
+          stock: detail.stock
+        }
+      }
+      productMap[detail.productId].quantityUsed += detail.quantity || 0
+    }
+  })
+  
+  return Object.values(productMap)
+}
+
 async function saveSale() {
   // Validaciones
   if (!form.value.paymentMethodId) {
@@ -369,37 +390,37 @@ watch(() => props.modelValue, (newVal) => {
 </script>
 
 <style scoped>
-/* === ESTRUCTURA COPIADA DE SaleFormModal === */
+/* === ESTRUCTURA COPIADA DE SaleFormModal (COMPACTADA) === */
 
 .form-section {
-  margin-bottom: 10px;
-  padding-bottom: 10px;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
   border-bottom: 1px solid #e0e0e0;
 }
 
 .form-section:last-of-type {
   border-bottom: none;
-  padding-bottom: 6px;
+  padding-bottom: 4px;
 }
 
 .section-title {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--color-text);
-  margin: 0 0 6px 0;
+  margin: 0 0 5px 0;
 }
 
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 6px;
+  margin-bottom: 5px;
 }
 
 .form-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 
 .form-group {
@@ -409,17 +430,17 @@ watch(() => props.modelValue, (newVal) => {
 
 .form-label {
   display: block;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--color-text);
-  margin-bottom: 4px;
+  margin-bottom: 3px;
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }
 
 .form-input {
   width: 100%;
-  padding: 8px 10px;
+  padding: 6px 8px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   font-size: 13px;
@@ -428,8 +449,8 @@ watch(() => props.modelValue, (newVal) => {
 .sale-product-row {
   border: 1px solid #d0d0d0;
   border-radius: 6px;
-  padding: 6px;
-  margin-bottom: 5px;
+  padding: 5px;
+  margin-bottom: 4px;
   background: #fefefe;
 }
 
@@ -439,8 +460,8 @@ watch(() => props.modelValue, (newVal) => {
 
 .sale-product-line {
   display: grid;
-  grid-template-columns: 1fr 100px auto;
-  gap: 8px;
+  grid-template-columns: 1fr 90px auto;
+  gap: 6px;
   align-items: end;
 }
 
@@ -452,13 +473,13 @@ watch(() => props.modelValue, (newVal) => {
   font-size: 13px;
   font-weight: 600;
   color: var(--color-text);
-  padding: 8px 10px;
+  padding: 6px 8px;
   background: var(--color-bg);
   border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
 }
 
 .product-text {
@@ -489,8 +510,8 @@ watch(() => props.modelValue, (newVal) => {
   background: transparent;
   border: none;
   cursor: pointer;
-  font-size: 14px;
-  padding: 4px 6px;
+  font-size: 13px;
+  padding: 3px 5px;
   border-radius: 4px;
   transition: var(--transition);
   opacity: 0.6;
@@ -505,7 +526,7 @@ watch(() => props.modelValue, (newVal) => {
 .control-group {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
 }
 
 .control-label {
@@ -517,47 +538,47 @@ watch(() => props.modelValue, (newVal) => {
 }
 
 .stock-badge {
-  margin-top: 3px;
+  margin-top: 2px;
 }
 
 .sale-total-box {
   background: transparent;
   border: 1px solid #c0c0c0;
   border-radius: 8px;
-  padding: 10px 12px;
-  margin-top: 8px;
+  padding: 8px 10px;
+  margin-top: 6px;
 }
 
 .total-line {
   display: flex;
   justify-content: space-between;
-  font-size: 14px;
+  font-size: 13px;
   padding: 2px 0;
   color: var(--color-text);
 }
 
 .total-line.total-final {
-  padding-top: 6px;
-  margin-top: 4px;
-  font-size: 15px;
+  padding-top: 4px;
+  margin-top: 3px;
+  font-size: 14px;
 }
 
 .total-amount {
-  font-size: 18px;
+  font-size: 17px;
   color: var(--color-accent);
 }
 
 .qty-input { 
-  padding: 7px 6px; 
+  padding: 6px 5px; 
 }
 
 .stock-error-msg {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--color-danger);
   text-align: center;
-  margin-top: 6px;
+  margin-top: 5px;
   font-weight: 600;
-  padding: 5px;
+  padding: 4px;
   background: #ffebee;
   border-radius: 4px;
 }
@@ -574,13 +595,13 @@ watch(() => props.modelValue, (newVal) => {
 
 .btn-icon-danger {
   background: white;
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   border-radius: 6px;
   transition: all 0.2s ease;
   cursor: pointer;
   border: 1px solid #d0d0d0;
-  font-size: 15px;
+  font-size: 14px;
   color: var(--color-text-muted);
   display: flex;
   align-items: center;
@@ -594,7 +615,7 @@ watch(() => props.modelValue, (newVal) => {
 }
 
 .btn-sm {
-  padding: 7px 12px;
+  padding: 6px 10px;
   font-size: 12px;
   font-weight: 600;
 }
@@ -603,19 +624,19 @@ watch(() => props.modelValue, (newVal) => {
 
 .invoice-ref {
   background: var(--color-accent-light);
-  padding: 10px 12px;
+  padding: 8px 10px;
   border-radius: var(--radius-sm);
-  margin-bottom: 12px;
-  font-size: 13px;
+  margin-bottom: 8px;
+  font-size: 12px;
   border-left: 3px solid var(--color-accent);
 }
 
 .payment-info {
-  padding: 8px 10px;
+  padding: 6px 8px;
   border-radius: var(--radius-sm);
-  font-size: 12px;
-  margin-top: 6px;
-  margin-bottom: 10px;
+  font-size: 11px;
+  margin-top: 5px;
+  margin-bottom: 8px;
 }
 
 .payment-info-credit {
@@ -631,17 +652,17 @@ watch(() => props.modelValue, (newVal) => {
 .partner-sale-detail {
   background: var(--color-accent-light);
   border: 1px solid var(--color-border);
-  padding: 8px 10px;
+  padding: 6px 8px;
   border-radius: var(--radius-sm);
-  margin-top: 6px;
+  margin-top: 4px;
 }
 
 .price-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 12px;
-  padding: 3px 0;
+  font-size: 11px;
+  padding: 2px 0;
   border-bottom: 1px solid rgba(0,0,0,0.04);
 }
 
