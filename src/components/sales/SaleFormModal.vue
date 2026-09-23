@@ -98,10 +98,13 @@
               <label class="control-label">Cantidad</label>
               <input 
                 v-model.number="detail.quantity" 
-                type="number" 
+                type="text" 
+                inputmode="numeric"
                 min="1"
                 class="form-input qty-input"
-                :class="{ 'input-error': isStockExceeded(detail) }" 
+                :class="{ 'input-error': isStockExceeded(detail) }"
+                @input="handleNumericInput($event, (val) => detail.quantity = val || 1)"
+                @keypress="onlyNumbers"
               />
             </div>
             
@@ -325,6 +328,18 @@ function addDetail() {
 function removeDetail(index) {
   if (form.value.details.length > 1) {
     form.value.details.splice(index, 1)
+  }
+}
+
+function handleNumericInput(event, callback) {
+  const value = event.target.value.replace(/[^0-9]/g, '')
+  callback(value === '' ? 0 : parseInt(value))
+}
+
+function onlyNumbers(event) {
+  const charCode = event.which ? event.which : event.keyCode
+  if (charCode < 48 || charCode > 57) {
+    event.preventDefault()
   }
 }
 

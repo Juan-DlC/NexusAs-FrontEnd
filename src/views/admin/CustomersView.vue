@@ -55,15 +55,14 @@
         </tbody>
       </table>
 
-      <div class="pagination" v-if="totalPages > 1">
-        <button class="btn btn-secondary btn-sm" :disabled="!hasPreviousPage" @click="changePage(pageNumber - 1)">
-          ← Anterior
-        </button>
-        <span class="page-info">Página {{ pageNumber }} de {{ totalPages }}</span>
-        <button class="btn btn-secondary btn-sm" :disabled="!hasNextPage" @click="changePage(pageNumber + 1)">
-          Siguiente →
-        </button>
-      </div>
+      <PaginationControls 
+        v-if="totalPages > 1"
+        :currentPage="pageNumber"
+        :totalPages="totalPages"
+        :hasNextPage="hasNextPage"
+        :hasPreviousPage="hasPreviousPage"
+        @change-page="changePage"
+      />
     </div>
 
     <ModalBase v-model="showModal" :title="editingCustomer ? 'Editar cliente' : 'Nuevo cliente'">
@@ -116,6 +115,7 @@ import { useToastStore } from '@/stores/toast'
 import ModalBase from '@/components/shared/ModalBase.vue'
 import ConfirmDialog from '@/components/shared/ConfirmDialog.vue'
 import SkeletonLoader from '@/components/shared/SkeletonLoader.vue'
+import PaginationControls from '@/components/shared/PaginationControls.vue'
 import { toUpperCase } from '@/utils/textFormat'
 
 const auth = useAuthStore()

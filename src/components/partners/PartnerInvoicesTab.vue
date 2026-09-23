@@ -52,23 +52,14 @@
       </tbody>
     </table>
     
-    <div class="pagination" v-if="totalPages > 1">
-      <button 
-        class="btn btn-secondary btn-sm" 
-        :disabled="currentPage <= 1" 
-        @click="$emit('page-changed', currentPage - 1)"
-      >
-        ← Anterior
-      </button>
-      <span class="page-info">Página {{ currentPage }} de {{ totalPages }}</span>
-      <button 
-        class="btn btn-secondary btn-sm" 
-        :disabled="currentPage >= totalPages" 
-        @click="$emit('page-changed', currentPage + 1)"
-      >
-        Siguiente →
-      </button>
-    </div>
+    <PaginationControls 
+      v-if="totalPages > 1"
+      :currentPage="currentPage"
+      :totalPages="totalPages"
+      :hasNextPage="currentPage < totalPages"
+      :hasPreviousPage="currentPage > 1"
+      @change-page="(page) => $emit('page-changed', page)"
+    />
     
     <p v-if="invoices.length === 0" class="state-text">Sin facturas registradas.</p>
   </div>
@@ -76,6 +67,7 @@
 
 <script setup>
 import { formatNumber, formatDate } from '@/utils/format'
+import PaginationControls from '@/components/shared/PaginationControls.vue'
 
 // eslint-disable-next-line no-unused-vars
 const props = defineProps({

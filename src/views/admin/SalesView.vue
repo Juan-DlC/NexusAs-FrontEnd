@@ -68,23 +68,14 @@
         </tbody>
       </table>
 
-      <div class="pagination" v-if="totalPages > 1">
-        <button
-          class="btn btn-secondary btn-sm"
-          :disabled="!hasPreviousPage"
-          @click="changePage(pageNumber - 1)"
-        >
-          ← Anterior
-        </button>
-        <span class="page-info">Página {{ pageNumber }} de {{ totalPages }}</span>
-        <button
-          class="btn btn-secondary btn-sm"
-          :disabled="!hasNextPage"
-          @click="changePage(pageNumber + 1)"
-        >
-          Siguiente →
-        </button>
-      </div>
+      <PaginationControls 
+        v-if="totalPages > 1"
+        :currentPage="pageNumber"
+        :totalPages="totalPages"
+        :hasNextPage="hasNextPage"
+        :hasPreviousPage="hasPreviousPage"
+        @change-page="changePage"
+      />
     </div>
 
     <SaleFormModal
@@ -109,6 +100,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useToastStore } from '@/stores/toast'
 import SaleFormModal from '@/components/sales/SaleFormModal.vue'
 import SaleDetailModal from '@/components/sales/SaleDetailModal.vue'
+import PaginationControls from '@/components/shared/PaginationControls.vue'
 import { formatNumber, formatDate } from '@/utils/format'
 
 const auth = useAuthStore()
