@@ -1,9 +1,11 @@
 <template>
   <input
     type="text"
+    inputmode="numeric"
     class="form-input"
     :value="displayValue"
     @input="onInput"
+    @keypress="onlyNumbers"
     @blur="onBlur"
     :placeholder="placeholder"
   />
@@ -29,6 +31,14 @@ const displayValue = ref(formatToCOP(props.modelValue))
 watch(() => props.modelValue, (newVal) => {
   displayValue.value = formatToCOP(newVal)
 }, { immediate: true })
+
+function onlyNumbers(event) {
+  const charCode = event.which ? event.which : event.keyCode
+  // Permitir solo números (48-57)
+  if (charCode < 48 || charCode > 57) {
+    event.preventDefault()
+  }
+}
 
 function onInput(e) {
   const raw = e.target.value.replace(/[^0-9]/g, '')
