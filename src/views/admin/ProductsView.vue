@@ -214,9 +214,11 @@
               <label class="form-label">Stock {{ editingProduct ? '' : 'inicial' }}</label>
               <input
                 v-model.number="form.stock"
-                type="number"
+                type="text"
+                inputmode="numeric"
                 class="form-input"
-                min="0"
+                @input="handleNumericInput($event, (val) => form.stock = val)"
+                @keypress="onlyNumbers"
                 required
               />
               <p class="hint-text" v-if="editingProduct">
@@ -225,7 +227,15 @@
             </div>
             <div class="form-group">
               <label class="form-label">Stock mínimo</label>
-              <input v-model.number="form.minStock" type="number" class="form-input" required />
+              <input 
+                v-model.number="form.minStock" 
+                type="text" 
+                inputmode="numeric"
+                class="form-input" 
+                @input="handleNumericInput($event, (val) => form.minStock = val)"
+                @keypress="onlyNumbers"
+                required 
+              />
             </div>
           </div>
         </div>
@@ -411,6 +421,18 @@ const form = ref({
   code: '', name: '', description: '', categoryId: '', supplierId: '', cost: 0,
   salePrice: 0, stock: 0, minStock: 0, isPartnership: false, businessPartnerId: null
 })
+
+function handleNumericInput(event, callback) {
+  const value = event.target.value.replace(/[^0-9]/g, '')
+  callback(value === '' ? 0 : parseInt(value))
+}
+
+function onlyNumbers(event) {
+  const charCode = event.which ? event.which : event.keyCode
+  if (charCode < 48 || charCode > 57) {
+    event.preventDefault()
+  }
+}
 
 function suggestPrice() {
   suggestedPrice.value = Math.round(form.value.cost * 1.7)
