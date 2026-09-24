@@ -71,7 +71,15 @@
         </div>
         <div class="form-group">
           <label class="form-label">Cantidad a ingresar</label>
-          <input v-model.number="entryForm.quantity" type="number" min="1" class="form-input" required />
+          <input 
+            :value="entryForm.quantity"
+            type="text" 
+            inputmode="numeric"
+            class="form-input" 
+            @input="handleQuantityInput($event, entryForm)"
+            @keypress="onlyNumbers"
+            required 
+          />
         </div>
         <div class="form-group">
           <label class="form-label">Motivo (opcional)</label>
@@ -101,7 +109,15 @@
         </div>
         <div class="form-group">
           <label class="form-label">Nuevo stock real</label>
-          <input v-model.number="adjustmentForm.newStock" type="number" min="0" class="form-input" required />
+          <input 
+            :value="adjustmentForm.newStock"
+            type="text" 
+            inputmode="numeric"
+            class="form-input" 
+            @input="handleStockInput($event, adjustmentForm)"
+            @keypress="onlyNumbers"
+            required 
+          />
           <p class="hint-text" v-if="adjustmentForm.productId">
             Stock actual en sistema: {{ getCurrentStock(adjustmentForm.productId) }}
           </p>
@@ -151,6 +167,23 @@ const showAdjustmentModal = ref(false)
 
 const entryForm = ref({ productId: '', quantity: 1, reason: '' })
 const adjustmentForm = ref({ productId: '', newStock: 0, reason: '' })
+
+function handleQuantityInput(event, form) {
+  const value = event.target.value.replace(/[^0-9]/g, '')
+  form.quantity = value === '' ? 1 : parseInt(value)
+}
+
+function handleStockInput(event, form) {
+  const value = event.target.value.replace(/[^0-9]/g, '')
+  form.newStock = value === '' ? 0 : parseInt(value)
+}
+
+function onlyNumbers(event) {
+  const charCode = event.which ? event.which : event.keyCode
+  if (charCode < 48 || charCode > 57) {
+    event.preventDefault()
+  }
+}
 
 function typeLabel(type) {
   const map = { Entry: 'Entrada', Exit: 'Salida', Adjustment: 'Ajuste' }

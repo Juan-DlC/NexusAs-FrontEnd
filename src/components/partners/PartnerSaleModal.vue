@@ -256,11 +256,6 @@ function clearProduct(detail) {
   detail.isPartnership = false
 }
 
-function handleNumericInput(event, callback) {
-  const value = event.target.value.replace(/[^0-9]/g, '')
-  callback(value === '' ? 0 : parseInt(value))
-}
-
 function handleQuantityInput(event, detail) {
   const value = event.target.value.replace(/[^0-9]/g, '')
   detail.quantity = value === '' ? 1 : parseInt(value)

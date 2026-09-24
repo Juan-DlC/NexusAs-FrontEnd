@@ -145,7 +145,15 @@
           <div class="form-group">
             <label class="form-label">Descuento % (opcional)</label>
             <div class="discount-input-wrapper">
-              <input v-model.number="form.discountPercent" type="number" min="0" max="100" class="form-input discount-input" placeholder="0" />
+              <input 
+                :value="form.discountPercent"
+                type="text" 
+                inputmode="numeric"
+                class="form-input discount-input" 
+                placeholder="0"
+                @input="handlePercentInput($event, (val) => form.discountPercent = val)"
+                @keypress="onlyNumbers"
+              />
               <span class="discount-symbol">%</span>
               <span v-if="form.discountPercent > 0" class="discount-amount">
                 = -${{ formatNumber(discountAmount) }}
@@ -334,14 +342,16 @@ function removeDetail(index) {
   }
 }
 
-function handleNumericInput(event, callback) {
-  const value = event.target.value.replace(/[^0-9]/g, '')
-  callback(value === '' ? 0 : parseInt(value))
-}
-
 function handleQuantityInput(event, detail) {
   const value = event.target.value.replace(/[^0-9]/g, '')
   detail.quantity = value === '' ? 1 : parseInt(value)
+}
+
+function handlePercentInput(event, callback) {
+  const value = event.target.value.replace(/[^0-9]/g, '')
+  let num = value === '' ? 0 : parseInt(value)
+  if (num > 100) num = 100
+  callback(num)
 }
 
 function onlyNumbers(event) {
@@ -380,7 +390,7 @@ async function saveSale() {
     productQuantities[detail.productId].total += detail.quantity || 0
   }
   
-  for (const [productId, data] of Object.entries(productQuantities)) {
+  for (const data of Object.values(productQuantities)) {
     if (data.total > data.stock) {
       toast.show(`Stock insuficiente para "${data.name}". Disponible: ${data.stock}, solicitado: ${data.total}`, 'warning')
       return
