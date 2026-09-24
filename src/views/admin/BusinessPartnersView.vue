@@ -83,8 +83,16 @@
       <div class="form-group">
         <label class="form-label">% de comisión sobre ganancia neta *</label>
         <div style="display: flex; align-items: center; gap: 8px;">
-          <input v-model.number="form.commissionPercent" type="number"
-            min="0" max="100" class="form-input" style="max-width: 80px;" required />
+          <input 
+            :value="form.commissionPercent"
+            type="text"
+            inputmode="numeric"
+            class="form-input" 
+            style="max-width: 80px;" 
+            @input="handlePercentInput($event, (val) => form.commissionPercent = val)"
+            @keypress="onlyNumbers"
+            required 
+          />
           <span style="font-size: 13px; color: var(--color-text-muted);">%</span>
         </div>
         <p class="hint-text">Porcentaje de la ganancia neta que recibe el socio. Default: 50%</p>

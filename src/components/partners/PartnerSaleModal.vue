@@ -35,9 +35,6 @@
       <div class="form-section">
         <div class="section-header">
           <h3 class="section-title">🛍️ Productos</h3>
-          <button type="button" class="btn btn-secondary btn-sm" @click="addDetail">
-            + Agregar producto
-          </button>
         </div>
 
         <div v-for="(detail, index) in form.details" :key="index" class="sale-product-row">
@@ -70,13 +67,12 @@
             <div class="control-group">
               <label class="control-label">Cantidad</label>
               <input 
-                v-model.number="detail.quantity" 
+                :value="detail.quantity"
                 type="text" 
                 inputmode="numeric"
-                min="1"
                 class="form-input qty-input"
                 :class="{ 'input-error': detail.quantity > detail.stock }"
-                @input="handleNumericInput($event, (val) => detail.quantity = val || 1)"
+                @input="handleQuantityInput($event, detail)"
                 @keypress="onlyNumbers"
               />
             </div>
@@ -118,6 +114,13 @@
             <div class="price-row" style="color: var(--color-text-muted); font-size: 10px;">
               <span>{{ detail.isPartnership ? '🤝 Producto de alianza' : '🏪 Producto tienda' }} — Ganancia mayorista: ${{ formatNumber(detail.partnerEarning) }} por unidad</span>
             </div>
+          </div>
+          
+          <!-- Botón agregar producto DESPUÉS de cada producto -->
+          <div v-if="detail.productId" class="add-product-row">
+            <button type="button" class="btn btn-secondary btn-sm" @click="addDetail">
+              + Agregar otro producto
+            </button>
           </div>
         </div>
       </div>
@@ -256,6 +259,11 @@ function clearProduct(detail) {
 function handleNumericInput(event, callback) {
   const value = event.target.value.replace(/[^0-9]/g, '')
   callback(value === '' ? 0 : parseInt(value))
+}
+
+function handleQuantityInput(event, detail) {
+  const value = event.target.value.replace(/[^0-9]/g, '')
+  detail.quantity = value === '' ? 1 : parseInt(value)
 }
 
 function onlyNumbers(event) {
@@ -683,5 +691,14 @@ watch(() => props.modelValue, (newVal) => {
 
 .price-row:last-child {
   border-bottom: none;
+}
+
+.add-product-row {
+  margin-top: 6px;
+  text-align: center;
+}
+
+.add-product-row .btn {
+  width: 100%;
 }
 </style>
