@@ -115,13 +115,13 @@
               <span>{{ detail.isPartnership ? '🤝 Producto de alianza' : '🏪 Producto tienda' }} — Ganancia mayorista: ${{ formatNumber(detail.partnerEarning) }} por unidad</span>
             </div>
           </div>
-          
-          <!-- Botón agregar producto DESPUÉS de cada producto -->
-          <div v-if="detail.productId" class="add-product-row">
-            <button type="button" class="btn btn-secondary btn-sm" @click="addDetail">
-              + Agregar otro producto
-            </button>
-          </div>
+        </div>
+        
+        <!-- Botón agregar producto UNA VEZ al final de todos los productos -->
+        <div class="add-product-row">
+          <button type="button" class="btn btn-secondary btn-sm" @click="addDetail">
+            + Agregar otro producto
+          </button>
         </div>
       </div>
 
