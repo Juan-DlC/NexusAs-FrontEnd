@@ -11,15 +11,24 @@
     </div>
     
     <div v-for="(d, i) in returnPartnerForm.details" :key="i" class="return-item">
-      <input type="checkbox" v-model="d.selected" />
-      <span>{{ d.productName }} (llevó {{ d.originalQuantity }})</span>
+      <input type="checkbox" v-model="d.selected" class="return-checkbox" />
+      <div class="product-info">
+        <div class="product-name">{{ d.productName }}</div>
+        <div class="product-meta">
+          <span v-if="d.productCode" class="product-code">Código: {{ d.productCode }}</span>
+          <span v-if="d.productDescription" class="product-description">{{ d.productDescription }}</span>
+          <span class="product-qty-original">Llevó: {{ d.originalQuantity }}</span>
+        </div>
+      </div>
       <input
         v-if="d.selected"
-        v-model.number="d.returnQuantity"
-        type="number"
-        :max="d.originalQuantity"
-        min="1"
+        :value="d.returnQuantity"
+        type="text"
+        inputmode="numeric"
         class="form-input return-qty"
+        placeholder="0"
+        @input="handleReturnQuantityInput($event, d)"
+        @keypress="onlyNumbers"
       />
     </div>
     
@@ -67,6 +76,8 @@ watch(() => props.modelValue, (val) => {
       details: props.invoice.details.map(d => ({
         productId: d.productId,
         productName: d.productName,
+        productCode: d.productCode || '',
+        productDescription: d.productDescription || '',
         originalQuantity: d.quantity,
         returnQuantity: 0,
         selected: false
@@ -74,6 +85,23 @@ watch(() => props.modelValue, (val) => {
     }
   }
 })
+
+function handleReturnQuantityInput(event, detail) {
+  const value = event.target.value.replace(/[^0-9]/g, '')
+  let num = value === '' ? 0 : parseInt(value)
+  // Limitar a la cantidad original
+  if (num > detail.originalQuantity) {
+    num = detail.originalQuantity
+  }
+  detail.returnQuantity = num
+}
+
+function onlyNumbers(event) {
+  const charCode = event.which ? event.which : event.keyCode
+  if (charCode < 48 || charCode > 57) {
+    event.preventDefault()
+  }
+}
 
 async function saveReturn() {
   const details = returnPartnerForm.value.details
@@ -117,14 +145,53 @@ async function saveReturn() {
   grid-template-columns: auto 1fr auto;
   gap: 12px;
   align-items: center;
-  padding: 8px 0;
+  padding: 10px 0;
   border-bottom: 1px solid var(--color-border);
+}
+
+.return-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.product-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.product-name {
   font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.product-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.product-code {
+  font-weight: 500;
+  color: var(--color-accent);
+}
+
+.product-description {
+  font-style: italic;
+}
+
+.product-qty-original {
+  font-weight: 500;
 }
 
 .return-qty {
   width: 70px;
   padding: 6px 8px;
+  text-align: center;
 }
 
 .form-group { 
