@@ -3,7 +3,7 @@
     :model-value="modelValue" 
     @update:model-value="$emit('update:modelValue', $event)"
     title="Registrar devolución" 
-    width="680px" 
+    width="620px" 
     :z-index="1100"
   >
     <div class="invoice-ref">
@@ -15,9 +15,9 @@
       <div class="product-info">
         <div class="product-name">{{ d.productName }}</div>
         <div class="product-meta">
-          <span v-if="d.productCode" class="product-code">Código: {{ d.productCode }}</span>
-          <span v-if="d.productDescription" class="product-description">{{ d.productDescription }}</span>
-          <span class="product-qty-original">Llevó: {{ d.originalQuantity }}</span>
+          <span v-if="d.productCode" class="meta-item">Código: <strong>{{ d.productCode }}</strong></span>
+          <span v-if="d.productDescription" class="meta-item">{{ d.productDescription }}</span>
+          <span class="meta-item">Llevó: <strong>{{ d.originalQuantity }}</strong></span>
         </div>
       </div>
       <input
@@ -32,7 +32,7 @@
       />
     </div>
     
-    <div class="form-group" style="margin-top: 16px;">
+    <div class="form-group" style="margin-top: 10px;">
       <label class="form-label">Notas (opcional)</label>
       <input
         v-model="returnPartnerForm.notes"
@@ -133,90 +133,84 @@ async function saveReturn() {
 <style scoped>
 .invoice-ref {
   background: var(--color-accent-light);
-  padding: 12px 14px;
+  padding: 8px 10px;
   border-radius: var(--radius-sm);
-  margin-bottom: 16px;
-  font-size: 13px;
+  margin-bottom: 10px;
+  font-size: 12px;
   border-left: 3px solid var(--color-accent);
 }
 
 .return-item {
   display: grid;
   grid-template-columns: auto 1fr auto;
-  gap: 14px;
-  align-items: start;
-  padding: 14px 0;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 0;
   border-bottom: 1px solid var(--color-border);
 }
 
 .return-checkbox {
-  width: 18px;
-  height: 18px;
+  width: 15px;
+  height: 15px;
   cursor: pointer;
 }
 
 .product-info {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding-top: 2px;
+  gap: 2px;
 }
 
 .product-name {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--color-text);
-  line-height: 1.3;
+  line-height: 1.2;
 }
 
 .product-meta {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 12px;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 10px;
   color: var(--color-text-muted);
+  line-height: 1.2;
 }
 
-.product-code {
+.meta-item {
+  display: inline;
+}
+
+.meta-item strong {
   font-weight: 600;
   color: var(--color-accent);
 }
 
-.product-description {
-  font-style: italic;
-  line-height: 1.4;
-  color: var(--color-text-muted);
-}
-
-.product-qty-original {
-  font-weight: 600;
-  color: var(--color-text);
-}
-
 .return-qty {
-  width: 80px;
-  padding: 8px 10px;
+  width: 60px;
+  padding: 5px 6px;
   text-align: center;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .form-group { 
-  margin-bottom: 16px; 
+  margin-bottom: 10px; 
 }
 
 .form-label { 
   display: block; 
-  font-size: 12px; 
+  font-size: 11px; 
   font-weight: 600; 
   color: var(--color-text); 
-  margin-bottom: 6px; 
+  margin-bottom: 4px; 
 }
 
 .form-input { 
   width: 100%; 
-  padding: 10px 12px; 
+  padding: 7px 9px; 
   border: 1px solid var(--color-border); 
   border-radius: var(--radius-sm); 
+  font-size: 12px;
 }
 </style>
