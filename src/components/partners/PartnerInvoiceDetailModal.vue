@@ -3,7 +3,7 @@
     :model-value="modelValue"
     @update:model-value="$emit('update:modelValue', $event)"
     title="Detalle de factura"
-    width="720px"
+    width="920px"
     :z-index="1050"
   >
     <div v-if="invoice">
@@ -20,6 +20,7 @@
           <tr>
             <th>Código</th>
             <th>Producto</th>
+            <th>Descripción</th>
             <th>Cant.</th>
             <th>Precio</th>
             <th>Subtotal</th>
@@ -27,11 +28,12 @@
         </thead>
         <tbody>
           <tr v-for="(d, i) in invoice.details" :key="i">
-            <td>{{ d.productCode || d.code || '-' }}</td>
-            <td>{{ d.productName }}</td>
-            <td>{{ d.quantity }}</td>
-            <td>${{ formatNumber(d.unitPrice) }}</td>
-            <td>${{ formatNumber(d.subtotal) }}</td>
+            <td class="td-code">{{ d.productCode || d.code || '-' }}</td>
+            <td class="td-name">{{ d.productName }}</td>
+            <td class="td-desc">{{ d.productDescription || '-' }}</td>
+            <td class="td-qty">{{ d.quantity }}</td>
+            <td class="td-price">${{ formatNumber(d.unitPrice) }}</td>
+            <td class="td-subtotal">${{ formatNumber(d.subtotal) }}</td>
           </tr>
         </tbody>
       </table>
@@ -157,9 +159,38 @@ thead th {
 }
 
 tbody td {
-  padding: 8px;
+  padding: 10px 8px;
   font-size: 13px;
   border-bottom: 1px solid var(--color-border);
+  vertical-align: top;
+}
+
+.td-code {
+  width: 90px;
+  font-weight: 500;
+  color: var(--color-accent);
+}
+
+.td-name {
+  min-width: 140px;
+  font-weight: 500;
+}
+
+.td-desc {
+  min-width: 180px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.td-qty {
+  width: 60px;
+  text-align: center;
+}
+
+.td-price, .td-subtotal {
+  width: 90px;
+  text-align: right;
+  font-weight: 500;
 }
 
 .btn {

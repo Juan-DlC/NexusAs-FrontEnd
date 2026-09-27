@@ -3,7 +3,7 @@
     :model-value="modelValue" 
     @update:model-value="$emit('update:modelValue', $event)"
     title="Registrar devolución" 
-    width="560px" 
+    width="680px" 
     :z-index="1100"
   >
     <div class="invoice-ref">
@@ -76,8 +76,8 @@ watch(() => props.modelValue, (val) => {
       details: props.invoice.details.map(d => ({
         productId: d.productId,
         productName: d.productName,
-        productCode: d.productCode || '',
-        productDescription: d.productDescription || '',
+        productCode: d.productCode || d.code || '',
+        productDescription: d.productDescription || d.description || '',
         originalQuantity: d.quantity,
         returnQuantity: 0,
         selected: false
@@ -143,9 +143,9 @@ async function saveReturn() {
 .return-item {
   display: grid;
   grid-template-columns: auto 1fr auto;
-  gap: 12px;
-  align-items: center;
-  padding: 10px 0;
+  gap: 14px;
+  align-items: start;
+  padding: 14px 0;
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -158,40 +158,47 @@ async function saveReturn() {
 .product-info {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
+  padding-top: 2px;
 }
 
 .product-name {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--color-text);
+  line-height: 1.3;
 }
 
 .product-meta {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  font-size: 11px;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
   color: var(--color-text-muted);
 }
 
 .product-code {
-  font-weight: 500;
+  font-weight: 600;
   color: var(--color-accent);
 }
 
 .product-description {
   font-style: italic;
+  line-height: 1.4;
+  color: var(--color-text-muted);
 }
 
 .product-qty-original {
-  font-weight: 500;
+  font-weight: 600;
+  color: var(--color-text);
 }
 
 .return-qty {
-  width: 70px;
-  padding: 6px 8px;
+  width: 80px;
+  padding: 8px 10px;
   text-align: center;
+  font-weight: 600;
+  font-size: 14px;
 }
 
 .form-group { 
