@@ -384,8 +384,39 @@ function openPaymentFromInvoiceDetail() {
 
 async function onReturnSaved() {
   toast.show('Devolución registrada. Stock actualizado.', 'success')
-  showInvoiceDetailModal.value = false
-  await openDetailModal(selectedPartner.value)
+  showReturnFromPartnerModal.value = false
+  
+  if (!selectedPartner.value) return
+
+  // Pequeño delay para que el backend procese la devolución
+  await new Promise(resolve => setTimeout(resolve, 300))
+
+  try {
+    // Recargar el detalle de la factura si estaba abierto
+    if (selectedInvoiceDetail.value) {
+      const invoiceRes = await api.get(`/Sale/${selectedInvoiceDetail.value.id}`)
+      selectedInvoiceDetail.value = invoiceRes.data.data
+    }
+
+    // Recargar resumen del partner, facturas y liquidaciones
+    const [summaryRes, invoicesRes, liqRes] = await Promise.all([
+      api.get(`/Partner/${selectedPartner.value.id}/admin-summary`),
+      api.get(`/Partner/${selectedPartner.value.id}/invoices`, {
+        params: { pageNumber: invoicesPageNumber.value, pageSize: 20 }
+      }),
+      api.get(`/Partner/${selectedPartner.value.id}/liquidations/paged`, {
+        params: { pageNumber: liquidationsPage.value, pageSize: 10 }
+      })
+    ])
+
+    partnerDetail.value = summaryRes.data.data
+    partnerInvoices.value = invoicesRes.data.data?.data || []
+    invoicesTotalPages.value = invoicesRes.data.data?.totalPages || 1
+    liquidations.value = liqRes.data.data?.data || []
+    liquidationsTotalPages.value = liqRes.data.data?.totalPages || 1
+  } catch {
+    toast.show('Error al recargar los datos', 'error')
+  }
 }
 
 function openSelectPartnerForSale() {
