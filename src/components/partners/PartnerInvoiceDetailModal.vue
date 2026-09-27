@@ -27,7 +27,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(d, i) in invoice.details" :key="i">
+          <tr v-for="(d, i) in availableDetails" :key="i">
             <td class="td-code">{{ d.productCode || d.code || '-' }}</td>
             <td class="td-name">{{ d.productName }}</td>
             <td class="td-desc">{{ d.productDescription || '-' }}</td>
@@ -37,6 +37,10 @@
           </tr>
         </tbody>
       </table>
+
+      <div v-if="availableDetails.length === 0" class="empty-products">
+        ℹ️ Todos los productos de esta factura ya fueron devueltos.
+      </div>
 
       <div v-if="invoice.creditInfo" class="credit-box">
         <div class="divider-label">Estado del crédito</div>
@@ -53,7 +57,13 @@
       <button class="btn btn-secondary" @click="$emit('update:modelValue', false)">Cerrar</button>
       <button class="btn btn-secondary" @click="downloadPdf">📄 Ver factura PDF</button>
       <button class="btn btn-secondary" @click="downloadPartnerInvoicePdf">📄 Factura para mayorista</button>
-      <button class="btn btn-warning" @click="$emit('open-return')">↩ Registrar devolución</button>
+      <button 
+        v-if="availableDetails.length > 0"
+        class="btn btn-warning" 
+        @click="$emit('open-return')"
+      >
+        ↩ Registrar devolución
+      </button>
       <button
         v-if="invoice?.creditInfo?.pendingAmount > 0"
         class="btn btn-primary"
@@ -66,6 +76,7 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import api from '@/api/axios'
 import { useToastStore } from '@/stores/toast'
 import ModalBase from '@/components/shared/ModalBase.vue'
@@ -79,6 +90,28 @@ const props = defineProps({
 defineEmits(['update:modelValue', 'open-return', 'open-payment'])
 
 const toast = useToastStore()
+
+// Calcular productos disponibles (excluyendo los ya devueltos completamente)
+const availableDetails = computed(() => {
+  if (!props.invoice?.details) return []
+  
+  // Crear mapa de cantidades devueltas
+  const returnedQuantities = {}
+  if (props.invoice.returns && Array.isArray(props.invoice.returns)) {
+    props.invoice.returns.forEach(ret => {
+      ret.details?.forEach(d => {
+        returnedQuantities[d.productId] = (returnedQuantities[d.productId] || 0) + d.quantity
+      })
+    })
+  }
+  
+  // Filtrar solo productos con cantidad disponible > 0
+  return props.invoice.details.filter(d => {
+    const alreadyReturned = returnedQuantities[d.productId] || 0
+    const available = d.quantity - alreadyReturned
+    return available > 0
+  })
+})
 
 async function downloadPdf() {
   try {
@@ -231,5 +264,15 @@ tbody td {
 
 .btn-warning:hover {
   background: #FFE0B2;
+}
+
+.empty-products {
+  padding: 20px 16px;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  background: var(--color-bg);
+  border-radius: var(--radius-sm);
+  margin-top: 10px;
 }
 </style>
