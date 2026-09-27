@@ -10,6 +10,16 @@
       Devolución de: <strong>{{ invoice?.saleNumber }}</strong>
     </div>
     
+    <div 
+      v-if="returnPartnerForm.details.length === 0" 
+      class="empty-state"
+    >
+      ℹ️ No hay productos disponibles para devolver en esta factura.
+      <span style="display: block; font-size: 11px; margin-top: 4px; color: var(--color-text-muted);">
+        Todos los productos ya fueron devueltos.
+      </span>
+    </div>
+
     <div v-for="(d, i) in returnPartnerForm.details" :key="i" class="return-item">
       <input type="checkbox" v-model="d.selected" class="return-checkbox" />
       <div class="product-info">
@@ -17,7 +27,7 @@
         <div class="product-meta">
           <span v-if="d.productCode" class="meta-item">Código: <strong>{{ d.productCode }}</strong></span>
           <span v-if="d.productDescription" class="meta-item">{{ d.productDescription }}</span>
-          <span class="meta-item">Llevó: <strong>{{ d.originalQuantity }}</strong></span>
+          <span class="meta-item">Disponible: <strong>{{ d.availableToReturn }}</strong></span>
         </div>
       </div>
       <input
@@ -44,7 +54,11 @@
     
     <template #footer>
       <button class="btn btn-secondary" @click="$emit('update:modelValue', false)">Cancelar</button>
-      <button class="btn btn-primary" @click="saveReturn" :disabled="saving">
+      <button 
+        class="btn btn-primary" 
+        @click="saveReturn" 
+        :disabled="saving || returnPartnerForm.details.length === 0"
+      >
         {{ saving ? 'Procesando...' : 'Confirmar devolución' }}
       </button>
     </template>
@@ -71,17 +85,36 @@ const saving = ref(false)
 
 watch(() => props.modelValue, (val) => {
   if (val && props.invoice?.details) {
+    // Crear un mapa de productos ya devueltos
+    const returnedQuantities = {}
+    if (props.invoice.returns && Array.isArray(props.invoice.returns)) {
+      props.invoice.returns.forEach(ret => {
+        ret.details?.forEach(d => {
+          returnedQuantities[d.productId] = (returnedQuantities[d.productId] || 0) + d.quantity
+        })
+      })
+    }
+
     returnPartnerForm.value = {
       notes: '',
-      details: props.invoice.details.map(d => ({
-        productId: d.productId,
-        productName: d.productName,
-        productCode: d.productCode || d.code || '',
-        productDescription: d.productDescription || d.description || '',
-        originalQuantity: d.quantity,
-        returnQuantity: 0,
-        selected: false
-      }))
+      details: props.invoice.details
+        .map(d => {
+          const alreadyReturned = returnedQuantities[d.productId] || 0
+          const availableToReturn = d.quantity - alreadyReturned
+          
+          return {
+            productId: d.productId,
+            productName: d.productName,
+            productCode: d.productCode || d.code || '',
+            productDescription: d.productDescription || d.description || '',
+            originalQuantity: d.quantity,
+            alreadyReturned: alreadyReturned,
+            availableToReturn: availableToReturn,
+            returnQuantity: 0,
+            selected: false
+          }
+        })
+        .filter(d => d.availableToReturn > 0) // Solo mostrar productos con cantidad disponible
     }
   }
 })
@@ -89,9 +122,9 @@ watch(() => props.modelValue, (val) => {
 function handleReturnQuantityInput(event, detail) {
   const value = event.target.value.replace(/[^0-9]/g, '')
   let num = value === '' ? 0 : parseInt(value)
-  // Limitar a la cantidad original
-  if (num > detail.originalQuantity) {
-    num = detail.originalQuantity
+  // Limitar a la cantidad disponible para devolver
+  if (num > detail.availableToReturn) {
+    num = detail.availableToReturn
   }
   detail.returnQuantity = num
 }
@@ -138,6 +171,16 @@ async function saveReturn() {
   margin-bottom: 10px;
   font-size: 12px;
   border-left: 3px solid var(--color-accent);
+}
+
+.empty-state {
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  background: var(--color-bg);
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--color-border);
 }
 
 .return-item {
