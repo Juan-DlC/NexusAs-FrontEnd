@@ -191,11 +191,24 @@
 
     <template #footer>
       <button class="btn btn-secondary" @click="emit('update:modelValue', false)">Cancelar</button>
-      <button class="btn btn-primary" @click="saveSale" :disabled="saving || hasStockErrors">
-        {{ saving ? 'Guardando...' : 'Registrar venta' }}
+      <button class="btn btn-accent" @click="showPreview" :disabled="hasStockErrors || !canShowPreview">
+        📄 Ver factura
       </button>
     </template>
   </ModalBase>
+
+  <!-- Modal de vista previa -->
+  <SalePreviewModal
+    v-model="showPreviewModal"
+    :details="form.details"
+    :customer-name="selectedCustomerName"
+    :payment-method-name="selectedPaymentMethod?.name || 'Sin especificar'"
+    :number-of-installments="form.numberOfInstallments"
+    :discount-percent="form.discountPercent"
+    :notes="form.notes"
+    :confirming="saving"
+    @confirm="confirmSale"
+  />
 </template>
 
 <script setup>
@@ -206,6 +219,7 @@ import ModalBase from '@/components/shared/ModalBase.vue'
 import ProductSearch from '@/components/shared/ProductSearch.vue'
 import CustomerSearch from '@/components/shared/CustomerSearch.vue'
 import CurrencyInput from '@/components/shared/CurrencyInput.vue'
+import SalePreviewModal from '@/components/sales/SalePreviewModal.vue'
 import { toUpperCase } from '@/utils/textFormat'
 import { formatNumber } from '@/utils/format'
 
@@ -220,6 +234,7 @@ const emit = defineEmits(['update:modelValue', 'sale-created'])
 const toast = useToastStore()
 
 const saving = ref(false)
+const showPreviewModal = ref(false)
 
 const form = ref({
   paymentMethodId: null,
@@ -267,6 +282,19 @@ const isCredit = computed(() => {
 const hasStockErrors = computed(() =>
   form.value.details.some(d => isStockExceeded(d))
 )
+
+const canShowPreview = computed(() => {
+  if (!form.value.paymentMethodId) return false
+  if (isCredit.value && !form.value.customerId) return false
+  const validDetails = form.value.details.filter(d => d.productId && d.productId > 0)
+  return validDetails.length > 0
+})
+
+const selectedCustomerName = computed(() => {
+  if (!form.value.customerId) return ''
+  const customer = props.customers.find(c => c.id === form.value.customerId)
+  return customer ? customer.name : ''
+})
 
 function onProductSelect(detail, product) {
   detail.productId = product.id
@@ -358,6 +386,34 @@ function onlyNumbers(event) {
   const charCode = event.which ? event.which : event.keyCode
   if (charCode < 48 || charCode > 57) {
     event.preventDefault()
+  }
+}
+
+function showPreview() {
+  // Validación rápida antes de mostrar preview
+  if (!form.value.paymentMethodId) {
+    toast.show('Debe seleccionar un método de pago', 'warning')
+    return
+  }
+  
+  if (isCredit.value && !form.value.customerId) {
+    toast.show('Debe seleccionar un cliente para ventas a crédito', 'warning')
+    return
+  }
+  
+  const validDetails = form.value.details.filter(d => d.productId && d.productId > 0)
+  if (validDetails.length === 0) {
+    toast.show('Debe agregar al menos un producto a la venta', 'warning')
+    return
+  }
+  
+  showPreviewModal.value = true
+}
+
+async function confirmSale() {
+  await saveSale()
+  if (!saving.value) {
+    showPreviewModal.value = false
   }
 }
 
@@ -692,6 +748,27 @@ async function saveSale() {
   padding: 6px 10px;
   font-size: 12px;
   font-weight: 600;
+}
+
+.btn-accent {
+  background: var(--color-accent);
+  color: white;
+  border-color: var(--color-accent);
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-accent:hover {
+  background: var(--color-accent-dark);
+}
+
+.btn-accent:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .add-product-row {
