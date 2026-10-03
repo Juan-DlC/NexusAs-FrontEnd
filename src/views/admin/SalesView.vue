@@ -46,7 +46,12 @@
         <tbody>
           <tr v-for="s in enrichedSales" :key="s.id" class="clickable-row" @click="openDetail(s)">
             <td><strong>{{ s.saleNumber }}</strong></td>
-            <td>{{ s.customerName || 'Sin cliente' }}</td>
+            <td>
+              <div class="customer-cell">
+                <span class="customer-name">{{ s.customerName || 'Sin cliente' }}</span>
+                <span v-if="s.customerNote" class="customer-note">{{ s.customerNote }}</span>
+              </div>
+            </td>
             <td>{{ formatDate(s.date) }}</td>
             <td>
               <span :class="['badge', s.paymentMethodName === 'Contado' ? 'badge-success' : 'badge-warning']">
@@ -127,17 +132,21 @@ const hasPreviousPage = ref(false)
 const customersMap = computed(() => {
   const map = {}
   customers.value.forEach(c => {
-    map[c.id] = c.name
+    map[c.id] = { name: c.name, note: c.note || '' }
   })
   return map
 })
 
-// ✅ Ventas enriquecidas con nombre del cliente
+// ✅ Ventas enriquecidas con nombre y nota del cliente
 const enrichedSales = computed(() => {
-  return sales.value.map(sale => ({
-    ...sale,
-    customerName: sale.customerName || (sale.customerId ? customersMap.value[sale.customerId] : null)
-  }))
+  return sales.value.map(sale => {
+    const customerData = sale.customerId ? customersMap.value[sale.customerId] : null
+    return {
+      ...sale,
+      customerName: sale.customerName || customerData?.name || null,
+      customerNote: customerData?.note || null
+    }
+  })
 })
 
 async function loadSales() {
@@ -330,5 +339,22 @@ onMounted(() => {
 
 .btn-icon:hover {
   background: var(--color-accent-light);
+}
+
+.customer-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.customer-name {
+  font-size: 13px;
+  color: var(--color-text);
+}
+
+.customer-note {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  font-style: italic;
 }
 </style>

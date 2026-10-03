@@ -45,7 +45,12 @@
         <tbody>
           <tr v-for="c in enrichedCredits" :key="c.id" class="clickable-row" @click="openDetailModal(c)">
             <td><strong>{{ c.saleNumber }}</strong></td>
-            <td>{{ c.customerName || c.sellerName || 'Sin cliente' }}</td>
+            <td>
+              <div class="customer-cell">
+                <span class="customer-name">{{ c.customerName || c.sellerName || 'Sin cliente' }}</span>
+                <span v-if="c.customerNote" class="customer-note">{{ c.customerNote }}</span>
+              </div>
+            </td>
             <td>${{ formatNumber(c.totalAmount) }}</td>
             <td style="color: var(--color-success)">${{ formatNumber(c.paidAmount) }}</td>
             <td style="color: var(--color-danger); font-weight: 600;">
@@ -207,17 +212,21 @@ const hasPreviousPage = ref(false)
 const customersMap = computed(() => {
   const map = {}
   customers.value.forEach(c => {
-    map[c.id] = c.name
+    map[c.id] = { name: c.name, note: c.note || '' }
   })
   return map
 })
 
-// ✅ Créditos enriquecidos con nombre del cliente
+// ✅ Créditos enriquecidos con nombre y nota del cliente
 const enrichedCredits = computed(() => {
-  return credits.value.map(credit => ({
-    ...credit,
-    customerName: credit.customerName || (credit.customerId ? customersMap.value[credit.customerId] : null)
-  }))
+  return credits.value.map(credit => {
+    const customerData = credit.customerId ? customersMap.value[credit.customerId] : null
+    return {
+      ...credit,
+      customerName: credit.customerName || customerData?.name || null,
+      customerNote: customerData?.note || null
+    }
+  })
 })
 
 function statusLabel(status) {
@@ -323,6 +332,23 @@ onMounted(() => {
 <style scoped>
 .clickable-row { cursor: pointer; }
 .clickable-row:hover { background: var(--color-accent-light) !important; }
+
+.customer-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.customer-name {
+  font-size: 13px;
+  color: var(--color-text);
+}
+
+.customer-note {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
 
 .divider-label {
   font-size: 12px;
