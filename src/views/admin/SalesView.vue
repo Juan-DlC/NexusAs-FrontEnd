@@ -132,7 +132,7 @@ const hasPreviousPage = ref(false)
 const customersMap = computed(() => {
   const map = {}
   customers.value.forEach(c => {
-    map[c.id] = { name: c.name, note: c.note || '' }
+    map[c.id] = { name: c.name, note: c.notes || '' }
   })
   return map
 })
@@ -212,6 +212,12 @@ async function openDetail(sale) {
 }
 
 async function downloadReceipt(saleId) {
+  if (!saleId) {
+    toast.show('Error: ID de venta no válido', 'error')
+    console.error('Sale ID is undefined')
+    return
+  }
+  
   try {
     const res = await api.get(`/Sale/${saleId}/receipt`, { responseType: 'blob' })
     const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
