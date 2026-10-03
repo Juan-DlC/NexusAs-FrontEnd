@@ -161,6 +161,11 @@ async function loadSales() {
     })
     const data = res.data.data
     sales.value = data.data
+    
+    // DEBUG: Ver qué trae el backend
+    console.log('Primera venta:', sales.value[0])
+    console.log('customersMap:', customersMap.value)
+    
     totalRecords.value = data.totalRecords
     totalPages.value = data.totalPages
     hasNextPage.value = data.hasNextPage
