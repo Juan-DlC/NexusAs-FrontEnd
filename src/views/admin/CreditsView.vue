@@ -63,7 +63,7 @@
               </span>
             </td>
             <td>
-              <button class="btn-icon" @click.stop="downloadReceipt(c.saleId)" title="📄 Ver recibo">
+              <button class="btn-icon" @click.stop="downloadReceipt(c.saleId || c.id)" title="📄 Ver recibo">
                 📄
               </button>
             </td>
@@ -227,11 +227,16 @@ const customersMap = computed(() => {
 const enrichedCredits = computed(() => {
   return credits.value.map(credit => {
     const customerData = credit.customerId ? customersMap.value[credit.customerId] : null
-    return {
+    const enriched = {
       ...credit,
       customerName: credit.customerName || customerData?.name || null,
       customerNote: customerData?.note || null
     }
+    // DEBUG temporal
+    if (!enriched.saleId && !enriched.id) {
+      console.warn('Credit sin ID:', credit)
+    }
+    return enriched
   })
 })
 
@@ -256,6 +261,11 @@ async function openDetailModal(credit) {
 }
 
 async function downloadReceipt(saleId) {
+  if (!saleId) {
+    toast.show('Error: ID de venta no válido', 'error')
+    return
+  }
+  
   try {
     const res = await api.get(`/Sale/${saleId}/receipt`, { responseType: 'blob' })
     const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
