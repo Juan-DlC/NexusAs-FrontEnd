@@ -39,6 +39,7 @@
             <th>Abonado</th>
             <th>Pendiente</th>
             <th>Estado</th>
+            <th>Recibo</th>
             <th>Acciones</th>
           </tr>
         </thead>
@@ -60,6 +61,11 @@
               <span :class="['badge', statusBadge(c.status)]">
                 {{ statusLabel(c.status) }}
               </span>
+            </td>
+            <td>
+              <button class="btn-icon" @click.stop="downloadReceipt(c.saleId)" title="📄 Ver recibo">
+                📄
+              </button>
             </td>
             <td>
               <button
@@ -249,6 +255,16 @@ async function openDetailModal(credit) {
   }
 }
 
+async function downloadReceipt(saleId) {
+  try {
+    const res = await api.get(`/Sale/${saleId}/receipt`, { responseType: 'blob' })
+    const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
+    window.open(url, '_blank')
+  } catch {
+    toast.show('Error al generar el recibo', 'error')
+  }
+}
+
 let searchTimeout = null
 function onSearchInput() {
   searching.value = true
@@ -348,6 +364,24 @@ onMounted(() => {
   font-size: 11px;
   color: var(--color-text-muted);
   font-style: italic;
+}
+
+.btn-icon {
+  background: var(--color-bg);
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: var(--transition);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.btn-icon:hover {
+  background: var(--color-accent-light);
 }
 
 .divider-label {
