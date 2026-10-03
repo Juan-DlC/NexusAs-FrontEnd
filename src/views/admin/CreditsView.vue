@@ -212,7 +212,7 @@ const hasPreviousPage = ref(false)
 const customersMap = computed(() => {
   const map = {}
   customers.value.forEach(c => {
-    map[c.id] = { name: c.name, note: c.note || '' }
+    map[c.id] = { name: c.name, note: c.notes || '' }
   })
   return map
 })
