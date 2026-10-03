@@ -7,9 +7,8 @@
     :z-index="1100"
   >
     <div class="preview-container">
-      <!-- Header con logo y datos empresa -->
+      <!-- Header simplificado sin logo -->
       <div class="preview-header">
-        <div class="company-logo">AS</div>
         <div class="company-info">
           <h2 class="company-name">AS ACCESORIOS</h2>
           <p class="invoice-type">{{ isPartnerSale ? 'FACTURA MAYORISTA' : 'FACTURA' }}</p>
@@ -150,31 +149,15 @@ const totalAmount = computed(() => {
 <style scoped>
 .preview-container {
   background: white;
-  padding: 20px;
+  padding: 16px;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
 }
 
 .preview-header {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding-bottom: 16px;
+  padding-bottom: 12px;
   border-bottom: 2px solid var(--color-accent);
-  margin-bottom: 16px;
-}
-
-.company-logo {
-  width: 60px;
-  height: 60px;
-  background: var(--color-accent);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  font-weight: 700;
-  border-radius: 8px;
+  margin-bottom: 12px;
 }
 
 .company-info {
@@ -182,15 +165,15 @@ const totalAmount = computed(() => {
 }
 
 .company-name {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--color-text);
-  margin: 0 0 4px 0;
+  margin: 0 0 2px 0;
   letter-spacing: 1px;
 }
 
 .invoice-type {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--color-text-muted);
   margin: 0;
   font-weight: 600;
@@ -200,9 +183,9 @@ const totalAmount = computed(() => {
 
 .invoice-info {
   background: var(--color-bg);
-  padding: 12px 16px;
+  padding: 10px 12px;
   border-radius: 6px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .info-row {
@@ -219,15 +202,15 @@ const totalAmount = computed(() => {
 }
 
 .products-section {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .section-title {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--color-accent);
-  margin: 0 0 10px 0;
-  padding-bottom: 6px;
+  margin: 0 0 8px 0;
+  padding-bottom: 4px;
   border-bottom: 1px solid var(--color-border);
   text-transform: uppercase;
   letter-spacing: 0.8px;
@@ -240,9 +223,9 @@ const totalAmount = computed(() => {
 
 .products-table thead th {
   background: #f5f5f5;
-  padding: 10px 8px;
+  padding: 8px 6px;
   text-align: left;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   color: var(--color-text-muted);
   text-transform: uppercase;
@@ -251,8 +234,8 @@ const totalAmount = computed(() => {
 }
 
 .products-table tbody td {
-  padding: 10px 8px;
-  font-size: 13px;
+  padding: 8px 6px;
+  font-size: 12px;
   border-bottom: 1px solid #f0f0f0;
   vertical-align: top;
 }
@@ -283,7 +266,7 @@ const totalAmount = computed(() => {
 }
 
 .notes-section {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .note-box {
@@ -308,7 +291,7 @@ const totalAmount = computed(() => {
 
 .totals-section {
   background: #f9f9f9;
-  padding: 12px 16px;
+  padding: 10px 12px;
   border-radius: 6px;
   border: 1px solid #e0e0e0;
 }
