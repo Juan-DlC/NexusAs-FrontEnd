@@ -40,7 +40,7 @@
             <th>Método</th>
             <th>Total</th>
             <th>Estado</th>
-            <th>Recibo</th>
+            <th v-if="!auth.isPartner">Recibo</th>
           </tr>
         </thead>
         <tbody>
@@ -64,7 +64,7 @@
               <span v-else-if="s.status === 'PartialReturn'" class="badge badge-warning">Dev. parcial</span>
               <span v-else class="badge badge-success">Completada</span>
             </td>
-            <td>
+            <td v-if="!auth.isPartner">
               <button class="btn-icon" @click.stop="downloadReceipt(s.id)" title="📄 Ver recibo">
                 📄
               </button>

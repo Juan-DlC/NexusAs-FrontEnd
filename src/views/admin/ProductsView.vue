@@ -11,7 +11,7 @@
       </button>
     </div>
 
-    <div class="search-bar" v-if="!auth.isPartner">
+    <div class="search-bar">
       <div class="search-input-wrapper">
         <input
           v-model="search"
@@ -22,18 +22,18 @@
         />
         <span v-if="searching" class="search-spinner" title="Buscando...">🔍</span>
       </div>
-      <select v-model="filterCategory" class="form-input filter-select" @change="onFilterChange">
+      <select v-if="!auth.isPartner" v-model="filterCategory" class="form-input filter-select" @change="onFilterChange">
         <option value="">Todas las categorías</option>
         <option v-for="cat in categories" :key="cat.id" :value="cat.id">
           {{ cat.name }}
         </option>
       </select>
-      <select v-model="filterStatus" class="form-input filter-select" @change="onFilterChange">
+      <select v-if="!auth.isPartner" v-model="filterStatus" class="form-input filter-select" @change="onFilterChange">
         <option value="">Solo activos (default)</option>
         <option value="inactive">Solo inactivos</option>
         <option value="all">Todos</option>
       </select>
-      <select v-model="sortBy" class="form-input filter-select" @change="onSortChange">
+      <select v-if="!auth.isPartner" v-model="sortBy" class="form-input filter-select" @change="onSortChange">
         <option value="name">Orden alfabético (A-Z)</option>
         <option value="createdAt-desc">Más recientes primero</option>
         <option value="createdAt-asc">Más antiguos primero</option>
@@ -140,7 +140,7 @@
       </table>
 
       <PaginationControls 
-        v-if="!auth.isPartner && totalPages > 1"
+        v-if="totalPages > 1"
         :currentPage="pageNumber"
         :totalPages="totalPages"
         :hasNextPage="hasNextPage"

@@ -34,37 +34,107 @@
         </div>
       </div>
 
-      <div class="card" style="margin-top: 4px;">
-        <div class="card-section-header">
-          <h3>Mis facturas recientes</h3>
+      <!-- Tabs de Facturas / Abonos -->
+      <div class="card tabs-container" style="margin-top: 20px;">
+        <div class="tabs-header">
+          <button 
+            :class="['tab-btn', { active: activeTab === 'invoices' }]" 
+            @click="activeTab = 'invoices'"
+          >
+            📋 Mis facturas
+          </button>
+          <button 
+            :class="['tab-btn', { active: activeTab === 'liquidations' }]" 
+            @click="activeTab = 'liquidations'"
+          >
+            💰 Mis abonos (liquidaciones)
+          </button>
         </div>
 
-        <div v-if="loadingInvoices" class="state-text">Cargando facturas...</div>
+        <!-- Tab: Facturas -->
+        <div v-if="activeTab === 'invoices'" class="tab-content">
+          <div v-if="loadingInvoices" class="state-text">Cargando facturas...</div>
 
-        <table v-else-if="myInvoices.length > 0">
-          <thead>
-            <tr>
-              <th>Factura</th>
-              <th>Fecha</th>
-              <th>Total</th>
-              <th>Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="inv in myInvoices" :key="inv.id">
-              <td><strong>{{ inv.saleNumber }}</strong></td>
-              <td>{{ formatDate(inv.date) }}</td>
-              <td>${{ formatNumber(inv.total) }}</td>
-              <td>
-                <span :class="['badge', inv.paymentMethodName === 'Contado' ? 'badge-info' : 'badge-warning']">
-                  {{ inv.paymentMethodName || 'Contado' }}
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+          <table v-else-if="myInvoices.length > 0">
+            <thead>
+              <tr>
+                <th>Factura</th>
+                <th>Fecha</th>
+                <th>Total</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="inv in myInvoices" :key="inv.id">
+                <td><strong>{{ inv.saleNumber }}</strong></td>
+                <td>{{ formatDate(inv.date) }}</td>
+                <td>${{ formatNumber(inv.total) }}</td>
+                <td>
+                  <span :class="['badge', inv.paymentMethodName === 'Contado' ? 'badge-info' : 'badge-warning']">
+                    {{ inv.paymentMethodName || 'Contado' }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
 
-        <p v-else class="state-text">No hay facturas registradas aún.</p>
+          <p v-else class="state-text">No hay facturas registradas aún.</p>
+        </div>
+
+        <!-- Tab: Liquidaciones (Abonos) -->
+        <div v-if="activeTab === 'liquidations'" class="tab-content">
+          <div v-if="loadingLiquidations" class="state-text">Cargando liquidaciones...</div>
+
+          <table v-else-if="myLiquidations.length > 0">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Período</th>
+                <th>Facturas</th>
+                <th>Ventas</th>
+                <th>G. Neta</th>
+                <th>Mi ganancia ({{ commissionPercent }}%)</th>
+                <th>AS Accesorios</th>
+                <th>Estado</th>
+                <th>Notas</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="l in myLiquidations" :key="l.id">
+                <td>{{ formatDate(l.date || l.createdAt) }}</td>
+                <td style="font-size: 11px;">
+                  {{ formatDate(l.periodFrom) }} —<br>{{ formatDate(l.periodTo) }}
+                </td>
+                <td style="text-align: center;">{{ l.detailCount || '-' }}</td>
+                <td>${{ formatNumber(l.totalRevenue) }}</td>
+                <td>${{ formatNumber(l.netProfit) }}</td>
+                <td style="color: var(--color-accent); font-weight: 600;">
+                  ${{ formatNumber(l.businessPartnerEarning) }}
+                </td>
+                <td style="color: var(--color-success); font-weight: 600;">
+                  ${{ formatNumber(l.asEarning) }}
+                </td>
+                <td>
+                  <span :class="['badge', l.status === 'Confirmed' ? 'badge-success' : 'badge-warning']">
+                    {{ l.status === 'Confirmed' ? 'Confirmada' : 'Borrador' }}
+                  </span>
+                </td>
+                <td>
+                  <span
+                    v-if="l.notes"
+                    :title="l.notes"
+                    style="cursor: help; font-size: 12px;"
+                  >
+                    📝
+                  </span>
+                  <span v-else style="color: var(--color-text-muted);">-</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <p v-else class="state-text">No hay liquidaciones registradas aún.</p>
+        </div>
       </div>
 
       <div class="actions-row">
@@ -77,18 +147,31 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import api from '@/api/axios'
 import { useAuthStore } from '@/stores/auth'
 import { useToastStore } from '@/stores/toast'
+import { formatNumber as utilFormatNumber, formatDate as utilFormatDate } from '@/utils/format'
+
+// ✅ Re-exportar las funciones para asegurar que estén disponibles en el template
+const formatNumber = utilFormatNumber
+const formatDate = utilFormatDate
 
 const auth = useAuthStore()
 const toast = useToastStore()
 
 const summary = ref(null)
 const myInvoices = ref([])
+const myLiquidations = ref([])
 const loading = ref(true)
 const loadingInvoices = ref(true)
+const loadingLiquidations = ref(true)
+const activeTab = ref('invoices')
+
+// ✅ Obtener el % de comisión del usuario autenticado
+const commissionPercent = computed(() => {
+  return auth.user?.commissionPercent || 50
+})
 
 async function loadData() {
   try {
@@ -105,12 +188,89 @@ async function loadData() {
 async function loadInvoices() {
   try {
     loadingInvoices.value = true
-    const res = await api.get('/Sale', { params: { pageSize: 10 } })
+    const res = await api.get('/Sale', { params: { pageSize: 100 } })
     myInvoices.value = res.data.data?.data || []
   } catch {
     myInvoices.value = []
   } finally {
     loadingInvoices.value = false
+  }
+}
+
+async function loadLiquidations() {
+  try {
+    loadingLiquidations.value = true
+    
+    // ✅ OPCIÓN 1: Intentar obtener liquidaciones usando el endpoint directo del partner autenticado
+    // Si el backend soporta /Partner/my/liquidations, usar ese endpoint
+    // Si no, obtener el partnerId del summary y usar /BusinessPartner/{id}/liquidations
+    
+    let res
+    try {
+      // Intentar endpoint directo del partner
+      res = await api.get('/Partner/my/liquidations', {
+        params: { pageNumber: 1, pageSize: 100 }
+      })
+    } catch (err) {
+      // Si no existe ese endpoint, obtener partnerId del user autenticado
+      const partnerId = auth.user?.businessPartnerId || summary.value?.businessPartnerId
+      
+      if (!partnerId) {
+        console.warn('⚠️ No se encontró businessPartnerId')
+        myLiquidations.value = []
+        return
+      }
+
+      res = await api.get(`/BusinessPartner/${partnerId}/liquidations`, {
+        params: { pageNumber: 1, pageSize: 100 }
+      })
+    }
+
+    // ✅ TRANSFORMAR: Mapear propiedades del backend al formato que espera el frontend
+    const rawLiquidations = res.data.data?.data || []
+    myLiquidations.value = rawLiquidations.map(liq => {
+      // Calcular totales desde details si existen
+      let totalRevenue = 0
+      let totalCost = 0
+      let grossProfit = 0
+      let partnerCommissionAmount = 0
+      let businessPartnerEarning = 0
+      let asEarning = 0
+
+      if (liq.details && liq.details.length > 0) {
+        liq.details.forEach(d => {
+          totalRevenue += (d.salePrice || 0) * (d.quantity || 0)
+          totalCost += (d.costPrice || 0) * (d.quantity || 0)
+          grossProfit += d.grossProfit || 0
+          partnerCommissionAmount += d.partnerCommissionAmount || 0
+          businessPartnerEarning += d.businessPartnerAmount || 0
+          asEarning += d.asAmount || 0
+        })
+      }
+
+      return {
+        id: liq.id,
+        liquidationNumber: liq.liquidationNumber,
+        date: liq.liquidationDate,
+        createdAt: liq.createdAt,
+        periodFrom: liq.fromDate,
+        periodTo: liq.toDate,
+        detailCount: liq.totalSales,
+        totalRevenue: totalRevenue,
+        totalCost: totalCost,
+        grossProfit: grossProfit,
+        netProfit: grossProfit - partnerCommissionAmount,
+        businessPartnerEarning: businessPartnerEarning,
+        asEarning: asEarning,
+        status: liq.isActive ? 'Confirmed' : 'Draft',
+        notes: liq.notes
+      }
+    })
+  } catch (err) {
+    console.error('❌ Error cargando liquidaciones:', err)
+    myLiquidations.value = []
+  } finally {
+    loadingLiquidations.value = false
   }
 }
 
@@ -134,6 +294,7 @@ async function downloadStatement() {
 onMounted(() => {
   loadData()
   loadInvoices()
+  loadLiquidations()
 })
 </script>
 
@@ -210,6 +371,46 @@ onMounted(() => {
   font-size: 20px;
   font-weight: 700;
   color: var(--color-text);
+}
+
+.tabs-container {
+  background: var(--color-white);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.tabs-header {
+  display: flex;
+  border-bottom: 2px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 14px 20px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  transition: var(--transition);
+  border-bottom: 3px solid transparent;
+}
+
+.tab-btn:hover {
+  background: rgba(0, 0, 0, 0.03);
+  color: var(--color-text);
+}
+
+.tab-btn.active {
+  color: var(--color-accent);
+  border-bottom: 3px solid var(--color-accent);
+  background: var(--color-white);
+}
+
+.tab-content {
+  padding: 16px;
 }
 
 .card-section-header {
