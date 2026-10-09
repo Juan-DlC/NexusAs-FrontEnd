@@ -16,12 +16,12 @@
       </div>
 
       <nav class="sidebar-nav">
-        <template v-for="item in menuItems" :key="item.name">
+        <template v-for="item in filteredMenuItems" :key="item.name || item.section">
           <div v-if="item.section && !sidebarCollapsed" class="nav-section">
             {{ item.section }}
           </div>
           <router-link
-            v-if="item.path && canSee(item.roles)"
+            v-if="item.path"
             :to="item.path"
             class="nav-item"
             :class="{ active: isActive(item.path) }"
@@ -92,7 +92,7 @@ const menuItems = [
   { name: 'suppliers', path: '/proveedores', label: 'Proveedores', icon: '📦', roles: ['Admin'] },
   { section: 'Ventas' },
   { name: 'customers', path: '/clientes', label: 'Clientes', icon: '👥', roles: ['Admin', 'Seller'] },
-  { name: 'sales', path: '/ventas', label: 'Ventas', icon: '💰', roles: ['Admin', 'Seller', 'Partner'] },
+  { name: 'sales', path: '/ventas', label: 'Ventas', icon: '💰', roles: ['Admin', 'Seller'] },
   { name: 'credits', path: '/creditos', label: 'Créditos', icon: '💳', roles: ['Admin'] },
   { section: 'Gestión' },
   { name: 'stock', path: '/stock', label: 'Stock', icon: '📋', roles: ['Admin'] },
@@ -103,6 +103,29 @@ const menuItems = [
   { section: 'Mi cuenta' },
   { name: 'partner-summary', path: '/mi-resumen', label: 'Mi Resumen', icon: '💼', roles: ['Partner'] },
 ]
+
+// ✅ Computed para filtrar menuItems según el rol actual
+const filteredMenuItems = computed(() => {
+  const userRole = auth.user?.role
+  const items = []
+  let lastSection = null
+  
+  for (const item of menuItems) {
+    if (item.section) {
+      // Guardar sección temporalmente, solo se agregará si hay items visibles después
+      lastSection = item
+    } else if (item.path && canSee(item.roles)) {
+      // Si hay una sección pendiente, agregarla antes del item
+      if (lastSection) {
+        items.push(lastSection)
+        lastSection = null
+      }
+      items.push(item)
+    }
+  }
+  
+  return items
+})
 
 const pageTitles = {
   '/': 'Dashboard',

@@ -55,13 +55,16 @@
         <div v-if="activeTab === 'invoices'" class="tab-content">
           <div v-if="loadingInvoices" class="state-text">Cargando facturas...</div>
 
-          <table v-else-if="myInvoices.length > 0">
+          <table v-else-if="myInvoices.length > 0" class="invoices-table">
             <thead>
               <tr>
                 <th>Factura</th>
                 <th>Fecha</th>
                 <th>Total</th>
+                <th>Abonado</th>
+                <th>Pendiente</th>
                 <th>Estado</th>
+                <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -70,9 +73,37 @@
                 <td>{{ formatDate(inv.date) }}</td>
                 <td>${{ formatNumber(inv.total) }}</td>
                 <td>
-                  <span :class="['badge', inv.paymentMethodName === 'Contado' ? 'badge-info' : 'badge-warning']">
-                    {{ inv.paymentMethodName || 'Contado' }}
+                  <span style="color: var(--color-success); font-weight: 600;">
+                    ${{ formatNumber(inv.totalPaid || 0) }}
                   </span>
+                </td>
+                <td>
+                  <span :style="{ color: (inv.remainingBalance || 0) > 0 ? 'var(--color-danger)' : 'var(--color-text-muted)', fontWeight: '600' }">
+                    ${{ formatNumber(inv.remainingBalance || 0) }}
+                  </span>
+                </td>
+                <td>
+                  <span :class="getBadgeClass(inv)">
+                    {{ getStatusLabel(inv) }}
+                  </span>
+                </td>
+                <td>
+                  <div class="action-buttons">
+                    <button 
+                      class="btn btn-sm btn-secondary" 
+                      @click="viewInvoiceDetail(inv)"
+                      title="Ver detalle"
+                    >
+                      👁️ Ver
+                    </button>
+                    <button 
+                      class="btn btn-sm btn-primary" 
+                      @click="downloadInvoicePDF(inv.id)"
+                      title="Descargar PDF mayorista"
+                    >
+                      📄 PDF
+                    </button>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -143,6 +174,12 @@
         </button>
       </div>
     </div>
+
+    <!-- Modal de detalle de factura -->
+    <PartnerInvoiceViewModal
+      v-model="showInvoiceDetail"
+      :sale-id="selectedInvoiceId"
+    />
   </div>
 </template>
 
@@ -152,6 +189,7 @@ import api from '@/api/axios'
 import { useAuthStore } from '@/stores/auth'
 import { useToastStore } from '@/stores/toast'
 import { formatNumber as utilFormatNumber, formatDate as utilFormatDate } from '@/utils/format'
+import PartnerInvoiceViewModal from '@/components/partners/PartnerInvoiceViewModal.vue'
 
 // ✅ Re-exportar las funciones para asegurar que estén disponibles en el template
 const formatNumber = utilFormatNumber
@@ -167,6 +205,8 @@ const loading = ref(true)
 const loadingInvoices = ref(true)
 const loadingLiquidations = ref(true)
 const activeTab = ref('invoices')
+const showInvoiceDetail = ref(false)
+const selectedInvoiceId = ref(null)
 
 // ✅ Obtener el % de comisión del usuario autenticado
 const commissionPercent = computed(() => {
@@ -291,6 +331,51 @@ async function downloadStatement() {
   }
 }
 
+function getBadgeClass(invoice) {
+  if (invoice.paymentMethodName === 'Contado') {
+    return 'badge badge-success'
+  }
+  if ((invoice.remainingBalance || 0) === 0) {
+    return 'badge badge-success'
+  }
+  if ((invoice.totalPaid || 0) > 0) {
+    return 'badge badge-warning'
+  }
+  return 'badge badge-danger'
+}
+
+function getStatusLabel(invoice) {
+  if (invoice.paymentMethodName === 'Contado') {
+    return 'Pagado'
+  }
+  if ((invoice.remainingBalance || 0) === 0) {
+    return 'Pagado'
+  }
+  if ((invoice.totalPaid || 0) > 0) {
+    return 'Abonado'
+  }
+  return 'Pendiente'
+}
+
+function viewInvoiceDetail(invoice) {
+  selectedInvoiceId.value = invoice.id
+  showInvoiceDetail.value = true
+}
+
+async function downloadInvoicePDF(saleId) {
+  try {
+    const res = await api.get(`/Sale/${saleId}/partner-invoice-pdf`, {
+      responseType: 'blob'
+    })
+    const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
+    window.open(url, '_blank')
+    toast.show('PDF descargado correctamente', 'success')
+  } catch (error) {
+    console.error('Error al descargar PDF:', error)
+    toast.show('Error al descargar el PDF', 'error')
+  }
+}
+
 onMounted(() => {
   loadData()
   loadInvoices()
@@ -331,7 +416,7 @@ onMounted(() => {
   background: var(--color-white);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  padding: 20px;
+  padding: 12px 16px;
   text-align: center;
   box-shadow: var(--shadow-sm);
   transition: var(--transition);
@@ -354,21 +439,22 @@ onMounted(() => {
 
 .summary-icon {
   display: block;
-  font-size: 28px;
-  margin-bottom: 8px;
+  font-size: 20px;
+  margin-bottom: 6px;
 }
 
 .summary-label {
   display: block;
-  font-size: 11px;
+  font-size: 10px;
   color: var(--color-text-muted);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  font-weight: 600;
 }
 
 .summary-value {
-  font-size: 20px;
+  font-size: 17px;
   font-weight: 700;
   color: var(--color-text);
 }
@@ -436,5 +522,22 @@ onMounted(() => {
   display: flex;
   justify-content: flex-end;
   padding-top: 4px;
+}
+
+.invoices-table {
+  width: 100%;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-buttons .btn-sm {
+  padding: 5px 10px;
+  font-size: 11px;
+  min-width: auto;
 }
 </style>
