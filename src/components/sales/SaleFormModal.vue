@@ -214,6 +214,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import api from '@/api/axios'
+import { useAuthStore } from '@/stores/auth'
 import { useToastStore } from '@/stores/toast'
 import ModalBase from '@/components/shared/ModalBase.vue'
 import ProductSearch from '@/components/shared/ProductSearch.vue'

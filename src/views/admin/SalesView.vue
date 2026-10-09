@@ -5,7 +5,7 @@
         <p class="page-sub">{{ totalRecords }} ventas registradas</p>
       </div>
       <button
-        v-if="auth.isAdmin || auth.isSeller"
+        v-if="auth.isAdmin || auth.isSeller || auth.isPartner"
         class="btn btn-primary floating-action-btn"
         @click="showFormModal = true"
       >
@@ -161,11 +161,6 @@ async function loadSales() {
     })
     const data = res.data.data
     sales.value = data.data
-    
-    // DEBUG: Ver qué trae el backend
-    console.log('Primera venta:', sales.value[0])
-    console.log('customersMap:', customersMap.value)
-    
     totalRecords.value = data.totalRecords
     totalPages.value = data.totalPages
     hasNextPage.value = data.hasNextPage
@@ -214,7 +209,6 @@ async function openDetail(sale) {
 async function downloadReceipt(saleId) {
   if (!saleId) {
     toast.show('Error: ID de venta no válido', 'error')
-    console.error('Sale ID is undefined')
     return
   }
   
