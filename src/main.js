@@ -10,7 +10,7 @@ app.use(router)
 app.mount('#app')
 
 // Prevenir cambio de valor con scroll en inputs numéricos globalmente
-document.addEventListener('wheel', (e) => {
+document.addEventListener('wheel', (_e) => {
   if (document.activeElement.type === 'number') {
     document.activeElement.blur()
   }

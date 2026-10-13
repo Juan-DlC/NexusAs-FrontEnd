@@ -107,16 +107,19 @@ const menuItems = [
 // ✅ Computed para filtrar menuItems según el rol actual
 const filteredMenuItems = computed(() => {
   const userRole = auth.user?.role
+  const isPartner = userRole === 'Partner'
   const items = []
   let lastSection = null
   
   for (const item of menuItems) {
     if (item.section) {
+      // Para Partners, no mostrar secciones (menú más limpio)
+      if (isPartner) continue
       // Guardar sección temporalmente, solo se agregará si hay items visibles después
       lastSection = item
     } else if (item.path && canSee(item.roles)) {
       // Si hay una sección pendiente, agregarla antes del item
-      if (lastSection) {
+      if (lastSection && !isPartner) {
         items.push(lastSection)
         lastSection = null
       }

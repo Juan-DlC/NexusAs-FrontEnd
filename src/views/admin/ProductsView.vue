@@ -17,7 +17,7 @@
           v-model="search"
           type="text"
           class="form-input search-input"
-          placeholder="Buscar por nombre o código..."
+          :placeholder="auth.isPartner ? 'Buscar producto...' : 'Buscar por nombre o código...'"
           @input="onSearchInput"
         />
         <span v-if="searching" class="search-spinner" title="Buscando...">🔍</span>
@@ -139,6 +139,7 @@
         </tbody>
       </table>
 
+      <!-- Paginación para todos los roles -->
       <PaginationControls 
         v-if="totalPages > 1"
         :currentPage="pageNumber"
@@ -376,7 +377,7 @@ import CurrencyInput from '@/components/shared/CurrencyInput.vue'
 import ConfirmDialog from '@/components/shared/ConfirmDialog.vue'
 import SkeletonLoader from '@/components/shared/SkeletonLoader.vue'
 import PaginationControls from '@/components/shared/PaginationControls.vue'
-import { toUpperCase, handleUpperCase } from '@/utils/textFormat'
+import { handleUpperCase } from '@/utils/textFormat'
 import { formatNumber } from '@/utils/format'
 
 const auth = useAuthStore()
@@ -456,8 +457,29 @@ async function loadProducts() {
     loading.value = true
 
     if (auth.isPartner) {
-      const res = await api.get('/Partner/my/products')
-      products.value = res.data.data
+      const params = {
+        pageNumber: pageNumber.value,
+        pageSize: pageSize.value,
+        search: search.value
+      }
+      const res = await api.get('/Partner/my/products', { params })
+      const data = res.data.data
+      
+      // Si el backend devuelve paginación
+      if (data && typeof data === 'object' && data.data) {
+        products.value = data.data
+        totalRecords.value = data.totalRecords || data.data.length
+        totalPages.value = data.totalPages || 1
+        hasNextPage.value = data.hasNextPage || false
+        hasPreviousPage.value = data.hasPreviousPage || false
+      } else {
+        // Si el backend devuelve array directo (sin paginación)
+        products.value = data || []
+        totalRecords.value = products.value.length
+        totalPages.value = 1
+        hasNextPage.value = false
+        hasPreviousPage.value = false
+      }
     } else {
       const params = {
         pageNumber: pageNumber.value,

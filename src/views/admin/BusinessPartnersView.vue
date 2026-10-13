@@ -331,7 +331,7 @@ import { ref, onMounted } from 'vue'
 import api from '@/api/axios'
 import { useToastStore } from '@/stores/toast'
 import ModalBase from '@/components/shared/ModalBase.vue'
-import { toUpperCase, handleUpperCase } from '@/utils/textFormat'
+import { handleUpperCase } from '@/utils/textFormat'
 import { formatNumber as utilFormatNumber, formatDate as utilFormatDate } from '@/utils/format'
 
 // ✅ Re-exportar las funciones para asegurar que estén disponibles en el template

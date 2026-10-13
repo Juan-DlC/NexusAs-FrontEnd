@@ -251,7 +251,7 @@ async function loadLiquidations() {
       res = await api.get('/Partner/my/liquidations', {
         params: { pageNumber: 1, pageSize: 100 }
       })
-    } catch (err) {
+    } catch {
       // Si no existe ese endpoint, obtener partnerId del user autenticado
       const partnerId = auth.user?.businessPartnerId || summary.value?.businessPartnerId
       
@@ -409,14 +409,14 @@ onMounted(() => {
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
+  gap: 10px;
 }
 
 .summary-card {
   background: var(--color-white);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  padding: 12px 16px;
+  padding: 10px 12px;
   text-align: center;
   box-shadow: var(--shadow-sm);
   transition: var(--transition);
@@ -439,22 +439,22 @@ onMounted(() => {
 
 .summary-icon {
   display: block;
-  font-size: 20px;
-  margin-bottom: 6px;
+  font-size: 16px;
+  margin-bottom: 4px;
 }
 
 .summary-label {
   display: block;
-  font-size: 10px;
+  font-size: 9px;
   color: var(--color-text-muted);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   font-weight: 600;
 }
 
 .summary-value {
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--color-text);
 }
