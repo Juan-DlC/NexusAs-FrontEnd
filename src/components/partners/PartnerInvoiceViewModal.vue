@@ -96,6 +96,59 @@
             </tbody>
           </table>
         </div>
+
+        <!-- Mostrar cuotas si existen -->
+        <div v-if="invoiceDetail.creditInfo.numberOfInstallments > 1 && invoiceDetail.creditInfo.installments" class="installments-section">
+          <div class="divider-label" style="margin-top: 12px; padding-top: 12px;">
+            Cuotas ({{ invoiceDetail.creditInfo.numberOfInstallments }})
+          </div>
+          <div class="installment-grid">
+            <div class="installment-item" v-for="inst in invoiceDetail.creditInfo.installments" :key="inst.number">
+              <span class="installment-number">Cuota {{ inst.number }}</span>
+              <span class="installment-amount">${{ formatNumber(inst.amount) }}</span>
+              <span :class="['badge', inst.isPaid ? 'badge-success' : 'badge-warning']">
+                {{ inst.isPaid ? 'Pagada' : 'Pendiente' }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mostrar devoluciones si existen -->
+      <div v-if="invoiceDetail.returns && invoiceDetail.returns.length > 0" class="returns-section">
+        <div class="divider-label">Devoluciones ({{ invoiceDetail.returns.length }})</div>
+        <div class="return-item" v-for="ret in invoiceDetail.returns" :key="ret.id">
+          <div class="return-header">
+            <div>
+              <strong>{{ formatDate(ret.date) }}</strong>
+              <span class="return-user">por {{ ret.userName || 'Usuario' }}</span>
+            </div>
+            <span class="return-total">-${{ formatNumber(ret.totalAmount || ret.totalReturned) }}</span>
+          </div>
+          
+          <table class="return-products-table">
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Cantidad</th>
+                <th>Precio Unit.</th>
+                <th>Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="d in ret.details" :key="d.productId">
+                <td>{{ d.productName }}</td>
+                <td class="td-center">{{ d.quantity }}</td>
+                <td class="td-right">${{ formatNumber(d.unitPrice) }}</td>
+                <td class="td-right">${{ formatNumber(d.subtotal) }}</td>
+              </tr>
+            </tbody>
+          </table>
+          
+          <p v-if="ret.notes" class="return-notes">
+            <strong>Notas:</strong> {{ ret.notes }}
+          </p>
+        </div>
       </div>
     </div>
 
@@ -141,8 +194,17 @@ watch(() => props.modelValue, (isOpen) => {
 async function loadInvoiceDetail(saleId) {
   try {
     loading.value = true
-    const res = await api.get(`/Sale/${saleId}`)
-    invoiceDetail.value = res.data.data
+    
+    // Cargar detalle de la venta y sus devoluciones
+    const [saleRes, returnsRes] = await Promise.all([
+      api.get(`/Sale/${saleId}`),
+      api.get(`/Sale/${saleId}/returns`).catch(() => ({ data: { data: [] } }))
+    ])
+    
+    invoiceDetail.value = {
+      ...saleRes.data.data,
+      returns: returnsRes.data.data || []
+    }
   } catch (error) {
     console.error('Error cargando detalle de factura:', error)
     toast.show('Error al cargar el detalle de la factura', 'error')
@@ -152,17 +214,22 @@ async function loadInvoiceDetail(saleId) {
 }
 
 async function downloadPartnerInvoicePdf() {
-  if (!props.saleId) return
+  const saleId = props.saleId
+  
+  if (!saleId) {
+    toast.show('Error: ID de factura no válido', 'error')
+    return
+  }
 
   try {
-    const res = await api.get(`/Sale/${props.saleId}/partner-invoice-pdf`, {
+    const res = await api.get(`/Sale/${saleId}/partner-receipt`, {
       responseType: 'blob'
     })
     const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
     window.open(url, '_blank')
     toast.show('PDF descargado correctamente', 'success')
   } catch (error) {
-    console.error('Error al descargar PDF:', error)
+    console.error('Error al descargar PDF mayorista:', error)
     toast.show('Error al descargar el PDF', 'error')
   }
 }
@@ -410,6 +477,140 @@ tfoot td {
 .payment-notes {
   color: var(--color-text-muted);
   font-style: italic;
+}
+
+.installments-section {
+  margin-top: 16px;
+}
+
+.installment-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.installment-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: white;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  font-size: 13px;
+}
+
+.installment-number {
+  font-weight: 600;
+  color: var(--color-text);
+  flex: 1;
+}
+
+.installment-amount {
+  font-weight: 600;
+  color: var(--color-accent);
+  margin-right: 12px;
+}
+
+.returns-section {
+  margin-top: 18px;
+}
+
+.return-item {
+  background: #FFF3E0;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  margin-bottom: 12px;
+  border-left: 3px solid var(--color-warning);
+}
+
+.return-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.return-header strong {
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.return-user {
+  margin-left: 10px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.return-total {
+  color: var(--color-warning);
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.return-products-table {
+  margin-top: 10px;
+  background: white;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  width: 100%;
+  font-size: 12px;
+}
+
+.return-products-table thead th {
+  background: var(--color-bg);
+  padding: 8px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.return-products-table tbody td {
+  padding: 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.return-products-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.td-center {
+  text-align: center;
+}
+
+.td-right {
+  text-align: right;
+  font-weight: 500;
+}
+
+.return-notes {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 10px;
+  margin-bottom: 0;
+}
+
+.badge {
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.badge-success {
+  background: #E8F5E9;
+  color: #2E7D32;
+}
+
+.badge-warning {
+  background: #FFF3E0;
+  color: #F57C00;
 }
 
 .btn {

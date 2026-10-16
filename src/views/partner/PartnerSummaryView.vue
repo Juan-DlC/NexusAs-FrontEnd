@@ -35,7 +35,7 @@
       </div>
 
       <!-- Tabs de Facturas / Abonos -->
-      <div class="card tabs-container" style="margin-top: 20px;">
+      <div class="card tabs-container" style="margin-top: 14px;">
         <div class="tabs-header">
           <button 
             :class="['tab-btn', { active: activeTab === 'invoices' }]" 
@@ -114,57 +114,30 @@
 
         <!-- Tab: Liquidaciones (Abonos) -->
         <div v-if="activeTab === 'liquidations'" class="tab-content">
-          <div v-if="loadingLiquidations" class="state-text">Cargando liquidaciones...</div>
+          <div v-if="loadingLiquidations" class="state-text">Cargando abonos...</div>
 
           <table v-else-if="myLiquidations.length > 0">
             <thead>
               <tr>
                 <th>Fecha</th>
-                <th>Período</th>
-                <th>Facturas</th>
-                <th>Ventas</th>
-                <th>G. Neta</th>
-                <th>Mi ganancia ({{ commissionPercent }}%)</th>
-                <th>AS Accesorios</th>
-                <th>Estado</th>
+                <th>Factura</th>
+                <th>Tipo</th>
+                <th>Monto</th>
                 <th>Notas</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="l in myLiquidations" :key="l.id">
-                <td>{{ formatDate(l.date || l.createdAt) }}</td>
-                <td style="font-size: 11px;">
-                  {{ formatDate(l.periodFrom) }} —<br>{{ formatDate(l.periodTo) }}
-                </td>
-                <td style="text-align: center;">{{ l.detailCount || '-' }}</td>
-                <td>${{ formatNumber(l.totalRevenue) }}</td>
-                <td>${{ formatNumber(l.netProfit) }}</td>
-                <td style="color: var(--color-accent); font-weight: 600;">
-                  ${{ formatNumber(l.businessPartnerEarning) }}
-                </td>
-                <td style="color: var(--color-success); font-weight: 600;">
-                  ${{ formatNumber(l.asEarning) }}
-                </td>
-                <td>
-                  <span :class="['badge', l.status === 'Confirmed' ? 'badge-success' : 'badge-warning']">
-                    {{ l.status === 'Confirmed' ? 'Confirmada' : 'Borrador' }}
-                  </span>
-                </td>
-                <td>
-                  <span
-                    v-if="l.notes"
-                    :title="l.notes"
-                    style="cursor: help; font-size: 12px;"
-                  >
-                    📝
-                  </span>
-                  <span v-else style="color: var(--color-text-muted);">-</span>
-                </td>
+                <td>{{ formatDate(l.date) }}</td>
+                <td>{{ l.saleNumber || 'Deuda general' }}</td>
+                <td>{{ l.type === 'Payment' ? 'Abono' : 'Pago AS' }}</td>
+                <td style="color: var(--color-success); font-weight: 600;">${{ formatNumber(l.amount) }}</td>
+                <td>{{ l.notes || '-' }}</td>
               </tr>
             </tbody>
           </table>
 
-          <p v-else class="state-text">No hay liquidaciones registradas aún.</p>
+          <p v-else class="state-text">No hay abonos registrados aún.</p>
         </div>
       </div>
 
@@ -208,11 +181,6 @@ const activeTab = ref('invoices')
 const showInvoiceDetail = ref(false)
 const selectedInvoiceId = ref(null)
 
-// ✅ Obtener el % de comisión del usuario autenticado
-const commissionPercent = computed(() => {
-  return auth.user?.commissionPercent || 50
-})
-
 async function loadData() {
   try {
     loading.value = true
@@ -241,73 +209,24 @@ async function loadLiquidations() {
   try {
     loadingLiquidations.value = true
     
-    // ✅ OPCIÓN 1: Intentar obtener liquidaciones usando el endpoint directo del partner autenticado
-    // Si el backend soporta /Partner/my/liquidations, usar ese endpoint
-    // Si no, obtener el partnerId del summary y usar /BusinessPartner/{id}/liquidations
+    // ✅ Obtener partnerId del usuario autenticado
+    const partnerId = auth.user?.id
     
-    let res
-    try {
-      // Intentar endpoint directo del partner
-      res = await api.get('/Partner/my/liquidations', {
-        params: { pageNumber: 1, pageSize: 100 }
-      })
-    } catch {
-      // Si no existe ese endpoint, obtener partnerId del user autenticado
-      const partnerId = auth.user?.businessPartnerId || summary.value?.businessPartnerId
-      
-      if (!partnerId) {
-        console.warn('⚠️ No se encontró businessPartnerId')
-        myLiquidations.value = []
-        return
-      }
-
-      res = await api.get(`/BusinessPartner/${partnerId}/liquidations`, {
-        params: { pageNumber: 1, pageSize: 100 }
-      })
+    if (!partnerId) {
+      console.warn('⚠️ No se encontró partner ID')
+      myLiquidations.value = []
+      return
     }
 
-    // ✅ TRANSFORMAR: Mapear propiedades del backend al formato que espera el frontend
-    const rawLiquidations = res.data.data?.data || []
-    myLiquidations.value = rawLiquidations.map(liq => {
-      // Calcular totales desde details si existen
-      let totalRevenue = 0
-      let totalCost = 0
-      let grossProfit = 0
-      let partnerCommissionAmount = 0
-      let businessPartnerEarning = 0
-      let asEarning = 0
-
-      if (liq.details && liq.details.length > 0) {
-        liq.details.forEach(d => {
-          totalRevenue += (d.salePrice || 0) * (d.quantity || 0)
-          totalCost += (d.costPrice || 0) * (d.quantity || 0)
-          grossProfit += d.grossProfit || 0
-          partnerCommissionAmount += d.partnerCommissionAmount || 0
-          businessPartnerEarning += d.businessPartnerAmount || 0
-          asEarning += d.asAmount || 0
-        })
-      }
-
-      return {
-        id: liq.id,
-        liquidationNumber: liq.liquidationNumber,
-        date: liq.liquidationDate,
-        createdAt: liq.createdAt,
-        periodFrom: liq.fromDate,
-        periodTo: liq.toDate,
-        detailCount: liq.totalSales,
-        totalRevenue: totalRevenue,
-        totalCost: totalCost,
-        grossProfit: grossProfit,
-        netProfit: grossProfit - partnerCommissionAmount,
-        businessPartnerEarning: businessPartnerEarning,
-        asEarning: asEarning,
-        status: liq.isActive ? 'Confirmed' : 'Draft',
-        notes: liq.notes
-      }
+    // ✅ Usar el mismo endpoint que PartnersView: /Partner/{id}/liquidations/paged
+    const res = await api.get(`/Partner/${partnerId}/liquidations/paged`, {
+      params: { pageNumber: 1, pageSize: 100 }
     })
+
+    // ✅ Los abonos vienen directamente, no necesitan transformación compleja
+    myLiquidations.value = res.data.data?.data || []
   } catch (err) {
-    console.error('❌ Error cargando liquidaciones:', err)
+    console.error('❌ Error cargando abonos:', err)
     myLiquidations.value = []
   } finally {
     loadingLiquidations.value = false
@@ -363,8 +282,13 @@ function viewInvoiceDetail(invoice) {
 }
 
 async function downloadInvoicePDF(saleId) {
+  if (!saleId) {
+    toast.show('Error: ID de factura no válido', 'error')
+    return
+  }
+  
   try {
-    const res = await api.get(`/Sale/${saleId}/partner-invoice-pdf`, {
+    const res = await api.get(`/Sale/${saleId}/partner-receipt`, {
       responseType: 'blob'
     })
     const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
@@ -387,36 +311,37 @@ onMounted(() => {
 .partner-summary {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 14px;
 }
 
 .welcome-header {
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .welcome-header h2 {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--color-text);
+  margin: 0;
 }
 
 .welcome-sub {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--color-text-muted);
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
+  gap: 8px;
 }
 
 .summary-card {
   background: var(--color-white);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  padding: 10px 12px;
+  padding: 8px 10px;
   text-align: center;
   box-shadow: var(--shadow-sm);
   transition: var(--transition);
@@ -439,22 +364,23 @@ onMounted(() => {
 
 .summary-icon {
   display: block;
-  font-size: 16px;
-  margin-bottom: 4px;
+  font-size: 14px;
+  margin-bottom: 3px;
 }
 
 .summary-label {
   display: block;
   font-size: 9px;
   color: var(--color-text-muted);
-  margin-bottom: 4px;
+  margin-bottom: 3px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   font-weight: 600;
+  line-height: 1.2;
 }
 
 .summary-value {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--color-text);
 }
@@ -473,11 +399,11 @@ onMounted(() => {
 
 .tab-btn {
   flex: 1;
-  padding: 14px 20px;
+  padding: 10px 16px;
   border: none;
   background: transparent;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--color-text-muted);
   transition: var(--transition);
@@ -496,7 +422,7 @@ onMounted(() => {
 }
 
 .tab-content {
-  padding: 16px;
+  padding: 12px;
 }
 
 .card-section-header {

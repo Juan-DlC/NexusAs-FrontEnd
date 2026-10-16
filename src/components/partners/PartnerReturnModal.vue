@@ -156,7 +156,11 @@ async function saveReturn() {
     emit('return-saved')
     emit('update:modelValue', false)
   } catch (err) {
-    toast.show(err.response?.data?.message || 'Error al registrar devolución', 'error')
+    const errorMsg = err.response?.data?.message || 
+                     err.response?.data?.title ||
+                     (err.response?.status === 403 ? 'No tienes permisos para realizar devoluciones' : 'Error al registrar devolución')
+    toast.show(errorMsg, 'error')
+    console.error('Error en devolución:', err.response?.data)
   } finally {
     saving.value = false
   }

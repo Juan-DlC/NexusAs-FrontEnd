@@ -124,16 +124,22 @@ async function downloadPdf() {
 }
 
 async function downloadPartnerInvoicePdf() {
-  if (!props.invoice?.id) return
+  const saleId = props.invoice?.id || props.invoice?.saleId
+  
+  if (!saleId) {
+    toast.show('Error: ID de factura no válido', 'error')
+    return
+  }
 
   try {
-    const res = await api.get(`/Sale/${props.invoice.id}/partner-receipt`, {
+    const res = await api.get(`/Sale/${saleId}/partner-receipt`, {
       responseType: 'blob'
     })
     const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
     window.open(url, '_blank')
     toast.show('PDF generado correctamente', 'success')
-  } catch {
+  } catch (error) {
+    console.error('Error al descargar PDF mayorista:', error)
     toast.show('Error al generar el PDF de mayorista', 'error')
   }
 }
