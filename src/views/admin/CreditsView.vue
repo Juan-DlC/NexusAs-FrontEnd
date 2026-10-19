@@ -225,26 +225,13 @@ const customersMap = computed(() => {
 
 // ✅ Créditos enriquecidos con nombre y nota del cliente
 const enrichedCredits = computed(() => {
-  const enriched = credits.value.map(credit => {
+  return credits.value.map(credit => {
     const customerData = credit.customerId ? customersMap.value[credit.customerId] : null
     return {
       ...credit,
       customerName: credit.customerName || customerData?.name || null,
       customerNote: customerData?.note || null
     }
-  })
-  
-  // Filtrado adicional por nota del cliente en frontend
-  if (!search.value || search.value.trim() === '') {
-    return enriched
-  }
-  
-  const searchTerm = search.value.toUpperCase().trim()
-  return enriched.filter(credit => {
-    // El backend ya filtra por factura y nombre de cliente
-    // Aquí agregamos filtro adicional por nota del cliente
-    const note = (credit.customerNote || '').toUpperCase()
-    return note.includes(searchTerm)
   })
 })
 
