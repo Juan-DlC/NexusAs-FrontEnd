@@ -88,7 +88,7 @@ function onInput() {
         params: { 
           search: query.value, 
           inStock: props.filterInStock ? true : undefined, 
-          pageSize: 10 
+          pageSize: 200 
         }
       })
       
