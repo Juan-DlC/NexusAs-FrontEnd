@@ -34,7 +34,7 @@
         </div>
       </div>
     </div>
-    <div class="results-dropdown" v-else-if="showResults && query.length >= 2 && !loading">
+    <div class="results-dropdown" v-else-if="showResults && query.length >= 1 && !loading">
       <div class="result-empty">No se encontraron productos</div>
     </div>
   </div>
@@ -73,7 +73,7 @@ function handleInput(e) {
 }
 
 function onInput() {
-  if (query.value.length < 2) {
+  if (query.value.length < 1) {
     results.value = []
     showResults.value = false
     clearTimeout(searchTimeout)
@@ -88,7 +88,7 @@ function onInput() {
         params: { 
           search: query.value, 
           inStock: props.filterInStock ? true : undefined, 
-          pageSize: 8 
+          pageSize: 10 
         }
       })
       

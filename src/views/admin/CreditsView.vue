@@ -278,7 +278,7 @@ function onSearchInput() {
     pageNumber.value = 1
     await loadCredits()
     searching.value = false
-  }, 300)
+  }, 400)
 }
 
 function onFilterChange() {
